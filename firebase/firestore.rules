@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Safe initial state: no writes are allowed until Auth, server-side booking,
+    // and Rules tests are implemented. Do not loosen this as a temporary fix.
+    match /salons/{salonId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /menus/{menuId} {
+      allow read: if resource.data.isPublished == true;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
