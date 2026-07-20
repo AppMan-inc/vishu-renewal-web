@@ -3,11 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Salon Vishu | Web予約",
+    default: "Salon Vishu | 新潟のプライベートヘアサロン",
     template: "%s | Salon Vishu",
   },
   description:
-    "Salon Vishuの公式サイト。サロン情報のご案内とオンライン予約をご利用いただけます。",
+    "髪と心に、深呼吸できる時間を。新潟のプライベートヘアサロン Salon Vishuの公式サイトです。",
 };
 
 export default function RootLayout({
