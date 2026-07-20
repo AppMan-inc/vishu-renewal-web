@@ -7,6 +7,7 @@ import { getStorage } from "firebase/storage";
 import { z } from "zod";
 
 const clientConfigSchema = z.object({
+  environment: z.enum(["dev", "prod"]),
   apiKey: z.string().min(1),
   authDomain: z.string().min(1),
   projectId: z.string().min(1),
@@ -17,6 +18,7 @@ const clientConfigSchema = z.object({
 
 function getClientConfig() {
   const result = clientConfigSchema.safeParse({
+    environment: process.env.NEXT_PUBLIC_VISHU_ENV,
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -28,6 +30,17 @@ function getClientConfig() {
   if (!result.success) {
     throw new Error(
       "Firebase client configuration is missing. Copy .env.example to .env.local and fill in the Web app values.",
+    );
+  }
+
+  const expectedProjectId =
+    result.data.environment === "dev"
+      ? "salon-vishu2-dev-30830"
+      : "salon-vishu";
+
+  if (result.data.projectId !== expectedProjectId) {
+    throw new Error(
+      `Firebase project '${result.data.projectId}' does not match the '${result.data.environment}' environment.`,
     );
   }
 

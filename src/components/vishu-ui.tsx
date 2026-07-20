@@ -7,6 +7,8 @@ type IconName =
   | "cut"
   | "leaf"
   | "lock"
+  | "phone"
+  | "pin"
   | "person"
   | "sparkle"
   | "spa";
@@ -37,6 +39,13 @@ const iconPaths: Record<IconName, React.ReactNode> = {
     <>
       <rect x="4" y="10" width="16" height="11" rx="3" />
       <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3" />
+    </>
+  ),
+  phone: <path d="M5.4 3.8 8.7 3l1.7 4.3-2.2 1.3a15 15 0 0 0 7.2 7.2l1.3-2.2 4.3 1.7-.8 3.3c-.3 1.2-1.4 2-2.6 1.9C10.2 19.7 4.3 13.8 3.5 6.4c-.1-1.2.7-2.3 1.9-2.6Z" />,
+  pin: (
+    <>
+      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+      <circle cx="12" cy="10" r="2.5" />
     </>
   ),
   person: (
@@ -148,14 +157,15 @@ export function BotanicalArtwork() {
 
 export function PageFooter() {
   return (
-    <footer className="site-footer" id="access">
+    <footer className="site-footer">
       <div className="footer-main">
         <Brand />
         <p>髪と心に、深呼吸できる時間を。</p>
       </div>
       <div className="footer-info">
-        <span>NIIGATA · PRIVATE HAIR SALON</span>
-        <span>完全予約制</span>
+        <span>大阪府河内長野市荘園町18-14</span>
+        <span>9:00〜18:00 · 不定休</span>
+        <a href="tel:0721218824">TEL 0721-21-8824</a>
       </div>
       <div className="footer-links">
         <Link href="/booking">Web予約</Link>

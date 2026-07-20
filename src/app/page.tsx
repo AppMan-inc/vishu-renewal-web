@@ -6,69 +6,107 @@ import {
   VishuIcon,
 } from "@/components/vishu-ui";
 
+const hotPepperUrl = "https://beauty.hotpepper.jp/slnH000583006/";
+
+const salonJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "HairSalon",
+  name: "Salon Vishu",
+  alternateName: "サロンヴィッシュ",
+  description:
+    "大阪府河内長野市荘園町の、1席・スタイリスト1名の完全予約制プライベートヘアサロン。",
+  telephone: "+81-721-21-8824",
+  address: {
+    "@type": "PostalAddress",
+    addressRegion: "大阪府",
+    addressLocality: "河内長野市",
+    streetAddress: "荘園町18-14",
+    addressCountry: "JP",
+  },
+  priceRange: "¥¥",
+  sameAs: [hotPepperUrl],
+};
+
 const values = [
   {
     icon: "person" as const,
     number: "01",
-    title: "似合わせる",
-    description: "髪質や骨格、いつもの過ごし方まで伺い、無理なく続くスタイルをご提案します。",
+    title: "一席だけの空間",
+    description: "セット面は1席。ほかのお客様を気にせず過ごせる、完全予約制のプライベートサロンです。",
   },
   {
     icon: "spa" as const,
     number: "02",
-    title: "心ほどける",
-    description: "周りを気にせず過ごせる静かな空間で、髪も気持ちも軽くなる時間を。",
+    title: "髪と頭皮にやさしく",
+    description: "ハーブカラーやコスメパーマ、髪質改善を取り入れ、ダメージに配慮した施術をご提案します。",
   },
   {
     icon: "sparkle" as const,
     number: "03",
-    title: "丁寧に育てる",
-    description: "その日だけでなく、次に訪れる日まで心地よさが続く丁寧な施術を大切にします。",
+    title: "癒やしのヘッドスパ",
+    description: "首に負担がかかりにくいシャンプー台と、こだわりのCOTAヘアケアで心地よいひとときを。",
   },
 ];
 
 const menus = [
   {
     icon: "cut" as const,
-    label: "DESIGN",
+    label: "CUT",
     title: "Cut",
     japanese: "カット",
-    description: "暮らしに馴染む、扱いやすいヘアデザイン。",
+    description: "大人カット（シャンプー・ブロー込み）",
+    price: "¥3,800",
   },
   {
     icon: "sparkle" as const,
-    label: "COLOR",
-    title: "Color",
-    japanese: "カラー",
-    description: "肌の色や季節に寄り添う、やわらかな色彩。",
+    label: "HERB COLOR",
+    title: "Herb color",
+    japanese: "ハーブカラー",
+    description: "おしゃれ染めにも白髪染めにも。髪へのやさしさに配慮したカラー。",
+    price: "¥7,000〜",
   },
   {
-    icon: "spa" as const,
-    label: "RELAX",
-    title: "Head spa",
-    japanese: "ヘッドスパ",
-    description: "深く息をほどくような、静かなリラクゼーション。",
+    icon: "sparkle" as const,
+    label: "HAIR STRAIGHTENING",
+    title: "Acid straight",
+    japanese: "酸性縮毛矯正",
+    description: "カット・システムトリートメント込みの髪質改善メニュー。",
+    price: "¥19,000〜",
   },
+];
+
+const salonDetails = [
+  { label: "営業時間", value: "9:00〜18:00（カット最終受付 17:00）" },
+  { label: "定休日", value: "不定休（お問い合わせください）" },
+  { label: "サロン", value: "セット面1席・スタイリスト1名・完全予約制・禁煙" },
+  { label: "駐車場", value: "店舗前に砂利駐車場あり" },
+  { label: "お支払い", value: "Visa / Mastercard / JCB / American Express / PayPay" },
 ];
 
 export default function Home() {
   return (
     <main className="home-page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(salonJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <section className="home-hero">
         <SiteHeader />
         <div className="hero-orb hero-orb-one" />
         <div className="hero-orb hero-orb-two" />
         <div className="hero-inner">
           <div className="hero-copy-block">
-            <p className="eyebrow">PRIVATE HAIR SALON · NIIGATA</p>
+            <p className="eyebrow">PRIVATE HAIR SALON · KAWACHINAGANO</p>
             <h1>
               髪と心に、
               <br />
               <span>深呼吸できる時間を。</span>
             </h1>
             <p className="hero-description">
-              一人ひとりの美しさを育てる、静かなプライベートサロン。
-              あなたらしくいられる髪と、やわらかな余白をお届けします。
+              大阪府河内長野市荘園町にある、一席だけのプライベートサロン。
+              髪にやさしい施術と、ゆっくり過ごせる時間をお届けします。
             </p>
             <div className="hero-actions">
               <Link className="button button-primary" href="/booking">
@@ -81,7 +119,8 @@ export default function Home() {
             </div>
             <div className="hero-details" aria-label="サロンの特徴">
               <span><VishuIcon name="leaf" />完全予約制</span>
-              <span><VishuIcon name="person" />プライベート空間</span>
+              <span><VishuIcon name="person" />セット面1席</span>
+              <span><VishuIcon name="pin" />大阪・河内長野</span>
             </div>
           </div>
           <div className="hero-visual" aria-hidden="true">
@@ -111,9 +150,9 @@ export default function Home() {
           <div className="section-lead">
             <p>
               Salon Vishuが大切にするのは、髪を整えることだけではありません。
-              お話をじっくり伺うこと、落ち着いて過ごせること、帰るころには心まで軽くなっていること。
+              ハーブカラーや髪質改善、トリートメントを取り入れ、髪への負担に配慮した施術を行っています。
             </p>
-            <p>あなただけのペースに寄り添う、穏やかなサロンでありたいと考えています。</p>
+            <p>最初から仕上げまで一人のスタイリストが担当。あなただけのペースでお過ごしください。</p>
           </div>
         </div>
         <div className="value-grid">
@@ -147,12 +186,74 @@ export default function Home() {
                 <span>{menu.label}</span>
                 <h3>{menu.title}<small>{menu.japanese}</small></h3>
                 <p>{menu.description}</p>
+                <strong className="menu-price">{menu.price}</strong>
                 <Link href="/booking" aria-label={`${menu.japanese}の予約へ`}>
                   <VishuIcon name="arrow" />
                 </Link>
               </div>
             </article>
           ))}
+        </div>
+        <p className="menu-note">
+          価格は税込です。カラー・パーマ・縮毛矯正などは長さにより ¥550〜¥2,200 の追加料金があります。
+        </p>
+      </section>
+
+      <section className="section access-section" id="access">
+        <div className="access-heading">
+          <div>
+            <p className="eyebrow">SALON INFORMATION</p>
+            <h2>サロン情報</h2>
+          </div>
+          <a
+            className="source-link"
+            href={hotPepperUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            HOT PEPPER Beautyで最新情報を見る
+            <VishuIcon name="arrow" />
+          </a>
+        </div>
+        <div className="access-layout">
+          <div className="access-card access-address-card">
+            <div className="access-icon"><VishuIcon name="pin" /></div>
+            <p className="access-label">ADDRESS</p>
+            <h3>大阪府河内長野市<br />荘園町18-14</h3>
+            <p>南海高野線 千代田駅から荘園町行きバスで15分、荘園町下車徒歩3分。</p>
+            <a
+              className="button button-quiet"
+              href="https://www.google.com/maps/search/?api=1&query=%E5%A4%A7%E9%98%AA%E5%BA%9C%E6%B2%B3%E5%86%85%E9%95%B7%E9%87%8E%E5%B8%82%E8%8D%98%E5%9C%92%E7%94%BA18-14"
+              target="_blank"
+              rel="noreferrer"
+            >
+              地図を開く
+              <VishuIcon name="arrow" />
+            </a>
+          </div>
+          <div className="access-detail-card">
+            <dl>
+              {salonDetails.map((detail) => (
+                <div key={detail.label}>
+                  <dt>{detail.label}</dt>
+                  <dd>{detail.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className="access-contact">
+              <div>
+                <span>ご予約・お問い合わせ</span>
+                <a href="tel:0721218824">0721-21-8824</a>
+              </div>
+              <VishuIcon name="phone" />
+            </div>
+          </div>
+        </div>
+        <div className="access-note">
+          <strong>お車でお越しの方へ</strong>
+          <p>
+            カーナビが案内する農道は危険なため通らず、赤峰交差点・小山田小学校前を通るルートでお越しください。
+          </p>
         </div>
       </section>
 

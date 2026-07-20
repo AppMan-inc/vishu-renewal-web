@@ -3,12 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "npm run dev:dev",
+    "dev:dev": "node scripts/with-environment.mjs dev dev",
+    "dev:prod": "node scripts/with-environment.mjs prod dev",
+    "build": "node scripts/with-environment.mjs",
+    "build:dev": "node scripts/with-environment.mjs dev build",
+    "build:prod": "node scripts/with-environment.mjs prod build",
+    "start": "node scripts/with-environment.mjs",
+    "start:dev": "node scripts/with-environment.mjs dev start",
+    "start:prod": "node scripts/with-environment.mjs prod start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@next/env": "^16.2.10",
     "client-only": "^0.0.1",
     "firebase": "^12.16.0",
     "firebase-admin": "^13.10.0",
