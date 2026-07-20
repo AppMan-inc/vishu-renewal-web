@@ -41,6 +41,11 @@ export type BookingCatalog = {
   availabilityIsLive: boolean;
 };
 
+export type BookingCustomerProfile = {
+  name: string;
+  phone: string;
+};
+
 const sampleMenus: BookingMenu[] = [
   {
     id: "sample-cut-color",
@@ -144,6 +149,31 @@ export async function loadBookingCatalog(): Promise<BookingCatalog> {
   };
 }
 
+export async function loadBookingCustomerProfile(
+  uid: string,
+  fallbackName = "",
+): Promise<BookingCustomerProfile> {
+  const database = firestore();
+
+  for (const collectionPath of ["users", "user"]) {
+    const profile = await settled(async () => {
+      const snapshot = await getDoc(doc(database, collectionPath, uid));
+      return snapshot.exists() ? snapshot.data() : null;
+    });
+
+    if (profile) {
+      return {
+        name: profileName(profile) || fallbackName.trim(),
+        phone: stringValue(
+          profile.telephoneNumber ?? profile.phoneNumber ?? profile.phone,
+        ),
+      };
+    }
+  }
+
+  return { name: fallbackName.trim(), phone: "" };
+}
+
 async function settled<T>(action: () => Promise<T>): Promise<T | null> {
   try {
     return await action();
@@ -201,6 +231,13 @@ function minutesFromDayTime(value: unknown) {
 
 function stringValue(value: unknown) {
   return typeof value === "string" ? value.trim() : value?.toString().trim() ?? "";
+}
+
+function profileName(data: Record<string, unknown>) {
+  const lastName = stringValue(data.lastName);
+  const firstName = stringValue(data.firstName);
+  const splitName = [lastName, firstName].filter(Boolean).join(" ");
+  return splitName || stringValue(data.name) || stringValue(data.displayName);
 }
 
 function numberValue(value: unknown) {

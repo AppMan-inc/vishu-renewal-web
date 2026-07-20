@@ -7,6 +7,7 @@ import {
   BookingCatalog,
   BookingMenu,
   loadBookingCatalog,
+  loadBookingCustomerProfile,
   TimeRange,
 } from "@/features/booking/booking-data";
 
@@ -57,6 +58,24 @@ export function BookingFlow() {
       isActive = false;
     };
   }, [reloadKey]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let isActive = true;
+    loadBookingCustomerProfile(
+      currentUser.uid,
+      currentUser.displayName ?? "",
+    ).then((profile) => {
+      if (!isActive) return;
+      setCustomerName((currentName) => currentName.trim() || profile.name);
+      setPhone((currentPhone) => currentPhone.trim() || profile.phone);
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentUser]);
 
   const visibleMenus = useMemo(() => {
     const menus = catalog?.menus ?? [];
