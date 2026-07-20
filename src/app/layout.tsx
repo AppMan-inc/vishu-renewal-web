@@ -3,11 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Salon Vishu | Web予約",
+    default: "Salon Vishu | 大阪・河内長野のプライベートヘアサロン",
     template: "%s | Salon Vishu",
   },
   description:
-    "Salon Vishuの公式サイト。サロン情報のご案内とオンライン予約をご利用いただけます。",
+    "大阪府河内長野市荘園町の完全予約制プライベートヘアサロン、Salon Vishu。ハーブカラー、酸性縮毛矯正、ヘッドスパなどをご提供します。",
 };
 
 export default function RootLayout({

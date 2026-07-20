@@ -28,7 +28,15 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    ".next/dev/production/types/**/*.ts",
+    ".next/dev/production/dev/types/**/*.ts",
+    ".next/dev/development/types/**/*.ts",
+    ".next/dev/development/dev/types/**/*.ts",
+    ".next/prod/production/types/**/*.ts",
+    ".next/prod/production/dev/types/**/*.ts",
+    ".next/prod/development/types/**/*.ts",
+    ".next/prod/development/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

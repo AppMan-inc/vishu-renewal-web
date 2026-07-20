@@ -92,8 +92,11 @@ MVPは匿名認証を推奨する。予約完了後にメールリンク等で�
 
 ## 環境
 
-- development: `salon-vishu2-dev-30830` を候補とし、Webアプリを新規登録する
-- staging: 本番前検証用。必要になった時点で分離する
-- production: 既存本番の扱いを確認後に決定する
+Flutterアプリと同じ2環境を使用する。
+
+- dev: `salon-vishu2-dev-30830`
+- prod: `salon-vishu`
+
+Web固有のFirebase API KeyとApp IDは `.env.dev.local` / `.env.prod.local` またはCI・ホスティング環境の変数から注入する。`scripts/with-environment.mjs` がプロジェクトID等の対応を検証し、ビルド成果物は `.next/dev/production` / `.next/prod/production` に分離する。
 
 サービスアカウントJSONはリポジトリへ保存せず、ホスティング環境のSecretとして設定する。
