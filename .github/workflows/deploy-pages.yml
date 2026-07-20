@@ -36,6 +36,15 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
 
+      # GitHub Pages is static hosting, so server-only route handlers are not
+      # included in the UI preview build. They remain available in normal
+      # development and production builds.
+      - name: Exclude server APIs from static preview
+        run: |
+          if [ -d src/app/api ]; then
+            mv src/app/api "${{ runner.temp }}/server-api"
+          fi
+
       - name: Build with Next.js
         run: npm run build:dev
         env:

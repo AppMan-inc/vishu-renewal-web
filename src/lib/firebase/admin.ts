@@ -1,6 +1,12 @@
 import "server-only";
 
-import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
+import {
+  applicationDefault,
+  cert,
+  getApp,
+  getApps,
+  initializeApp,
+} from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { z } from "zod";
@@ -8,8 +14,8 @@ import { z } from "zod";
 const adminConfigSchema = z.object({
   environment: z.enum(["dev", "prod"]),
   projectId: z.string().min(1),
-  clientEmail: z.email(),
-  privateKey: z.string().min(1),
+  clientEmail: z.email().optional(),
+  privateKey: z.string().min(1).optional(),
 });
 
 function getAdminConfig() {
@@ -35,6 +41,12 @@ function getAdminConfig() {
     );
   }
 
+  if (Boolean(result.data.clientEmail) !== Boolean(result.data.privateKey)) {
+    throw new Error(
+      "Firebase Admin client email and private key must be configured together.",
+    );
+  }
+
   return result.data;
 }
 
@@ -45,7 +57,14 @@ export function getFirebaseAdminApp() {
 
   const config = getAdminConfig();
   return initializeApp({
-    credential: cert(config),
+    credential:
+      config.clientEmail && config.privateKey
+        ? cert({
+            projectId: config.projectId,
+            clientEmail: config.clientEmail,
+            privateKey: config.privateKey,
+          })
+        : applicationDefault(),
     projectId: config.projectId,
   });
 }
