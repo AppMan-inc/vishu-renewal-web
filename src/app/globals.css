@@ -56,6 +56,18 @@ svg {
   display: block;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip: rect(0, 0, 0, 0);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .site-header {
   position: relative;
   z-index: 20;
@@ -128,6 +140,30 @@ svg {
 .site-navigation > a:not(.header-booking-link):hover,
 .header-text-link:hover {
   color: var(--primary-dark);
+}
+
+.header-session-action {
+  display: inline-flex;
+}
+
+.header-session-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  transition: color 160ms ease;
+}
+
+.header-session-button:hover:not(:disabled) {
+  color: var(--primary-dark);
+}
+
+.header-session-button:disabled {
+  color: var(--text-muted);
+  cursor: wait;
 }
 
 .header-booking-link {
@@ -2455,6 +2491,14 @@ button.booking-menu-card.is-selected .round-arrow {
     display: none;
   }
 
+  .site-navigation {
+    gap: 12px;
+  }
+
+  .header-session-button {
+    font-size: 10px;
+  }
+
   .header-booking-link {
     min-height: 40px;
     gap: 10px;
@@ -2784,7 +2828,8 @@ button.booking-menu-card.is-selected .round-arrow {
   }
 
   .button,
-  .site-navigation a {
+  .site-navigation a,
+  .header-session-button {
     transition: none;
   }
 }

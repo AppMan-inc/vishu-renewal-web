@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CustomerSessionAction } from "@/features/auth/components/customer-session-action";
 
 type IconName =
   | "arrow"
@@ -112,6 +113,7 @@ export function SiteHeader({ owner = false }: { owner?: boolean }) {
             Web予約
             <VishuIcon name="arrow" />
           </Link>
+          <CustomerSessionAction />
         </nav>
       )}
     </header>
