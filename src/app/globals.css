@@ -1991,6 +1991,23 @@ button.booking-menu-card.is-selected .round-arrow {
   color: var(--primary-deep);
 }
 
+.booking-summary-alert.is-success strong,
+.booking-summary-alert.is-success span {
+  display: block;
+}
+
+.booking-summary-alert.is-success span {
+  margin-top: 4px;
+  font-size: 8px;
+  overflow-wrap: anywhere;
+}
+
+.booking-summary-alert.is-error {
+  border-color: #e5c7c2;
+  background: #fff4f1;
+  color: #9a4f45;
+}
+
 .booking-secure-note {
   display: flex;
   align-items: center;

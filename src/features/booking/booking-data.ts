@@ -85,7 +85,7 @@ const sampleMenus: BookingMenu[] = [
   },
 ];
 
-export async function loadBookingCatalog(): Promise<BookingCatalog> {
+export async function loadBookingCatalog(uid?: string): Promise<BookingCatalog> {
   const database = firestore();
   let menus = sampleMenus;
   let usesSampleMenus = true;
@@ -122,9 +122,19 @@ export async function loadBookingCatalog(): Promise<BookingCatalog> {
     );
   }
 
-  const [reservationResult, restResult] = await Promise.all([
+  const [reservationResult, userReservationResult, restResult] = await Promise.all([
     settled(async () => {
       const snapshot = await getDocs(collection(database, "reservation"));
+      return snapshot.docs
+        .filter((document) => !isCancelled(document.data().status))
+        .map((document) => rangeFromData(document.data()))
+        .filter(isTimeRange);
+    }),
+    settled(async () => {
+      if (!uid) return [];
+      const snapshot = await getDocs(
+        collection(database, "users", uid, "reservations"),
+      );
       return snapshot.docs
         .filter((document) => !isCancelled(document.data().status))
         .map((document) => rangeFromData(document.data()))
@@ -142,10 +152,13 @@ export async function loadBookingCatalog(): Promise<BookingCatalog> {
     closingMinutes,
     slotIntervalMinutes,
     closedWeekdays,
-    reservations: reservationResult ?? [],
+    reservations: [...(reservationResult ?? []), ...(userReservationResult ?? [])],
     restBlocks: restResult ?? [],
     usesSampleMenus,
-    availabilityIsLive: reservationResult !== null && restResult !== null,
+    availabilityIsLive:
+      reservationResult !== null &&
+      userReservationResult !== null &&
+      restResult !== null,
   };
 }
 

@@ -3,6 +3,7 @@ import "client-only";
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getFunctions } from "firebase/functions";
 import { getStorage } from "firebase/storage";
 import { z } from "zod";
 
@@ -53,4 +54,6 @@ export function getFirebaseApp() {
 
 export const firebaseAuth = () => getAuth(getFirebaseApp());
 export const firestore = () => getFirestore(getFirebaseApp());
+export const firebaseFunctions = () =>
+  getFunctions(getFirebaseApp(), "us-central1");
 export const firebaseStorage = () => getStorage(getFirebaseApp());
