@@ -22,6 +22,20 @@ const nextConfig: NextConfig = {
   output: isGitHubPagesBuild ? "export" : undefined,
   basePath: isGitHubPagesBuild ? process.env.PAGES_BASE_PATH : undefined,
   trailingSlash: isGitHubPagesBuild,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+        pathname: "/v0/b/**",
+      },
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
+        pathname: "/**",
+      },
+    ],
+  },
   // Keep dev-server caches and optimized builds for both Firebase projects
   // isolated. This also allows a build while a dev server is running.
   distDir: isGitHubPagesBuild

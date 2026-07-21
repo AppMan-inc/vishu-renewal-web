@@ -11,10 +11,16 @@ import {
 } from "firebase/firestore";
 import { firestore } from "@/lib/firebase/client";
 
+const cloudStorageImageHosts = new Set([
+  "firebasestorage.googleapis.com",
+  "storage.googleapis.com",
+]);
+
 export type BookingMenu = {
   id: string;
   title: string;
   description: string;
+  imageUrl: string;
   categories: string[];
   beforePrice: number | null;
   price: number;
@@ -51,6 +57,7 @@ const sampleMenus: BookingMenu[] = [
     id: "sample-cut-color",
     title: "カット＋ハーブカラー",
     description: "髪質に合わせたカットと、頭皮にやさしいハーブカラーのメニューです。",
+    imageUrl: "",
     categories: ["カット", "カラー"],
     beforePrice: 10300,
     price: 9550,
@@ -63,6 +70,7 @@ const sampleMenus: BookingMenu[] = [
     id: "sample-head-spa",
     title: "リラックスヘッドスパ",
     description: "頭皮ケアとリラクゼーションを組み合わせたメニューです。",
+    imageUrl: "",
     categories: ["ヘッドスパ"],
     beforePrice: 6600,
     price: 5500,
@@ -75,6 +83,7 @@ const sampleMenus: BookingMenu[] = [
     id: "sample-hair-set",
     title: "洋装ヘアセット",
     description: "お出かけやイベント向けのヘアセットです。早朝はお電話でご相談ください。",
+    imageUrl: "",
     categories: ["ヘアセット"],
     beforePrice: 4400,
     price: 3300,
@@ -85,7 +94,7 @@ const sampleMenus: BookingMenu[] = [
   },
 ];
 
-export async function loadBookingCatalog(): Promise<BookingCatalog> {
+export async function loadBookingCatalog(uid?: string): Promise<BookingCatalog> {
   const database = firestore();
   let menus = sampleMenus;
   let usesSampleMenus = true;
@@ -122,9 +131,19 @@ export async function loadBookingCatalog(): Promise<BookingCatalog> {
     );
   }
 
-  const [reservationResult, restResult] = await Promise.all([
+  const [reservationResult, userReservationResult, restResult] = await Promise.all([
     settled(async () => {
       const snapshot = await getDocs(collection(database, "reservation"));
+      return snapshot.docs
+        .filter((document) => !isCancelled(document.data().status))
+        .map((document) => rangeFromData(document.data()))
+        .filter(isTimeRange);
+    }),
+    settled(async () => {
+      if (!uid) return [];
+      const snapshot = await getDocs(
+        collection(database, "users", uid, "reservations"),
+      );
       return snapshot.docs
         .filter((document) => !isCancelled(document.data().status))
         .map((document) => rangeFromData(document.data()))
@@ -142,10 +161,13 @@ export async function loadBookingCatalog(): Promise<BookingCatalog> {
     closingMinutes,
     slotIntervalMinutes,
     closedWeekdays,
-    reservations: reservationResult ?? [],
+    reservations: [...(reservationResult ?? []), ...(userReservationResult ?? [])],
     restBlocks: restResult ?? [],
     usesSampleMenus,
-    availabilityIsLive: reservationResult !== null && restResult !== null,
+    availabilityIsLive:
+      reservationResult !== null &&
+      userReservationResult !== null &&
+      restResult !== null,
   };
 }
 
@@ -187,6 +209,7 @@ function menuFromDocument(id: string, data: Record<string, unknown>): BookingMen
     id: stringValue(data.menuId) || id,
     title: stringValue(data.treatmentDetail) || "サロンメニュー",
     description: stringValue(data.menuIntroduction),
+    imageUrl: cloudStorageImageUrl(data.menuImageUrl),
     categories: Array.isArray(data.treatmentDetailList)
       ? data.treatmentDetailList.map(stringValue).filter(Boolean)
       : [],
@@ -197,6 +220,20 @@ function menuFromDocument(id: string, data: Record<string, unknown>): BookingMen
     needsExtraMoney: booleanValue(data.isNeedExtraMoney),
     priority: positiveInteger(data.priority) ?? 999,
   };
+}
+
+function cloudStorageImageUrl(value: unknown) {
+  const imageUrl = stringValue(value);
+  if (!imageUrl) return "";
+
+  try {
+    const parsed = new URL(imageUrl);
+    return parsed.protocol === "https:" && cloudStorageImageHosts.has(parsed.hostname)
+      ? parsed.toString()
+      : "";
+  } catch {
+    return "";
+  }
 }
 
 function rangeFromData(data: Record<string, unknown>): TimeRange | null {

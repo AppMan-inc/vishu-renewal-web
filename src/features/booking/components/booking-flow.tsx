@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { VishuIcon } from "@/components/vishu-ui";
 import { firebaseAuth } from "@/lib/firebase/client";
@@ -10,6 +11,10 @@ import {
   loadBookingCustomerProfile,
   TimeRange,
 } from "@/features/booking/booking-data";
+import {
+  bookingReservationErrorMessage,
+  createBookingReservation,
+} from "@/features/booking/reservation-api";
 
 const steps = ["メニュー", "日時", "お客様情報", "確認"];
 const categories = [
@@ -25,6 +30,11 @@ const categories = [
 ];
 
 type Step = 0 | 1 | 2 | 3;
+type ReservationSubmission =
+  | { status: "idle" }
+  | { status: "submitting" }
+  | { status: "success"; reservationId: string }
+  | { status: "error"; message: string };
 
 export function BookingFlow() {
   const currentUser = firebaseAuth().currentUser;
@@ -40,11 +50,12 @@ export function BookingFlow() {
   const [customerName, setCustomerName] = useState(currentUser?.displayName ?? "");
   const [phone, setPhone] = useState("");
   const [request, setRequest] = useState("");
-  const [confirmationNotice, setConfirmationNotice] = useState(false);
+  const [reservationSubmission, setReservationSubmission] =
+    useState<ReservationSubmission>({ status: "idle" });
 
   useEffect(() => {
     let isActive = true;
-    loadBookingCatalog()
+    loadBookingCatalog(currentUser?.uid)
       .then((loadedCatalog) => {
         if (!isActive) return;
         setCatalog(loadedCatalog);
@@ -57,7 +68,7 @@ export function BookingFlow() {
     return () => {
       isActive = false;
     };
-  }, [reloadKey]);
+  }, [currentUser?.uid, reloadKey]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -95,7 +106,7 @@ export function BookingFlow() {
   function chooseMenu(menu: BookingMenu) {
     setSelectedMenu(menu);
     setSelectedSlot(null);
-    setConfirmationNotice(false);
+    setReservationSubmission({ status: "idle" });
   }
 
   function goForward() {
@@ -113,14 +124,55 @@ export function BookingFlow() {
   }
 
   function goBack() {
-    setConfirmationNotice(false);
+    setReservationSubmission({ status: "idle" });
     setCurrentStep((step) => Math.max(0, step - 1) as Step);
   }
 
+  async function confirmReservation() {
+    if (
+      !selectedMenu ||
+      !selectedSlot ||
+      !currentUser ||
+      reservationSubmission.status === "submitting" ||
+      reservationSubmission.status === "success"
+    ) {
+      return;
+    }
+
+    setReservationSubmission({ status: "submitting" });
+    try {
+      const result = await createBookingReservation({
+        menuId: selectedMenu.id,
+        startAt: selectedSlot.toISOString(),
+        customerName: customerName.trim(),
+        telephoneNumber: phone.trim(),
+        request: request.trim(),
+      });
+      setReservationSubmission({
+        status: "success",
+        reservationId: result.reservationId,
+      });
+      setReloadKey((key) => key + 1);
+    } catch (error) {
+      setReservationSubmission({
+        status: "error",
+        message: bookingReservationErrorMessage(error),
+      });
+    }
+  }
+
+  const phoneDigits = phone.replace(/[^0-9]/g, "");
+  const hasValidCustomerDetails =
+    customerName.trim().length > 0 &&
+    customerName.trim().length <= 80 &&
+    phone.trim().length <= 20 &&
+    phoneDigits.length >= 10 &&
+    phoneDigits.length <= 11 &&
+    request.trim().length <= 500;
   const canContinue =
     (currentStep === 0 && Boolean(selectedMenu) && !selectedMenu?.isCallable) ||
     (currentStep === 1 && Boolean(selectedSlot)) ||
-    (currentStep === 2 && Boolean(customerName.trim()) && Boolean(phone.trim()));
+    (currentStep === 2 && hasValidCustomerDetails);
 
   return (
     <section className="app-page-shell">
@@ -162,8 +214,12 @@ export function BookingFlow() {
               onWeekChange={(offset) => {
                 setWeekOffset(offset);
                 setSelectedSlot(null);
+                setReservationSubmission({ status: "idle" });
               }}
-              onSlotSelect={setSelectedSlot}
+              onSlotSelect={(slot) => {
+                setSelectedSlot(slot);
+                setReservationSubmission({ status: "idle" });
+              }}
             />
           ) : null}
           {currentStep === 2 ? (
@@ -188,7 +244,7 @@ export function BookingFlow() {
             />
           ) : null}
 
-          {currentStep > 0 ? (
+          {currentStep > 0 && reservationSubmission.status !== "success" ? (
             <button className="booking-inline-back" type="button" onClick={goBack}>
               <VishuIcon name="arrow" />
               前のステップへ戻る
@@ -197,13 +253,13 @@ export function BookingFlow() {
         </section>
 
         <BookingSummary
-          confirmationNotice={confirmationNotice}
+          reservationSubmission={reservationSubmission}
           currentStep={currentStep}
           menu={selectedMenu}
           slot={selectedSlot}
           canContinue={canContinue}
           onContinue={goForward}
-          onConfirm={() => setConfirmationNotice(true)}
+          onConfirm={confirmReservation}
         />
       </div>
     </section>
@@ -286,7 +342,7 @@ function MenuStep(props: MenuStepProps) {
             type="button"
             onClick={() => props.onMenuSelect(menu)}
           >
-            <div className="booking-menu-icon"><VishuIcon name={menuIcon(menu)} /></div>
+            <MenuImage menu={menu} />
             <div className="booking-menu-copy">
               <span>{categoryLabel(menu)}</span>
               <h3>{menu.title}</h3>
@@ -302,6 +358,37 @@ function MenuStep(props: MenuStepProps) {
         ))}
       </div>
     </>
+  );
+}
+
+function MenuImage({
+  menu,
+  compact = false,
+}: {
+  menu: BookingMenu;
+  compact?: boolean;
+}) {
+  const [failedImageUrl, setFailedImageUrl] = useState("");
+
+  if (!menu.imageUrl || failedImageUrl === menu.imageUrl) {
+    return (
+      <div className="booking-menu-icon">
+        <VishuIcon name={menuIcon(menu)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="booking-menu-icon has-image">
+      <Image
+        alt=""
+        fill
+        sizes={compact ? "58px" : "(max-width: 600px) 52px, 76px"}
+        src={menu.imageUrl}
+        unoptimized
+        onError={() => setFailedImageUrl(menu.imageUrl)}
+      />
+    </div>
   );
 }
 
@@ -337,7 +424,7 @@ function DateTimeStep({
         <h2>ご希望の日時を選ぶ</h2>
       </div>
       <div className="selected-menu-panel">
-        <div className="booking-menu-icon"><VishuIcon name={menuIcon(menu)} /></div>
+        <MenuImage compact menu={menu} />
         <div><small>選択中のメニュー</small><strong>{menu.title}</strong><span>{menu.durationMinutes}分 · {priceLabel(menu)}</span></div>
       </div>
       {!catalog.availabilityIsLive ? (
@@ -443,10 +530,10 @@ function CustomerStep({
       <div className="subsection-heading"><span>STEP 03</span><h2>お客様情報を入力</h2></div>
       <div className="booking-form-card">
         <div className="booking-form-grid">
-          <label><span>お名前 <em>必須</em></span><input value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="山田 花子" /></label>
-          <label><span>電話番号 <em>必須</em></span><input inputMode="tel" value={phone} onChange={(event) => onPhoneChange(event.target.value)} placeholder="09012345678" /></label>
+          <label><span>お名前 <em>必須</em></span><input maxLength={80} value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="山田 花子" /></label>
+          <label><span>電話番号 <em>必須</em></span><input inputMode="tel" maxLength={20} value={phone} onChange={(event) => onPhoneChange(event.target.value)} placeholder="09012345678" /></label>
           <label className="is-wide"><span>メールアドレス</span><input value={email} disabled /></label>
-          <label className="is-wide"><span>ご要望・ご相談</span><textarea value={request} onChange={(event) => onRequestChange(event.target.value)} placeholder="髪のお悩みやご希望があればご記入ください。" rows={5} /></label>
+          <label className="is-wide"><span>ご要望・ご相談</span><textarea maxLength={500} value={request} onChange={(event) => onRequestChange(event.target.value)} placeholder="髪のお悩みやご希望があればご記入ください。" rows={5} /></label>
         </div>
         <p className="booking-form-note">ご入力いただいた情報は、ご予約の確認とサロンからのご連絡に使用します。</p>
       </div>
@@ -488,7 +575,7 @@ function ConfirmationRow({ label, value, detail }: { label: string; value: strin
 }
 
 function BookingSummary({
-  confirmationNotice,
+  reservationSubmission,
   currentStep,
   menu,
   slot,
@@ -496,13 +583,13 @@ function BookingSummary({
   onContinue,
   onConfirm,
 }: {
-  confirmationNotice: boolean;
+  reservationSubmission: ReservationSubmission;
   currentStep: Step;
   menu: BookingMenu | null;
   slot: Date | null;
   canContinue: boolean;
   onContinue: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
 }) {
   return (
     <aside className="booking-summary">
@@ -518,13 +605,35 @@ function BookingSummary({
       )}
       {slot ? <div className="summary-date"><small>ご予約日時</small><strong>{formatBookingDate(slot)}</strong></div> : null}
       {menu?.isCallable ? <div className="booking-summary-alert">このメニューはお電話でのご予約をお願いします。</div> : null}
-      {confirmationNotice ? <div className="booking-summary-alert is-success">予約保存APIは次の実装で接続します。現在はまだ予約データを保存していません。</div> : null}
+      {reservationSubmission.status === "success" ? (
+        <div className="booking-summary-alert is-success" role="status">
+          <strong>ご予約が確定しました</strong>
+          <span>予約番号：{reservationSubmission.reservationId}</span>
+        </div>
+      ) : null}
+      {reservationSubmission.status === "error" ? (
+        <div className="booking-summary-alert is-error" role="alert">
+          {reservationSubmission.message}
+        </div>
+      ) : null}
       {currentStep < 3 ? (
         <button className="button button-primary" type="button" disabled={!canContinue} onClick={onContinue}>
           {continueLabel(currentStep, menu)}<VishuIcon name="arrow" />
         </button>
       ) : (
-        <button className="button button-primary" type="button" onClick={onConfirm}>予約を確定する<VishuIcon name="arrow" /></button>
+        <button
+          className="button button-primary"
+          type="button"
+          disabled={reservationSubmission.status === "submitting" || reservationSubmission.status === "success"}
+          onClick={() => void onConfirm()}
+        >
+          {reservationSubmission.status === "submitting"
+            ? "予約を保存しています…"
+            : reservationSubmission.status === "success"
+              ? "予約が確定しました"
+              : "予約を確定する"}
+          {reservationSubmission.status === "idle" || reservationSubmission.status === "error" ? <VishuIcon name="arrow" /> : null}
+        </button>
       )}
       <p className="booking-secure-note"><VishuIcon name="lock" />ログイン情報で安全に予約を管理します</p>
     </aside>

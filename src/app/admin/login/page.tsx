@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Brand, VishuIcon } from "@/components/vishu-ui";
+import { AdminLoginForm } from "@/features/admin/components/admin-login-form";
 
 export const metadata: Metadata = {
   title: "店主ログイン",
@@ -30,27 +32,9 @@ export default function AdminLoginPage() {
           <h2>店主ログイン</h2>
           <p className="login-guidance">登録済みのメールアドレスとパスワードを入力してください。</p>
 
-          <form className="login-form">
-            <label htmlFor="owner-email">メールアドレス</label>
-            <div className="input-wrap">
-              <VishuIcon name="person" />
-              <input id="owner-email" type="email" placeholder="owner@example.com" disabled />
-            </div>
-            <label htmlFor="owner-password">パスワード</label>
-            <div className="input-wrap">
-              <VishuIcon name="lock" />
-              <input id="owner-password" type="password" placeholder="••••••••" disabled />
-            </div>
-            <button className="button button-primary" type="button" disabled>
-              ログイン
-              <VishuIcon name="arrow" />
-            </button>
-          </form>
-
-          <div className="preview-notice login-preview-notice">
-            <strong>認証機能は準備中です</strong>
-            <p>Firebase Authentication接続後にログイン操作を有効化します。</p>
-          </div>
+          <Suspense fallback={<p className="login-guidance">ログイン画面を準備しています…</p>}>
+            <AdminLoginForm />
+          </Suspense>
           <Link className="back-link" href="/">
             <VishuIcon name="arrow" />
             公開サイトへ戻る
