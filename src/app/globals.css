@@ -1185,9 +1185,25 @@ svg {
 }
 
 .booking-menu-icon {
+  position: relative;
+  overflow: hidden;
   width: 76px;
   height: 76px;
   border-radius: var(--radius-medium);
+}
+
+.booking-menu-icon.has-image {
+  background: var(--surface-warm);
+}
+
+.booking-menu-icon.has-image img {
+  object-fit: cover;
+  transition: transform 180ms ease;
+}
+
+button.booking-menu-card:hover .booking-menu-icon.has-image img,
+button.booking-menu-card:focus-visible .booking-menu-icon.has-image img {
+  transform: scale(1.035);
 }
 
 .booking-menu-icon svg {

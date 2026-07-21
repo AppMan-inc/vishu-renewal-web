@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { VishuIcon } from "@/components/vishu-ui";
 import { firebaseAuth } from "@/lib/firebase/client";
@@ -341,7 +342,7 @@ function MenuStep(props: MenuStepProps) {
             type="button"
             onClick={() => props.onMenuSelect(menu)}
           >
-            <div className="booking-menu-icon"><VishuIcon name={menuIcon(menu)} /></div>
+            <MenuImage menu={menu} />
             <div className="booking-menu-copy">
               <span>{categoryLabel(menu)}</span>
               <h3>{menu.title}</h3>
@@ -357,6 +358,37 @@ function MenuStep(props: MenuStepProps) {
         ))}
       </div>
     </>
+  );
+}
+
+function MenuImage({
+  menu,
+  compact = false,
+}: {
+  menu: BookingMenu;
+  compact?: boolean;
+}) {
+  const [failedImageUrl, setFailedImageUrl] = useState("");
+
+  if (!menu.imageUrl || failedImageUrl === menu.imageUrl) {
+    return (
+      <div className="booking-menu-icon">
+        <VishuIcon name={menuIcon(menu)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="booking-menu-icon has-image">
+      <Image
+        alt=""
+        fill
+        sizes={compact ? "58px" : "(max-width: 600px) 52px, 76px"}
+        src={menu.imageUrl}
+        unoptimized
+        onError={() => setFailedImageUrl(menu.imageUrl)}
+      />
+    </div>
   );
 }
 
@@ -392,7 +424,7 @@ function DateTimeStep({
         <h2>ご希望の日時を選ぶ</h2>
       </div>
       <div className="selected-menu-panel">
-        <div className="booking-menu-icon"><VishuIcon name={menuIcon(menu)} /></div>
+        <MenuImage compact menu={menu} />
         <div><small>選択中のメニュー</small><strong>{menu.title}</strong><span>{menu.durationMinutes}分 · {priceLabel(menu)}</span></div>
       </div>
       {!catalog.availabilityIsLive ? (
