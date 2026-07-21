@@ -1,27 +1,1443 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbfaf7;
-  --background-alt: #f3f2ed;
+  --background: #fbf8f5;
+  --background-alt: #f4ece8;
   --surface: #ffffff;
-  --surface-warm: #f4f5ef;
-  --surface-selected: #eef4ea;
-  --primary: #5f8657;
-  --primary-dark: #3f643e;
-  --primary-deep: #29482f;
-  --primary-light: #ddead8;
-  --champagne: #eae3d6;
-  --clay: #a9705c;
-  --text: #282b28;
-  --text-secondary: #5f655f;
-  --text-muted: #8b918b;
-  --border: #e2dfd8;
-  --divider: #ece9e3;
-  --shadow-soft: 0 18px 50px rgba(52, 59, 52, 0.09);
-  --shadow-subtle: 0 8px 24px rgba(52, 59, 52, 0.07);
+  --surface-warm: #f5eeeb;
+  --surface-selected: #faebe8;
+  --primary: #bd6d68;
+  --primary-dark: #7f3f4b;
+  --primary-deep: #39282d;
+  --primary-light: #efd3ce;
+  --champagne: #eadbd3;
+  --clay: #b9625f;
+  --text: #2e2829;
+  --text-secondary: #665d5f;
+  --text-muted: #968b8d;
+  --border: #e6dcd8;
+  --divider: #eee5e1;
+  --shadow-soft: 0 18px 50px rgba(70, 42, 48, 0.1);
+  --shadow-subtle: 0 8px 24px rgba(70, 42, 48, 0.07);
   --radius-small: 10px;
   --radius-medium: 14px;
   --radius-large: 16px;
+}
+
+/* Salon booking experience — 2026 redesign */
+.salon-home {
+  --salon-ink: #2d2427;
+  --salon-wine: #713b48;
+  --salon-rose: #ba6169;
+  --salon-blush: #efd2ca;
+  --salon-cream: #fbf5f0;
+  --salon-paper: #fffaf6;
+  --salon-line: rgba(66, 39, 46, 0.14);
+  overflow: hidden;
+  background: var(--salon-cream);
+  color: var(--salon-ink);
+}
+
+.salon-home .site-header {
+  width: min(1380px, calc(100% - 64px));
+  height: 94px;
+  border-bottom-color: rgba(67, 36, 43, .1);
+}
+
+.salon-home .brand-monogram {
+  width: 42px;
+  height: 48px;
+  border: 1px solid rgba(75, 40, 48, .38);
+  border-radius: 50% 50% 46% 46%;
+  color: var(--salon-wine);
+  font-size: 24px;
+  transform: none;
+}
+
+.salon-home .brand-copy strong {
+  color: var(--salon-ink);
+  font-size: 19px;
+  letter-spacing: .3em;
+}
+
+.salon-home .brand-copy small {
+  color: #8a777c;
+  letter-spacing: .24em;
+}
+
+.salon-home .site-navigation {
+  color: #685b5e;
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+
+.salon-home .site-navigation > a:not(.header-booking-link):hover {
+  color: var(--salon-wine);
+}
+
+.salon-home .header-booking-link {
+  min-height: 48px;
+  padding: 0 21px;
+  border-radius: 999px;
+  background: var(--salon-ink);
+  letter-spacing: .04em;
+}
+
+.salon-home .header-booking-link:hover {
+  background: var(--salon-wine);
+}
+
+.salon-hero {
+  position: relative;
+  min-height: 880px;
+  background:
+    radial-gradient(circle at 12% 34%, rgba(227, 177, 168, .2) 0 1px, transparent 2px) 0 0 / 26px 26px,
+    linear-gradient(115deg, #fffaf6 0%, #fbf2ed 56%, #eed8d2 100%);
+}
+
+.salon-hero::before {
+  position: absolute;
+  top: 94px;
+  bottom: 0;
+  left: calc(50% + 50px);
+  width: 1px;
+  background: rgba(88, 50, 58, .09);
+  content: "";
+}
+
+.salon-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(1270px, calc(100% - 64px));
+  min-height: 720px;
+  grid-template-columns: minmax(0, .9fr) minmax(490px, 1fr);
+  gap: clamp(42px, 6vw, 104px);
+  align-items: center;
+  margin: 0 auto;
+  padding: 58px 0 88px;
+}
+
+.salon-hero-copy {
+  max-width: 620px;
+  padding-bottom: 12px;
+}
+
+.salon-kicker,
+.salon-section-label {
+  margin: 0;
+  color: var(--salon-wine);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .24em;
+  line-height: 1.7;
+}
+
+.salon-kicker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.salon-kicker span {
+  width: 28px;
+  height: 1px;
+  background: var(--salon-rose);
+}
+
+.salon-hero-copy h1 {
+  margin: 30px 0 28px;
+  font-family: "Yu Mincho", YuMincho, "Hiragino Mincho ProN", Georgia, serif;
+  font-size: clamp(48px, 5.25vw, 76px);
+  font-weight: 500;
+  letter-spacing: -.06em;
+  line-height: 1.33;
+}
+
+.salon-hero-copy h1 em {
+  position: relative;
+  color: var(--salon-wine);
+  font-style: normal;
+}
+
+.salon-hero-copy h1 em::after {
+  position: absolute;
+  right: -2px;
+  bottom: 2px;
+  left: -2px;
+  height: 9px;
+  background: rgba(216, 141, 136, .22);
+  content: "";
+}
+
+.salon-hero-description {
+  max-width: 555px;
+  margin: 0;
+  color: #66595c;
+  font-size: 14px;
+  line-height: 2.05;
+}
+
+.salon-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin-top: 36px;
+}
+
+.salon-primary-action {
+  display: inline-flex;
+  min-height: 64px;
+  align-items: center;
+  gap: 34px;
+  padding: 0 12px 0 27px;
+  border-radius: 999px;
+  background: var(--salon-ink);
+  box-shadow: 0 16px 36px rgba(63, 37, 43, .18);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.salon-primary-action > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: white;
+  color: var(--salon-ink);
+}
+
+.salon-primary-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.salon-primary-action:hover {
+  background: var(--salon-wine);
+  transform: translateY(-2px);
+}
+
+.salon-text-action {
+  padding-bottom: 5px;
+  border-bottom: 1px solid #9c868b;
+  color: #5d5053;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.salon-hero-facts {
+  display: flex;
+  gap: 0;
+  margin: 44px 0 0;
+}
+
+.salon-hero-facts div {
+  min-width: 130px;
+  padding: 0 26px;
+  border-left: 1px solid var(--salon-line);
+}
+
+.salon-hero-facts div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.salon-hero-facts dt {
+  margin-bottom: 8px;
+  color: #a47a7f;
+  font-family: Georgia, serif;
+  font-size: 9px;
+  letter-spacing: .18em;
+}
+
+.salon-hero-facts dd {
+  margin: 0;
+  color: #514649;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.salon-hero-visual {
+  position: relative;
+  width: 100%;
+  max-width: 630px;
+  justify-self: end;
+}
+
+.salon-portrait-frame {
+  position: relative;
+  width: min(100%, 520px);
+  margin-left: auto;
+  filter: drop-shadow(0 28px 42px rgba(75, 42, 49, .16));
+}
+
+.salon-hair-portrait {
+  width: 100%;
+  height: auto;
+}
+
+.salon-visual-word {
+  position: absolute;
+  top: 13%;
+  left: -1%;
+  color: var(--salon-wine);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(18px, 2vw, 29px);
+  font-style: italic;
+  letter-spacing: .08em;
+  line-height: 1.18;
+  transform: rotate(-8deg);
+}
+
+.salon-availability-card {
+  position: absolute;
+  right: -22px;
+  bottom: 64px;
+  width: 260px;
+  padding: 20px 22px;
+  border: 1px solid rgba(255, 255, 255, .55);
+  border-radius: 18px;
+  background: rgba(255, 250, 247, .94);
+  box-shadow: 0 18px 48px rgba(78, 45, 52, .16);
+  backdrop-filter: blur(12px);
+}
+
+.salon-availability-card > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #95767c;
+}
+
+.salon-availability-card small {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+
+.salon-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #cf686e;
+  box-shadow: 0 0 0 5px rgba(207, 104, 110, .12);
+}
+
+.salon-availability-card strong {
+  display: block;
+  margin-top: 13px;
+  font-family: "Yu Mincho", YuMincho, serif;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.salon-availability-card a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 17px;
+  padding-top: 13px;
+  border-top: 1px solid var(--salon-line);
+  color: var(--salon-wine);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.salon-availability-card svg {
+  width: 17px;
+}
+
+.salon-round-note {
+  position: absolute;
+  top: 9%;
+  right: -12px;
+  display: grid;
+  width: 82px;
+  height: 82px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .7);
+  border-radius: 50%;
+  background: rgba(113, 59, 72, .82);
+  color: white;
+  font-family: Georgia, serif;
+  font-size: 8px;
+  letter-spacing: .14em;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.salon-scroll {
+  position: absolute;
+  bottom: 24px;
+  left: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #947b80;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .2em;
+  writing-mode: vertical-rl;
+}
+
+.salon-scroll span {
+  width: 1px;
+  height: 48px;
+  background: #b79ca1;
+}
+
+.salon-quick-booking {
+  display: grid;
+  width: min(1240px, calc(100% - 64px));
+  grid-template-columns: 240px minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  margin: -44px auto 0;
+  padding: 22px 24px;
+  border: 1px solid rgba(84, 47, 55, .09);
+  border-radius: 24px;
+  background: var(--salon-paper);
+  box-shadow: 0 24px 60px rgba(83, 48, 56, .11);
+  position: relative;
+  z-index: 4;
+}
+
+.salon-quick-copy {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.salon-step-number {
+  color: #c38a8c;
+  font-family: Georgia, serif;
+  font-size: 34px;
+  font-style: italic;
+}
+
+.salon-quick-copy h2 {
+  margin: 5px 0 0;
+  font-family: "Yu Mincho", YuMincho, serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.salon-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--salon-line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.salon-quick-item {
+  display: grid;
+  min-height: 78px;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-left: 1px solid var(--salon-line);
+  background: white;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.salon-quick-item:first-child {
+  border-left: 0;
+}
+
+.salon-quick-item > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f8eae6;
+  color: var(--salon-wine);
+}
+
+.salon-quick-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.salon-quick-item > svg {
+  color: #b7989e;
+}
+
+.salon-quick-item strong {
+  font-size: 11px;
+}
+
+.salon-quick-item:hover {
+  background: #f9ece8;
+  color: var(--salon-wine);
+}
+
+.salon-all-menu-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--salon-wine);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.salon-all-menu-link svg {
+  width: 17px;
+}
+
+.salon-concept {
+  display: grid;
+  width: min(1120px, calc(100% - 64px));
+  grid-template-columns: .9fr 1.1fr;
+  gap: clamp(70px, 10vw, 150px);
+  margin: 0 auto;
+  padding: 150px 0 145px;
+}
+
+.salon-concept-heading h2,
+.salon-section-heading h2,
+.salon-guide-intro h2,
+.salon-info h2,
+.salon-final-cta h2 {
+  margin: 20px 0 0;
+  font-family: "Yu Mincho", YuMincho, "Hiragino Mincho ProN", Georgia, serif;
+  font-size: clamp(34px, 4vw, 52px);
+  font-weight: 500;
+  letter-spacing: -.04em;
+  line-height: 1.5;
+}
+
+.salon-concept-story {
+  padding-top: 24px;
+}
+
+.salon-concept-lead {
+  margin: 0;
+  color: var(--salon-wine);
+  font-family: "Yu Mincho", YuMincho, serif;
+  font-size: 21px;
+  line-height: 1.9;
+}
+
+.salon-concept-story > p:not(.salon-concept-lead) {
+  margin: 28px 0 0;
+  color: #6b5d60;
+  font-size: 13px;
+  line-height: 2.15;
+}
+
+.salon-concept-points {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 45px;
+  border-top: 1px solid var(--salon-line);
+}
+
+.salon-concept-points div {
+  padding: 22px 12px 0;
+  border-left: 1px solid var(--salon-line);
+}
+
+.salon-concept-points div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.salon-concept-points span {
+  display: block;
+  margin-bottom: 15px;
+  color: #c0878b;
+  font-family: Georgia, serif;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.salon-concept-points strong {
+  font-family: "Yu Mincho", YuMincho, serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.8;
+}
+
+.salon-menu-showcase {
+  padding: 128px max(32px, calc((100vw - 1240px) / 2));
+  background: #34292c;
+  color: white;
+}
+
+.salon-menu-showcase .salon-section-label {
+  color: #dda8a5;
+}
+
+.salon-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 50px;
+}
+
+.salon-section-heading h2 {
+  margin-top: 12px;
+}
+
+.salon-section-heading > p {
+  max-width: 330px;
+  margin: 0 0 10px;
+  color: #bfaeb1;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.salon-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-top: 58px;
+}
+
+.salon-menu-card {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 22px;
+  background: #fffaf6;
+  color: var(--salon-ink);
+  overflow: hidden;
+  transition: transform 180ms ease;
+}
+
+.salon-menu-card:hover {
+  transform: translateY(-5px);
+}
+
+.salon-menu-art {
+  position: relative;
+  display: flex;
+  height: 260px;
+  align-items: end;
+  justify-content: space-between;
+  padding: 24px;
+  overflow: hidden;
+  background: #e9beb3;
+}
+
+.salon-menu-card.is-rose .salon-menu-art {
+  background: #d99496;
+}
+
+.salon-menu-card.is-mauve .salon-menu-art {
+  background: #a87c87;
+}
+
+.salon-menu-art > span {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  color: rgba(255, 255, 255, .82);
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.salon-menu-art > small {
+  position: relative;
+  z-index: 2;
+  color: white;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .2em;
+}
+
+.salon-hair-lines {
+  position: absolute;
+  inset: 24px 25px 0;
+}
+
+.salon-hair-lines i {
+  position: absolute;
+  right: 10%;
+  bottom: -36px;
+  display: block;
+  width: 54%;
+  height: 245px;
+  border: 3px solid rgba(63, 34, 40, .82);
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0;
+}
+
+.salon-hair-lines i:nth-child(2) {
+  right: 18%;
+  width: 48%;
+  height: 220px;
+  border-width: 2px;
+  opacity: .62;
+}
+
+.salon-hair-lines i:nth-child(3) {
+  right: 28%;
+  width: 38%;
+  height: 196px;
+  opacity: .4;
+}
+
+.salon-hair-lines i:nth-child(4) {
+  right: auto;
+  left: 8%;
+  bottom: 28px;
+  width: 32%;
+  height: 110px;
+  border-color: rgba(255, 255, 255, .58);
+  border-radius: 50%;
+  transform: rotate(-30deg);
+}
+
+.salon-menu-body {
+  padding: 25px 24px 23px;
+}
+
+.salon-menu-body h3 {
+  margin: 0;
+  font-family: "Yu Mincho", YuMincho, serif;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.salon-menu-body > p {
+  min-height: 50px;
+  margin: 13px 0 22px;
+  color: #74666a;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.salon-menu-body > div {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 18px;
+  align-items: center;
+  padding-top: 18px;
+  border-top: 1px solid var(--salon-line);
+}
+
+.salon-menu-body span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #8e7d81;
+  font-family: Georgia, serif;
+  font-size: 10px;
+}
+
+.salon-menu-body span svg,
+.salon-menu-body a svg {
+  width: 16px;
+  height: 16px;
+}
+
+.salon-menu-body strong {
+  color: var(--salon-wine);
+  font-family: Georgia, serif;
+  font-size: 17px;
+}
+
+.salon-menu-body a {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--salon-ink);
+  color: white;
+}
+
+.salon-price-note {
+  margin: 24px 0 0;
+  color: #a9969a;
+  font-size: 9px;
+}
+
+.salon-booking-guide {
+  display: grid;
+  grid-template-columns: .8fr 1.2fr;
+  gap: clamp(70px, 9vw, 130px);
+  padding: 140px max(32px, calc((100vw - 1120px) / 2));
+  background: #d9918c;
+  color: #34272a;
+}
+
+.salon-booking-guide .salon-section-label {
+  color: #713d47;
+}
+
+.salon-guide-intro > p:not(.salon-section-label) {
+  max-width: 390px;
+  margin: 25px 0 0;
+  color: #694d52;
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.salon-light-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 36px;
+  margin-top: 36px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgba(57, 35, 40, .45);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.salon-light-action svg {
+  width: 18px;
+}
+
+.salon-guide-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.salon-guide-steps li {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  align-items: center;
+  padding: 24px 0;
+  border-top: 1px solid rgba(63, 34, 40, .19);
+}
+
+.salon-guide-steps li:last-child {
+  border-bottom: 1px solid rgba(63, 34, 40, .19);
+}
+
+.salon-guide-steps > li > span {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-style: italic;
+}
+
+.salon-guide-steps li > div {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 18px;
+  align-items: center;
+}
+
+.salon-guide-steps svg {
+  width: 26px;
+  height: 26px;
+  color: #713d47;
+}
+
+.salon-guide-steps strong {
+  font-family: "Yu Mincho", YuMincho, serif;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.salon-guide-steps p {
+  margin: 0;
+  color: #72545a;
+  font-size: 10px;
+}
+
+.salon-info {
+  display: grid;
+  grid-template-columns: .9fr 1.1fr;
+  gap: clamp(80px, 10vw, 150px);
+  padding: 140px max(32px, calc((100vw - 1120px) / 2));
+  background: var(--salon-paper);
+}
+
+.salon-info h2 {
+  font-size: clamp(36px, 4vw, 50px);
+}
+
+.salon-info-message {
+  margin: 28px 0 0;
+  color: #6b5d60;
+  font-family: "Yu Mincho", YuMincho, serif;
+  font-size: 15px;
+  line-height: 2;
+}
+
+.salon-outline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 36px;
+  padding: 14px 18px;
+  border: 1px solid var(--salon-line);
+  border-radius: 999px;
+  color: var(--salon-wine);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.salon-outline-link svg {
+  width: 16px;
+}
+
+.salon-info-details dl {
+  margin: 0;
+}
+
+.salon-info-details dl > div {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 24px;
+  padding: 22px 0;
+  border-top: 1px solid var(--salon-line);
+}
+
+.salon-info-details dt {
+  color: #b07b82;
+  font-family: Georgia, serif;
+  font-size: 9px;
+  letter-spacing: .16em;
+}
+
+.salon-info-details dd {
+  margin: 0;
+  color: #54494c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.salon-contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 12px;
+  padding: 22px 24px;
+  border-radius: 16px;
+  background: #f3e3de;
+}
+
+.salon-contact-row span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #765d62;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.salon-contact-row svg {
+  width: 18px;
+}
+
+.salon-contact-row a {
+  color: var(--salon-wine);
+  font-family: Georgia, serif;
+  font-size: 21px;
+}
+
+.salon-final-cta {
+  position: relative;
+  display: flex;
+  min-height: 380px;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(70px, 10vw, 160px);
+  padding: 80px 32px;
+  background: var(--salon-wine);
+  color: white;
+  overflow: hidden;
+}
+
+.salon-final-cta .salon-section-label {
+  color: #ddb0af;
+}
+
+.salon-final-cta h2 {
+  margin-top: 12px;
+  font-size: clamp(34px, 4vw, 48px);
+}
+
+.salon-final-mark {
+  position: absolute;
+  top: 50%;
+  left: 8%;
+  color: rgba(255, 255, 255, .055);
+  font-family: Georgia, serif;
+  font-size: 340px;
+  line-height: 1;
+  transform: translateY(-51%);
+}
+
+.salon-primary-action.is-light {
+  position: relative;
+  background: white;
+  box-shadow: none;
+  color: var(--salon-wine);
+}
+
+.salon-primary-action.is-light > span {
+  background: #e9ccc7;
+  color: var(--salon-wine);
+}
+
+.salon-home .site-footer {
+  background: #2c2426;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  color: white;
+}
+
+.salon-home .site-footer .brand-monogram {
+  border-color: rgba(255, 255, 255, .42);
+  color: white;
+}
+
+.salon-home .site-footer .brand-copy strong,
+.salon-home .site-footer .footer-links a,
+.salon-home .site-footer .footer-info a {
+  color: white;
+}
+
+.salon-home .site-footer .brand-copy small,
+.salon-home .site-footer .footer-main > p,
+.salon-home .site-footer .footer-info,
+.salon-home .site-footer .footer-links {
+  color: #b8a7aa;
+}
+
+.salon-home .site-footer .copyright {
+  border-top-color: rgba(255, 255, 255, .09);
+  color: #776a6d;
+}
+
+.salon-mobile-booking {
+  display: none;
+}
+
+@media (max-width: 1080px) {
+  .salon-hero-inner {
+    grid-template-columns: minmax(0, .95fr) minmax(410px, 1fr);
+    gap: 38px;
+  }
+
+  .salon-availability-card {
+    right: 0;
+  }
+
+  .salon-quick-booking {
+    grid-template-columns: 210px 1fr;
+  }
+
+  .salon-all-menu-link {
+    grid-column: 2;
+    justify-self: end;
+    padding-right: 4px;
+  }
+}
+
+@media (max-width: 840px) {
+  .salon-home .site-header {
+    width: calc(100% - 40px);
+  }
+
+  .salon-hero {
+    min-height: auto;
+  }
+
+  .salon-hero::before {
+    display: none;
+  }
+
+  .salon-hero-inner {
+    width: min(680px, calc(100% - 48px));
+    grid-template-columns: 1fr;
+    gap: 48px;
+    padding: 70px 0 120px;
+  }
+
+  .salon-hero-copy {
+    max-width: 650px;
+  }
+
+  .salon-hero-visual {
+    width: min(100%, 570px);
+    justify-self: center;
+  }
+
+  .salon-visual-word {
+    left: 0;
+  }
+
+  .salon-scroll {
+    display: none;
+  }
+
+  .salon-quick-booking {
+    width: min(680px, calc(100% - 40px));
+    grid-template-columns: 1fr;
+    margin-top: -48px;
+  }
+
+  .salon-quick-grid {
+    grid-column: 1;
+  }
+
+  .salon-all-menu-link {
+    grid-column: 1;
+  }
+
+  .salon-concept,
+  .salon-booking-guide,
+  .salon-info {
+    grid-template-columns: 1fr;
+    gap: 54px;
+  }
+
+  .salon-concept-story {
+    padding-top: 0;
+  }
+
+  .salon-menu-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .salon-menu-card:last-child {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .salon-final-cta {
+    flex-direction: column;
+    gap: 38px;
+    align-items: flex-start;
+    padding-inline: max(32px, calc((100vw - 680px) / 2));
+  }
+}
+
+@media (max-width: 680px) {
+  .salon-home {
+    padding-bottom: 68px;
+  }
+
+  .salon-home .site-header {
+    width: calc(100% - 32px);
+    height: 72px;
+  }
+
+  .salon-home .brand-monogram {
+    width: 32px;
+    height: 37px;
+    font-size: 18px;
+  }
+
+  .salon-home .brand-copy strong {
+    font-size: 14px;
+  }
+
+  .salon-home .brand-copy small {
+    font-size: 5px;
+  }
+
+  .salon-home .site-navigation > .header-session-action,
+  .salon-home .header-session-action {
+    display: none;
+  }
+
+  .salon-home .header-booking-link {
+    min-height: 38px;
+    padding: 0 13px;
+    font-size: 10px;
+  }
+
+  .salon-hero-inner {
+    width: calc(100% - 32px);
+    gap: 34px;
+    padding: 46px 0 88px;
+  }
+
+  .salon-kicker,
+  .salon-section-label {
+    font-size: 8px;
+  }
+
+  .salon-hero-copy h1 {
+    margin: 22px 0 20px;
+    font-size: clamp(38px, 11.3vw, 54px);
+    line-height: 1.38;
+  }
+
+  .salon-hero-description {
+    font-size: 12px;
+    line-height: 1.9;
+  }
+
+  .salon-hero-actions {
+    gap: 20px;
+    align-items: flex-start;
+    flex-direction: column;
+    margin-top: 28px;
+  }
+
+  .salon-primary-action {
+    min-height: 56px;
+    gap: 25px;
+    padding-left: 21px;
+    font-size: 12px;
+  }
+
+  .salon-primary-action > span {
+    width: 38px;
+    height: 38px;
+  }
+
+  .salon-hero-facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 35px;
+  }
+
+  .salon-hero-facts div {
+    min-width: 0;
+    padding: 0 10px;
+  }
+
+  .salon-hero-facts dd {
+    font-size: 9px;
+    line-height: 1.5;
+  }
+
+  .salon-portrait-frame {
+    width: 94%;
+    margin: 0 auto;
+  }
+
+  .salon-visual-word {
+    top: 11%;
+    font-size: 17px;
+  }
+
+  .salon-round-note {
+    top: 6%;
+    right: -2px;
+    width: 67px;
+    height: 67px;
+    font-size: 6px;
+  }
+
+  .salon-availability-card {
+    right: 0;
+    bottom: 35px;
+    width: 225px;
+    padding: 16px 18px;
+  }
+
+  .salon-availability-card strong {
+    font-size: 13px;
+  }
+
+  .salon-quick-booking {
+    width: calc(100% - 24px);
+    gap: 18px;
+    margin-top: -34px;
+    padding: 19px 16px;
+    border-radius: 19px;
+  }
+
+  .salon-step-number {
+    font-size: 26px;
+  }
+
+  .salon-quick-copy h2 {
+    font-size: 17px;
+  }
+
+  .salon-quick-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .salon-quick-item {
+    min-height: 64px;
+    border-top: 1px solid var(--salon-line);
+  }
+
+  .salon-quick-item:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .salon-quick-item:nth-child(-n+2) {
+    border-top: 0;
+  }
+
+  .salon-quick-item > span {
+    width: 29px;
+    height: 29px;
+  }
+
+  .salon-quick-item strong {
+    font-size: 10px;
+  }
+
+  .salon-concept {
+    width: calc(100% - 36px);
+    gap: 40px;
+    padding: 100px 0 90px;
+  }
+
+  .salon-concept-heading h2,
+  .salon-section-heading h2,
+  .salon-guide-intro h2,
+  .salon-info h2,
+  .salon-final-cta h2 {
+    margin-top: 13px;
+    font-size: 31px;
+  }
+
+  .salon-concept-lead {
+    font-size: 17px;
+  }
+
+  .salon-concept-story > p:not(.salon-concept-lead) {
+    font-size: 12px;
+    line-height: 2;
+  }
+
+  .salon-concept-points {
+    margin-top: 34px;
+  }
+
+  .salon-concept-points div {
+    padding: 17px 7px 0;
+  }
+
+  .salon-concept-points strong {
+    font-size: 10px;
+  }
+
+  .salon-menu-showcase {
+    padding: 88px 18px;
+  }
+
+  .salon-section-heading {
+    display: block;
+  }
+
+  .salon-section-heading > p {
+    margin-top: 18px;
+  }
+
+  .salon-menu-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 36px;
+  }
+
+  .salon-menu-card:last-child {
+    grid-column: auto;
+    display: block;
+  }
+
+  .salon-menu-art {
+    height: 210px;
+  }
+
+  .salon-menu-body > p {
+    min-height: 0;
+  }
+
+  .salon-booking-guide,
+  .salon-info {
+    gap: 42px;
+    padding: 90px 18px;
+  }
+
+  .salon-guide-steps li {
+    grid-template-columns: 43px 1fr;
+    padding: 20px 0;
+  }
+
+  .salon-guide-steps > li > span {
+    font-size: 16px;
+  }
+
+  .salon-guide-steps li > div {
+    grid-template-columns: 32px 1fr;
+    gap: 11px;
+  }
+
+  .salon-guide-steps strong {
+    font-size: 14px;
+  }
+
+  .salon-guide-steps p {
+    display: none;
+  }
+
+  .salon-info-details dl > div {
+    grid-template-columns: 80px 1fr;
+    gap: 14px;
+  }
+
+  .salon-contact-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .salon-final-cta {
+    min-height: 370px;
+    padding: 70px 18px;
+  }
+
+  .salon-final-mark {
+    left: 35%;
+    font-size: 250px;
+  }
+
+  .salon-home .site-footer {
+    padding-bottom: 34px;
+  }
+
+  .salon-mobile-booking {
+    position: fixed;
+    z-index: 100;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    min-height: 68px;
+    grid-template-columns: .8fr 1.2fr;
+    border-top: 1px solid rgba(64, 36, 43, .12);
+    background: rgba(255, 250, 247, .96);
+    box-shadow: 0 -10px 30px rgba(64, 36, 43, .1);
+    backdrop-filter: blur(14px);
+  }
+
+  .salon-mobile-booking a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    color: var(--salon-wine);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .salon-mobile-booking a:last-child {
+    margin: 7px;
+    border-radius: 999px;
+    background: var(--salon-ink);
+    color: white;
+  }
+
+  .salon-mobile-booking svg {
+    width: 17px;
+    height: 17px;
+  }
 }
 
 * {

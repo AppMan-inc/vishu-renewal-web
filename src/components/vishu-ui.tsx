@@ -85,12 +85,10 @@ export function VishuIcon({ name, className = "" }: { name: IconName; className?
 export function Brand({ owner = false }: { owner?: boolean }) {
   return (
     <Link className="vishu-brand" href="/" aria-label="Salon Vishu トップへ">
-      <span className="brand-monogram" aria-hidden="true">
-        V
-      </span>
+      <span className="brand-monogram" aria-hidden="true">V</span>
       <span className="brand-copy">
         <strong>{owner ? "VISHU OWNER" : "VISHU"}</strong>
-        <small>{owner ? "SALON MANAGEMENT" : "HAIR & RELAXATION"}</small>
+        <small>{owner ? "SALON MANAGEMENT" : "PRIVATE HAIR SALON"}</small>
       </span>
     </Link>
   );
@@ -106,9 +104,9 @@ export function SiteHeader({ owner = false }: { owner?: boolean }) {
         </Link>
       ) : (
         <nav className="site-navigation" aria-label="メインナビゲーション">
-          <Link href="/#concept">私たちについて</Link>
-          <Link href="/#menu">メニュー</Link>
-          <Link href="/#access">サロン情報</Link>
+          <Link href="/#concept">コンセプト</Link>
+          <Link href="/#style-menu">メニュー・料金</Link>
+          <Link href="/#access">アクセス</Link>
           <Link className="header-booking-link" href="/booking">
             Web予約
             <VishuIcon name="arrow" />
@@ -120,49 +118,12 @@ export function SiteHeader({ owner = false }: { owner?: boolean }) {
   );
 }
 
-export function BotanicalArtwork() {
-  return (
-    <svg
-      className="botanical-artwork"
-      viewBox="0 0 560 620"
-      role="img"
-      aria-label="葉とSalon VishuのVを組み合わせた装飾"
-    >
-      <defs>
-        <linearGradient id="vishu-leaf" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#829579" />
-          <stop offset="1" stopColor="#3f643e" />
-        </linearGradient>
-        <filter id="vishu-shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="18" stdDeviation="20" floodColor="#263326" floodOpacity=".15" />
-        </filter>
-      </defs>
-      <circle cx="280" cy="285" r="220" fill="#f8f5ed" fillOpacity=".78" />
-      <g filter="url(#vishu-shadow)">
-        <path d="M150 126h82l48 287 48-287h82L315 480h-70L150 126Z" fill="url(#vishu-leaf)" />
-        <path d="M280 411c-28-82-24-155 12-219 25-44 64-73 117-88-7 70-32 124-75 163-21 19-39 60-54 124Z" fill="#9aa589" />
-        <path d="M283 403c12-89 52-180 119-272" fill="none" stroke="#eef0e8" strokeWidth="4" strokeLinecap="round" />
-        <path d="M359 190c51-6 92 4 123 31-43 32-87 40-133 25" fill="#5f7653" />
-        <path d="M393 220c28-2 52 0 76 3" fill="none" stroke="#dfe6d8" strokeWidth="3" strokeLinecap="round" />
-        <path d="M329 269c-41-6-75 3-103 26 36 29 74 37 114 24" fill="#b6bea6" />
-      </g>
-      <g fill="none" stroke="#73836b" strokeLinecap="round" opacity=".38">
-        <path d="M84 532c34-65 51-129 50-193" />
-        <path d="M127 405c-34-3-57 8-70 34 34 6 58-6 70-34Z" fill="#cbd0bd" />
-        <path d="M132 361c29-16 45-38 47-68-33 14-50 37-47 68Z" fill="#d5d8ca" />
-        <path d="M460 545c-15-70-10-133 14-190" />
-        <path d="M470 407c31-15 58-15 82 0-28 27-57 27-82 0Z" fill="#cbd0bd" />
-      </g>
-    </svg>
-  );
-}
-
 export function PageFooter() {
   return (
     <footer className="site-footer">
       <div className="footer-main">
         <Brand />
-        <p>髪と心に、深呼吸できる時間を。</p>
+        <p>今日より少し、好きな髪でいよう。</p>
       </div>
       <div className="footer-info">
         <span>大阪府河内長野市荘園町18-14</span>
