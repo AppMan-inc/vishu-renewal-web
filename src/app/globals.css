@@ -1,27 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbf8f5;
-  --background-alt: #f4ece8;
+  --background: #fdfbf8;
+  --background-alt: #fbf8f4;
   --surface: #ffffff;
-  --surface-warm: #f5eeeb;
-  --surface-selected: #faebe8;
-  --primary: #bd6d68;
-  --primary-dark: #7f3f4b;
-  --primary-deep: #39282d;
-  --primary-light: #efd3ce;
-  --champagne: #eadbd3;
-  --clay: #b9625f;
-  --text: #2e2829;
-  --text-secondary: #665d5f;
-  --text-muted: #968b8d;
-  --border: #e6dcd8;
-  --divider: #eee5e1;
-  --shadow-soft: 0 18px 50px rgba(70, 42, 48, 0.1);
-  --shadow-subtle: 0 8px 24px rgba(70, 42, 48, 0.07);
+  --surface-warm: #fbf8f4;
+  --surface-selected: #f8f3ec;
+  --primary: #80664b;
+  --primary-dark: #755f49;
+  --primary-deep: #292621;
+  --primary-light: #f2e8d8;
+  --champagne: #e9dfd2;
+  --clay: #94715f;
+  --text: #292621;
+  --text-secondary: #6f675e;
+  --text-muted: #756f68;
+  --border: #ece5dc;
+  --divider: #f1ece6;
+  --shadow-soft: 0 18px 50px rgba(94, 81, 69, 0.06);
+  --shadow-subtle: 0 8px 24px rgba(94, 81, 69, 0.035);
   --radius-small: 10px;
   --radius-medium: 14px;
-  --radius-large: 16px;
+  --radius-large: 20px;
 }
 
 /* Salon booking experience — 2026 redesign */
@@ -1453,7 +1453,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--text);
-  font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", YuGothic, sans-serif;
+  font-family: var(--font-sans), "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", YuGothic, sans-serif;
   font-feature-settings: "palt" 1;
   -webkit-font-smoothing: antialiased;
 }
@@ -1464,8 +1464,14 @@ a {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
+}
+
+:where(a, button, input, textarea):focus-visible {
+  outline: 2px solid var(--primary-dark);
+  outline-offset: 3px;
 }
 
 svg {
@@ -1525,7 +1531,7 @@ svg {
 
 .brand-copy strong {
   color: var(--primary-deep);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-serif), Georgia, "Times New Roman", serif;
   font-size: 18px;
   font-weight: 600;
   letter-spacing: 0.24em;
@@ -1629,13 +1635,13 @@ svg {
 
 .button-primary {
   background: var(--primary-dark);
-  box-shadow: 0 10px 28px rgba(63, 100, 62, 0.18);
+  box-shadow: 0 10px 28px rgba(94, 81, 69, 0.14);
   color: white;
 }
 
 .button-primary:hover:not(:disabled) {
   background: var(--primary-deep);
-  box-shadow: 0 14px 32px rgba(63, 100, 62, 0.24);
+  box-shadow: 0 14px 32px rgba(94, 81, 69, 0.18);
 }
 
 .button-quiet {
@@ -2472,7 +2478,9 @@ svg {
 .booking-title-row h1,
 .admin-welcome h1 {
   margin: 10px 0 10px;
+  font-family: var(--font-serif), "Yu Mincho", serif;
   font-size: clamp(38px, 5vw, 54px);
+  font-weight: 500;
   letter-spacing: -.04em;
 }
 
@@ -2511,37 +2519,43 @@ svg {
 }
 
 .booking-progress {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  align-items: center;
   margin: 48px 0 58px;
   padding: 0;
   list-style: none;
 }
 
 .booking-progress li {
-  position: relative;
   display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
   align-items: center;
-  gap: 10px;
   color: var(--text-muted);
   font-size: 11px;
 }
 
-.booking-progress li::after {
-  position: absolute;
-  top: 16px;
-  right: 12px;
-  left: 45px;
+.booking-progress li:last-child {
+  flex: 0 0 auto;
+}
+
+.booking-step-content {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.booking-step-connector {
   height: 1px;
+  min-width: 16px;
+  flex: 1 1 auto;
+  margin: 0 clamp(16px, 2vw, 30px);
   background: var(--border);
-  content: "";
 }
 
-.booking-progress li:last-child::after {
-  display: none;
-}
-
-.booking-progress li > span {
+.booking-step-number {
   display: grid;
   width: 32px;
   height: 32px;
@@ -2557,10 +2571,14 @@ svg {
   color: var(--primary-dark);
 }
 
-.booking-progress .is-current > span {
+.booking-progress .is-current .booking-step-number {
   border-color: var(--primary-dark);
   background: var(--primary-dark);
   color: white;
+}
+
+.booking-progress .is-current strong {
+  color: var(--text);
 }
 
 .booking-layout {
@@ -2744,13 +2762,13 @@ button.booking-menu-card:focus-visible .booking-menu-icon.has-image img {
   color: var(--primary-dark);
 }
 
-.booking-progress .is-complete > span {
+.booking-progress .is-complete .booking-step-number {
   border-color: var(--primary);
   background: var(--surface-selected);
   color: var(--primary-dark);
 }
 
-.booking-progress .is-complete::after {
+.booking-progress .is-complete .booking-step-connector {
   background: var(--primary-light);
 }
 
@@ -2797,16 +2815,16 @@ button.booking-menu-card {
 
 button.booking-menu-card:hover,
 button.booking-menu-card:focus-visible {
-  border-color: rgba(63, 100, 62, .5);
-  box-shadow: 0 14px 34px rgba(52, 59, 52, .12);
+  border-color: rgba(117, 95, 73, .52);
+  box-shadow: 0 14px 34px rgba(94, 81, 69, .1);
   outline: none;
   transform: translateY(-2px);
 }
 
 button.booking-menu-card.is-selected {
   border-color: var(--primary-dark);
-  background: linear-gradient(110deg, var(--surface), var(--surface-selected));
-  box-shadow: 0 12px 32px rgba(63, 100, 62, .15);
+  background: var(--surface-selected);
+  box-shadow: 0 12px 32px rgba(94, 81, 69, .08);
 }
 
 button.booking-menu-card.is-selected .round-arrow {
@@ -2841,9 +2859,9 @@ button.booking-menu-card.is-selected .round-arrow {
   gap: 12px;
   margin: 0 0 18px;
   padding: 13px 15px;
-  border: 1px solid #dbe5d6;
+  border: 1px solid var(--border);
   border-radius: var(--radius-medium);
-  background: #f4f8f1;
+  background: var(--surface-warm);
 }
 
 .booking-info-banner.is-warning {
@@ -3245,7 +3263,7 @@ button.booking-menu-card.is-selected .round-arrow {
 .booking-form-grid input:focus,
 .booking-form-grid textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(95, 134, 87, .1);
+  box-shadow: 0 0 0 3px rgba(165, 137, 104, .12);
 }
 
 .booking-form-grid input:disabled {
@@ -3418,8 +3436,8 @@ button.booking-menu-card.is-selected .round-arrow {
 }
 
 .booking-summary-alert.is-success {
-  border-color: #cadcc5;
-  background: #f3f8f0;
+  border-color: #d8e0d3;
+  background: #f4f7f2;
   color: var(--primary-deep);
 }
 
@@ -3452,6 +3470,10 @@ button.booking-menu-card.is-selected .round-arrow {
 
 .booking-secure-note svg {
   width: 12px;
+}
+
+.booking-mobile-action {
+  display: none;
 }
 
 /* Owner sign-in */
@@ -3508,6 +3530,15 @@ button.booking-menu-card.is-selected .round-arrow {
   font-size: clamp(40px, 4.5vw, 60px);
   letter-spacing: -.045em;
   line-height: 1.4;
+}
+
+.customer-login-page .login-brand-copy h1 {
+  font-size: clamp(36px, 3.4vw, 50px);
+}
+
+.login-headline-line {
+  display: block;
+  white-space: nowrap;
 }
 
 .login-brand-copy > p:last-child {
@@ -3616,7 +3647,26 @@ button.booking-menu-card.is-selected .round-arrow {
 }
 
 .customer-login-page .admin-login-brand-panel {
-  background: linear-gradient(145deg, #f2efe6, #d8e0d2);
+  background:
+    linear-gradient(180deg, rgba(41, 38, 33, .12), rgba(41, 38, 33, .72)),
+    url("/images/salon-vishu-hero.jpg") center 42% / cover;
+}
+
+.customer-login-page .admin-login-brand-panel .brand-monogram {
+  border-color: rgba(255, 255, 255, .62);
+  color: white;
+}
+
+.customer-login-page .admin-login-brand-panel .brand-copy strong,
+.customer-login-page .admin-login-brand-panel .brand-copy small,
+.customer-login-page .login-brand-copy h1 {
+  color: white;
+}
+
+.customer-login-page .login-brand-copy > p:last-child,
+.customer-login-page .login-panel-note,
+.customer-login-page .login-brand-copy .eyebrow {
+  color: rgba(255, 255, 255, .76);
 }
 
 .login-error {
@@ -4121,15 +4171,17 @@ button.booking-menu-card.is-selected .round-arrow {
   }
 
   .booking-progress li {
+    align-items: flex-start;
+  }
+
+  .booking-step-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
   }
 
-  .booking-progress li::after {
-    top: 16px;
-    right: 8px;
-    left: 40px;
+  .booking-step-connector {
+    margin: 16px 8px 0;
   }
 
   .booking-progress strong {
@@ -4227,6 +4279,73 @@ button.booking-menu-card.is-selected .round-arrow {
 
   .booking-page .site-footer {
     margin-top: 0;
+  }
+
+  .booking-page {
+    padding-bottom: 78px;
+  }
+
+  .booking-mobile-action {
+    position: fixed;
+    z-index: 90;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    min-height: 70px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    background: rgba(253, 251, 248, .96);
+    box-shadow: 0 -8px 26px rgba(94, 81, 69, .08);
+    backdrop-filter: blur(14px);
+  }
+
+  .booking-mobile-action > div {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .booking-mobile-action small {
+    color: var(--primary);
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: .16em;
+  }
+
+  .booking-mobile-action strong {
+    overflow: hidden;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .booking-mobile-action button {
+    display: inline-flex;
+    min-height: 50px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 17px;
+    border: 0;
+    border-radius: var(--radius-medium);
+    background: var(--primary-dark);
+    color: white;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .booking-mobile-action button:disabled {
+    background: var(--border);
+    color: var(--text-muted);
+  }
+
+  .booking-mobile-action svg {
+    width: 15px;
   }
 
   .admin-login-brand-panel {
@@ -4678,19 +4797,17 @@ button.booking-menu-card.is-selected .round-arrow {
     margin: 28px 0 34px;
   }
 
-  .booking-progress li {
+  .booking-step-content {
     gap: 5px;
   }
 
-  .booking-progress li > span {
+  .booking-step-number {
     width: 28px;
     height: 28px;
   }
 
-  .booking-progress li::after {
-    top: 14px;
-    right: 7px;
-    left: 35px;
+  .booking-step-connector {
+    margin: 14px 7px 0;
   }
 
   .booking-progress strong {

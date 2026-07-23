@@ -96,7 +96,10 @@ export function CustomerLogin() {
         <Brand />
         <div className="login-brand-copy">
           <p className="eyebrow">CUSTOMER SIGN IN</p>
-          <h1>ご予約を、<br />安心してスムーズに。</h1>
+          <h1>
+            <span className="login-headline-line">ご予約を、</span>
+            <span className="login-headline-line">安心してスムーズに。</span>
+          </h1>
           <p>ご予約内容をお客様のアカウントに安全に紐づけ、あとから確認できるようにします。</p>
         </div>
         <p className="login-panel-note">FOR SALON GUESTS · SECURE BOOKING</p>

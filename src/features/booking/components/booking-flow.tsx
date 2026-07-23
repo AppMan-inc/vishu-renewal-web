@@ -244,6 +244,15 @@ export function BookingFlow() {
             />
           ) : null}
 
+          <MobileBookingAction
+            canContinue={canContinue}
+            currentStep={currentStep}
+            menu={selectedMenu}
+            reservationSubmission={reservationSubmission}
+            onConfirm={confirmReservation}
+            onContinue={goForward}
+          />
+
           {currentStep > 0 && reservationSubmission.status !== "success" ? (
             <button className="booking-inline-back" type="button" onClick={goBack}>
               <VishuIcon name="arrow" />
@@ -271,14 +280,63 @@ function BookingProgress({ currentStep }: { currentStep: Step }) {
     <ol className="booking-progress" aria-label="予約の進行状況">
       {steps.map((step, index) => (
         <li
+          aria-current={index === currentStep ? "step" : undefined}
           className={index === currentStep ? "is-current" : index < currentStep ? "is-complete" : ""}
           key={step}
         >
-          <span>{index + 1}</span>
-          <strong>{step}</strong>
+          <span className="booking-step-content">
+            <span className="booking-step-number">{index + 1}</span>
+            <strong>{step}</strong>
+          </span>
+          {index < steps.length - 1 ? (
+            <span className="booking-step-connector" aria-hidden="true" />
+          ) : null}
         </li>
       ))}
     </ol>
+  );
+}
+
+function MobileBookingAction({
+  canContinue,
+  currentStep,
+  menu,
+  reservationSubmission,
+  onConfirm,
+  onContinue,
+}: {
+  canContinue: boolean;
+  currentStep: Step;
+  menu: BookingMenu | null;
+  reservationSubmission: ReservationSubmission;
+  onConfirm: () => Promise<void>;
+  onContinue: () => void;
+}) {
+  const isSubmitting = reservationSubmission.status === "submitting";
+  const isSuccess = reservationSubmission.status === "success";
+
+  return (
+    <div className="booking-mobile-action">
+      <div>
+        <small>STEP {String(currentStep + 1).padStart(2, "0")}</small>
+        <strong>{menu?.title ?? "メニューを選択"}</strong>
+      </div>
+      {currentStep < 3 ? (
+        <button type="button" disabled={!canContinue} onClick={onContinue}>
+          {continueLabel(currentStep, menu)}
+          <VishuIcon name="arrow" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={isSubmitting || isSuccess}
+          onClick={() => void onConfirm()}
+        >
+          {isSubmitting ? "保存中…" : isSuccess ? "予約確定" : "予約を確定する"}
+          {!isSubmitting && !isSuccess ? <VishuIcon name="arrow" /> : null}
+        </button>
+      )}
+    </div>
   );
 }
 
