@@ -3705,8 +3705,13 @@ button.booking-menu-card.is-selected .round-arrow {
 
 .social-login-actions .button {
   min-height: 48px;
+  gap: 9px;
   padding: 0 12px;
   font-size: 11px;
+}
+
+.social-login-icon {
+  flex: 0 0 auto;
 }
 
 .auth-loading-page {

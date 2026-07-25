@@ -77,7 +77,7 @@ function HeroSection() {
         </p>
         <div className={styles.heroActions}>
           <ArrowLink href="/booking">空き時間を見て予約</ArrowLink>
-          <a className={styles.textLink} href="#menu">メニュー・料金を見る</a>
+          <a className={styles.textLink} href="#style-menu">メニュー・料金を見る</a>
         </div>
         <dl className={styles.heroFacts}>
           <div><dt>STYLE</dt><dd>マンツーマン</dd></div>
@@ -91,7 +91,7 @@ function HeroSection() {
           alt="自然光の中で、艶のあるヘアスタイルを見せる女性"
           className={styles.heroImage}
           fill
-          priority
+          preload
           sizes="(max-width: 760px) 100vw, 54vw"
           src="/images/salon-vishu-hero.jpg"
         />
@@ -145,7 +145,7 @@ function PhilosophySection() {
 
 function ServicesSection() {
   return (
-    <section className={styles.services} id="menu" aria-labelledby="services-title">
+    <section className={styles.services} id="style-menu" aria-labelledby="services-title">
       <div className={styles.sectionHeading}>
         <div>
           <SectionLabel>SELECTED MENU</SectionLabel>
@@ -184,7 +184,8 @@ function BookingGuideSection() {
   const steps = [
     ["01", "メニューを選ぶ", "料金と所要時間を確認"],
     ["02", "空いている日時を選ぶ", "7日分の空き枠を表示"],
-    ["03", "連絡先を入力して完了", "ご要望も事前に伝えられます"],
+    ["03", "連絡先を入力する", "ご要望も事前に伝えられます"],
+    ["04", "内容を確認して予約確定", "入力内容を確認して予約を送信"],
   ] as const;
 
   return (

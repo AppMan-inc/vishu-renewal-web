@@ -132,7 +132,7 @@ export function PageFooter() {
       </div>
       <div className="footer-links">
         <Link href="/booking">Web予約</Link>
-        <Link href="/admin/login">店主ログイン</Link>
+        <Link href="/login">ログイン</Link>
       </div>
       <p className="copyright">© SALON VISHU</p>
     </footer>

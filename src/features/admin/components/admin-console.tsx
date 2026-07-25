@@ -39,7 +39,7 @@ export function AdminConsole({ section }: { section: AdminSection }) {
       setSnapshot(await fetchAdminSnapshot());
     } catch (caught) {
       if (caught instanceof AdminApiError && caught.status === 401) {
-        router.replace(`/admin/login?returnTo=${encodeURIComponent(location.pathname)}`);
+        router.replace(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
         return;
       }
       setError(caught instanceof Error ? caught.message : "管理データを取得できませんでした。");
@@ -51,7 +51,7 @@ export function AdminConsole({ section }: { section: AdminSection }) {
   useEffect(() => {
     return onAuthStateChanged(firebaseAuth(), (user) => {
       if (!user) {
-        router.replace(`/admin/login?returnTo=${encodeURIComponent(location.pathname)}`);
+        router.replace(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
         return;
       }
       void refresh();
@@ -77,7 +77,7 @@ export function AdminConsole({ section }: { section: AdminSection }) {
 
   async function handleSignOut() {
     await signOut(firebaseAuth());
-    router.replace("/admin/login");
+    router.replace("/login");
   }
 
   if (loading) return <AdminLoading />;

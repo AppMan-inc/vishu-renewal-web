@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { DecodedIdToken } from "firebase-admin/auth";
+import { appAdminUids } from "@/features/admin/admin-access";
 import { adminAuth, adminFirestore } from "@/lib/firebase/admin";
 import type { AdminRole, AdminSession } from "@/features/admin/types";
 
@@ -30,10 +31,13 @@ export async function requireAdmin(request: Request): Promise<AdminSession> {
   const roleFromClaim = normalizeRole(token.role);
   const hasAdminClaim = token.admin === true || roleFromClaim !== null;
   const allowedUids = new Set(
-    (process.env.FIREBASE_ADMIN_UIDS ?? "")
-      .split(",")
-      .map((uid) => uid.trim())
-      .filter(Boolean),
+    [
+      ...appAdminUids,
+      ...(process.env.FIREBASE_ADMIN_UIDS ?? "")
+        .split(",")
+        .map((uid) => uid.trim())
+        .filter(Boolean),
+    ],
   );
 
   let role = roleFromClaim;
