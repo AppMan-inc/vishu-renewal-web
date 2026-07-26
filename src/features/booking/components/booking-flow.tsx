@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { VishuIcon } from "@/components/vishu-ui";
 import { firebaseAuth } from "@/lib/firebase/client";
@@ -667,6 +668,7 @@ function BookingSummary({
         <div className="booking-summary-alert is-success" role="status">
           <strong>ご予約が確定しました</strong>
           <span>予約番号：{reservationSubmission.reservationId}</span>
+          <Link href="/mypage/reservations">予約履歴で確認する</Link>
         </div>
       ) : null}
       {reservationSubmission.status === "error" ? (

@@ -10,11 +10,12 @@ import {
 import type { AuthError, UserCredential } from "firebase/auth";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Brand, VishuIcon } from "@/components/vishu-ui";
-import { isAppAdminUid } from "@/features/admin/admin-access";
+import { AdminApiError, checkAdminAccess } from "@/features/admin/admin-api";
 import { firebaseAuth } from "@/lib/firebase/client";
 import {
+  isAdminReturnTo,
   safeAdminReturnTo,
   safeCustomerReturnTo,
 } from "@/features/auth/return-to";
@@ -28,6 +29,56 @@ export function CustomerLogin() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [pendingMethod, setPendingMethod] = useState<LoginMethod | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const hasStartedNavigation = useRef(false);
+
+  const navigateAfterSignIn = useCallback(
+    async (user: UserCredential["user"], source: "auth-state" | "credential") => {
+      if (hasStartedNavigation.current) {
+        console.info("[auth] navigation_skipped", {
+          source,
+          uid: user.uid,
+        });
+        return;
+      }
+
+      hasStartedNavigation.current = true;
+      console.info("[auth] admin_access_check_started", {
+        requestedAdmin: isAdminReturnTo(returnTo),
+        source,
+        uid: user.uid,
+      });
+
+      try {
+        const access = await checkAdminAccess(user);
+        const destination = loginDestination(access.isAdmin, returnTo);
+        console.info("[auth] navigation_started", {
+          destinationPath: pathWithoutQuery(destination),
+          isAdmin: access.isAdmin,
+          requestId: access.requestId,
+          requestedAdmin: isAdminReturnTo(returnTo),
+          source,
+          uid: user.uid,
+        });
+        router.replace(destination);
+      } catch (error) {
+        hasStartedNavigation.current = false;
+        console.error("[auth] admin_access_check_failed", {
+          errorName: error instanceof Error ? error.name : typeof error,
+          requestId: error instanceof AdminApiError ? error.requestId : undefined,
+          source,
+          status: error instanceof AdminApiError ? error.status : undefined,
+          uid: user.uid,
+        });
+        const requestReference = error instanceof AdminApiError && error.requestId
+          ? `（Request ID: ${error.requestId}）`
+          : "";
+        setErrorMessage(`ログイン後の権限を確認できませんでした。${requestReference}`);
+        setIsCheckingAuth(false);
+        setPendingMethod(null);
+      }
+    },
+    [returnTo, router],
+  );
 
   useEffect(() => {
     let unsubscribe: () => void = () => {};
@@ -37,19 +88,25 @@ export function CustomerLogin() {
         firebaseAuth(),
         (user) => {
           if (user) {
-            router.replace(loginDestination(user.uid, returnTo));
+            console.info("[auth] session_detected", { uid: user.uid });
+            void navigateAfterSignIn(user, "auth-state");
             return;
           }
+          console.info("[auth] session_missing");
           setIsCheckingAuth(false);
         },
-        () => setIsCheckingAuth(false),
+        (error) => {
+          console.error("[auth] session_check_failed", authErrorDetails(error));
+          setIsCheckingAuth(false);
+        },
       );
-    } catch {
+    } catch (error) {
+      console.error("[auth] session_check_initialization_failed", authErrorDetails(error));
       queueMicrotask(() => setIsCheckingAuth(false));
     }
 
     return unsubscribe;
-  }, [returnTo, router]);
+  }, [navigateAfterSignIn]);
 
   async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -82,11 +139,23 @@ export function CustomerLogin() {
   ) {
     setPendingMethod(method);
     setErrorMessage(null);
+    console.info("[auth] sign_in_started", {
+      method,
+      requestedAdmin: isAdminReturnTo(returnTo),
+    });
 
     try {
       const credential = await action();
-      router.replace(loginDestination(credential.user.uid, returnTo));
+      console.info("[auth] sign_in_succeeded", {
+        method,
+        uid: credential.user.uid,
+      });
+      void navigateAfterSignIn(credential.user, "credential");
     } catch (error) {
+      console.error("[auth] sign_in_failed", {
+        method,
+        ...authErrorDetails(error),
+      });
       setErrorMessage(authErrorMessage(error));
       setPendingMethod(null);
     }
@@ -115,9 +184,9 @@ export function CustomerLogin() {
       <section className="admin-login-form-panel">
         <div className="admin-login-card">
           <div className="login-icon"><VishuIcon name="lock" /></div>
-          <p className="eyebrow">SIGN IN TO BOOK</p>
+          <p className="eyebrow">ACCOUNT SIGN IN</p>
           <h2>ログイン</h2>
-          <p className="login-guidance">Web予約にはログインが必要です。アプリと同じアカウントをご利用いただけます。</p>
+          <p className="login-guidance">Web予約・予約履歴・プロフィール管理にはログインが必要です。アプリと同じアカウントをご利用いただけます。</p>
 
           {errorMessage ? (
             <div className="login-error" role="alert">{errorMessage}</div>
@@ -189,8 +258,8 @@ export function CustomerLogin() {
   );
 }
 
-function loginDestination(uid: string, returnTo: string | null) {
-  return isAppAdminUid(uid)
+function loginDestination(isAdmin: boolean, returnTo: string | null) {
+  return isAdmin
     ? safeAdminReturnTo(returnTo)
     : safeCustomerReturnTo(returnTo);
 }
@@ -250,7 +319,24 @@ function authErrorMessage(error: unknown) {
       return "ログインがキャンセルされました。";
     case "auth/operation-not-allowed":
       return "このログイン方法は現在利用できません。";
+    case "auth/unauthorized-domain":
+      return "このドメインではログインできません。Firebase Authenticationの承認済みドメインを確認してください。";
+    case "auth/invalid-api-key":
+      return "FirebaseのAPIキー設定を確認してください。";
     default:
       return "ログインできませんでした。時間をおいて再度お試しください。";
   }
+}
+
+function authErrorDetails(error: unknown) {
+  const candidate = error as Partial<AuthError> | null;
+
+  return {
+    code: candidate?.code ?? "unknown",
+    name: error instanceof Error ? error.name : typeof error,
+  };
+}
+
+function pathWithoutQuery(value: string) {
+  return value.split(/[?#]/, 1)[0];
 }

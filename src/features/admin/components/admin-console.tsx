@@ -16,13 +16,14 @@ import type {
 } from "@/features/admin/types";
 import { firebaseAuth } from "@/lib/firebase/client";
 
-const navigation: Array<{ section: AdminSection; href: string; label: string; icon: "calendar" | "clock" | "person" | "spa" | "sparkle" }> = [
+const navigation: Array<{ section: AdminSection; href: string; label: string; icon: "bell" | "calendar" | "clock" | "person" | "spa" | "sparkle" }> = [
   { section: "dashboard", href: "/admin", label: "ホーム", icon: "sparkle" },
   { section: "reservations", href: "/admin/reservations", label: "予約", icon: "calendar" },
   { section: "rests", href: "/admin/rests", label: "休憩", icon: "clock" },
   { section: "customers", href: "/admin/customers", label: "顧客・カルテ", icon: "person" },
   { section: "menus", href: "/admin/menus", label: "メニュー", icon: "spa" },
   { section: "sales", href: "/admin/sales", label: "売上", icon: "sparkle" },
+  { section: "notifications", href: "/admin/notifications", label: "Push通知", icon: "bell" },
 ];
 
 export function AdminConsole({ section }: { section: AdminSection }) {
@@ -38,24 +39,60 @@ export function AdminConsole({ section }: { section: AdminSection }) {
     try {
       setSnapshot(await fetchAdminSnapshot());
     } catch (caught) {
+      console.error("[admin-console] refresh_failed", {
+        errorName: caught instanceof Error ? caught.name : typeof caught,
+        message: caught instanceof Error ? caught.message : undefined,
+        requestId: caught instanceof AdminApiError ? caught.requestId : undefined,
+        status: caught instanceof AdminApiError ? caught.status : undefined,
+      });
       if (caught instanceof AdminApiError && caught.status === 401) {
+        console.warn("[admin-console] redirecting_to_login", {
+          path: location.pathname,
+          requestId: caught.requestId,
+          status: caught.status,
+        });
         router.replace(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
         return;
       }
-      setError(caught instanceof Error ? caught.message : "管理データを取得できませんでした。");
+      const message = caught instanceof Error
+        ? caught.message
+        : "管理データを取得できませんでした。";
+      const requestReference = caught instanceof AdminApiError && caught.requestId
+        ? `（Request ID: ${caught.requestId}）`
+        : "";
+      setError(`${message}${requestReference}`);
     } finally {
       setLoading(false);
     }
   }, [router]);
 
   useEffect(() => {
-    return onAuthStateChanged(firebaseAuth(), (user) => {
-      if (!user) {
-        router.replace(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
-        return;
-      }
-      void refresh();
-    });
+    return onAuthStateChanged(
+      firebaseAuth(),
+      (user) => {
+        if (!user) {
+          console.warn("[admin-console] session_missing", {
+            path: location.pathname,
+          });
+          router.replace(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
+          return;
+        }
+        console.info("[admin-console] session_detected", {
+          path: location.pathname,
+          uid: user.uid,
+        });
+        void refresh();
+      },
+      (error) => {
+        console.error("[admin-console] session_check_failed", {
+          code: (error as { code?: unknown }).code ?? "unknown",
+          errorName: error.name,
+          path: location.pathname,
+        });
+        setError("ログイン状態を確認できませんでした。ページを再読み込みしてください。");
+        setLoading(false);
+      },
+    );
   }, [refresh, router]);
 
   async function runMutation(body: Record<string, unknown>, successMessage: string) {
@@ -133,6 +170,7 @@ function AdminSectionContent(props: {
     case "customers": return <Customers snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
     case "menus": return <Menus snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
     case "sales": return <Sales snapshot={props.snapshot} />;
+    case "notifications": return <Notifications snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
   }
 }
 
@@ -151,6 +189,7 @@ function Dashboard({ snapshot }: { snapshot: AdminSnapshot }) {
       customers: "顧客情報と施術カルテを管理",
       menus: "料金・所要時間・公開条件を編集",
       sales: "予約件数と売上見込を集計",
+      notifications: "全ユーザーまたは個人へお知らせを配信",
     }[item.section],
   }));
   return (
@@ -338,6 +377,111 @@ function Sales({ snapshot }: { snapshot: AdminSnapshot }) {
   const month = snapshot.reservations.filter((item) => monthKey(new Date(item.startTime)) === monthKey(now) && item.status !== "canceled");
   const ranking = [...month.reduce((map, item) => map.set(item.treatmentDetail, (map.get(item.treatmentDetail) ?? 0) + 1), new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]);
   return <><PageTitle eyebrow="SALES SUMMARY" title="売上サマリー" description="予約データから件数と売上見込を自動集計します。" /><div className="admin-console-stats is-four"><Metric icon="calendar" label="本日の予約" value={`${today.length}件`} /><Metric icon="sparkle" label="本日の売上見込" value={yen(today.reduce((sum, item) => sum + item.price, 0))} compact /><Metric icon="calendar" label="今月の予約" value={`${month.length}件`} /><Metric icon="sparkle" label="今月の売上見込" value={yen(month.reduce((sum, item) => sum + item.price, 0))} compact /></div><div className="admin-sales-grid"><section className="admin-panel"><SectionHeading eyebrow="RANKING" title="今月の人気メニュー" />{ranking.slice(0, 8).map(([name, count], index) => <article key={name}><strong>{index + 1}</strong><span>{name}</span><b>{count}件</b></article>)}{ranking.length === 0 ? <p>集計できる予約はありません。</p> : null}</section><section className="admin-panel"><SectionHeading eyebrow="RECENT" title="直近の予約" />{[...snapshot.reservations].filter((item) => item.status !== "canceled").sort((a, b) => b.startTime.localeCompare(a.startTime)).slice(0, 8).map((item) => <article key={item.sourcePath}><time>{formatDate(item.startTime)}</time><span><strong>{item.customerName}</strong><small>{item.treatmentDetail}</small></span><b>{yen(item.price)}</b></article>)}</section></div></>;
+}
+
+function Notifications({ snapshot, mutating, runMutation }: {
+  snapshot: AdminSnapshot;
+  mutating: boolean;
+  runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean>;
+}) {
+  const [target, setTarget] = useState<"all" | "customer">("all");
+  const [customerId, setCustomerId] = useState("");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const selectedCustomer = snapshot.customers.find((customer) => customer.id === customerId);
+  const recipientDeviceCount = target === "all"
+    ? snapshot.notificationDeviceCount
+    : selectedCustomer?.pushTokenCount ?? 0;
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const audience = target === "all" ? "全ユーザー" : selectedCustomer?.displayName;
+    if (!audience || !confirm(`${audience}（登録端末 ${recipientDeviceCount}台）へ通知を送信しますか？`)) return;
+    const ok = await runMutation({
+      action: "notification.send",
+      target,
+      customerId: target === "customer" ? customerId : "",
+      title,
+      content,
+    }, `${audience}へのPush通知を受け付けました。`);
+    if (ok) {
+      setTitle("");
+      setContent("");
+    }
+  }
+
+  return (
+    <>
+      <PageTitle eyebrow="PUSH NOTIFICATIONS" title="Push通知" description="iOS・Androidアプリへ、自由に入力したお知らせを配信します。" />
+      <div className="admin-notification-layout">
+        <form className="admin-panel admin-notification-form" onSubmit={submit}>
+          <fieldset>
+            <legend>通知先</legend>
+            <div className="admin-notification-targets">
+              <label className={target === "all" ? "is-active" : ""}>
+                <input checked={target === "all"} name="notification-target" onChange={() => setTarget("all")} type="radio" />
+                <VishuIcon name="person" />
+                <span><strong>全ユーザー</strong><small>通知許可済みの登録端末すべて</small></span>
+              </label>
+              <label className={target === "customer" ? "is-active" : ""}>
+                <input checked={target === "customer"} name="notification-target" onChange={() => setTarget("customer")} type="radio" />
+                <VishuIcon name="person" />
+                <span><strong>特定ユーザー</strong><small>選択した1名の登録端末</small></span>
+              </label>
+            </div>
+          </fieldset>
+          {target === "customer" ? (
+            <label className="admin-notification-field">
+              <span>ユーザー</span>
+              <select required value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+                <option value="">ユーザーを選択してください</option>
+                {snapshot.customers.map((customer) => (
+                  <option disabled={customer.pushTokenCount === 0} key={customer.id} value={customer.id}>
+                    {customer.displayName}（{customer.pushTokenCount > 0 ? `登録端末 ${customer.pushTokenCount}台` : "通知端末なし"}）
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <label className="admin-notification-field">
+            <span>タイトル <small>{title.length}/100</small></span>
+            <input maxLength={100} placeholder="例：Salon Vishuからのお知らせ" required value={title} onChange={(event) => setTitle(event.target.value)} />
+          </label>
+          <label className="admin-notification-field">
+            <span>通知内容 <small>{content.length}/1000</small></span>
+            <textarea maxLength={1000} placeholder="お客様へお知らせする内容を入力してください。" required rows={8} value={content} onChange={(event) => setContent(event.target.value)} />
+          </label>
+          <div className="admin-notification-summary">
+            <VishuIcon name="bell" />
+            <div>
+              <small>送信対象</small>
+              <strong>{target === "all" ? "全ユーザー" : selectedCustomer?.displayName || "未選択"}</strong>
+              <span>登録端末 {recipientDeviceCount}台</span>
+            </div>
+          </div>
+          <button className="admin-notification-submit" disabled={mutating || recipientDeviceCount === 0} type="submit">
+            {mutating ? "送信処理中…" : "確認して送信"}
+          </button>
+          <p className="admin-notification-help">通知を許可している端末に配信されます。端末の通信状況などにより、到着まで時間がかかる場合があります。</p>
+        </form>
+        <section className="admin-panel admin-notification-history">
+          <SectionHeading eyebrow="HISTORY" title="送信履歴" />
+          {snapshot.pushNotifications.map((notification) => (
+            <article key={notification.id}>
+              <div>
+                <span>{notification.targetLabel}</span>
+                <time>{notification.createdAt ? formatDateTime(notification.createdAt) : "日時不明"}</time>
+              </div>
+              <strong>{notification.title}</strong>
+              <p>{notification.content}</p>
+              <small>送信対象 {notification.recipientDeviceCount}台</small>
+            </article>
+          ))}
+          {snapshot.pushNotifications.length === 0 ? <p className="admin-notification-empty">送信履歴はありません。</p> : null}
+        </section>
+      </div>
+    </>
+  );
 }
 
 function AdminLoading() { return <main className="auth-loading-page" aria-busy="true"><Brand owner /><div className="auth-loading-content"><div className="login-icon"><VishuIcon name="lock" /></div><p>管理データを安全に読み込んでいます…</p></div></main>; }
