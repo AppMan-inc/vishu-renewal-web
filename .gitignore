@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+*-firebase-adminsdk-*.json
 
 # debug
 npm-debug.log*
@@ -42,3 +43,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# firebase functions
+/firebase/functions/lib/
+/firebase/functions/node_modules/
+firebase-debug.log
