@@ -14,6 +14,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Brand, VishuIcon } from "@/components/vishu-ui";
 import { AdminApiError, checkAdminAccess } from "@/features/admin/admin-api";
 import { firebaseAuth } from "@/lib/firebase/client";
+import { siteAssetPath } from "@/lib/site-path";
 import {
   isAdminReturnTo,
   safeAdminReturnTo,
@@ -165,7 +166,12 @@ export function CustomerLogin() {
 
   return (
     <main className="admin-login-page customer-login-page">
-      <section className="admin-login-brand-panel">
+      <section
+        className="admin-login-brand-panel"
+        style={{
+          backgroundImage: `linear-gradient(180deg, rgba(41, 38, 33, .12), rgba(41, 38, 33, .72)), url("${siteAssetPath("/images/salon-vishu-hero.jpg")}")`,
+        }}
+      >
         <div className="login-panel-decoration" aria-hidden="true">
           <VishuIcon name="leaf" />
         </div>

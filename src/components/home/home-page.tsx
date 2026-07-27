@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { PageFooter, SiteHeader, VishuIcon } from "@/components/vishu-ui";
+import { siteAssetPath } from "@/lib/site-path";
 import styles from "./home-page.module.css";
 
 const hotPepperUrl = "https://beauty.hotpepper.jp/slnH000583006/";
@@ -93,7 +94,7 @@ function HeroSection() {
           fill
           preload
           sizes="(max-width: 760px) 100vw, 54vw"
-          src="/images/salon-vishu-hero.jpg"
+          src={siteAssetPath("/images/salon-vishu-hero.jpg")}
         />
         <div className={styles.heroImageShade} />
         <p className={styles.heroImageNote}>HAIR &amp; RELAXATION</p>
@@ -116,7 +117,7 @@ function PhilosophySection() {
           className={styles.philosophyImage}
           height={1024}
           sizes="(max-width: 760px) 100vw, 56vw"
-          src="/images/salon-vishu-care.jpg"
+          src={siteAssetPath("/images/salon-vishu-care.jpg")}
           width={1536}
         />
         <div className={styles.imageCaption}>

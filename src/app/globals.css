@@ -4549,9 +4549,8 @@ button.booking-menu-card.is-selected .round-arrow {
 }
 
 .customer-login-page .admin-login-brand-panel {
-  background:
-    linear-gradient(180deg, rgba(41, 38, 33, .12), rgba(41, 38, 33, .72)),
-    url("/images/salon-vishu-hero.jpg") center 42% / cover;
+  background-position: center 42%;
+  background-size: cover;
 }
 
 .customer-login-page .admin-login-brand-panel .brand-monogram {
