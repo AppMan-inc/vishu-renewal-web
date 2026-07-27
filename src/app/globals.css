@@ -784,6 +784,66 @@
   }
 }
 
+@media (max-width: 767px) {
+  .app-page.account-page .site-header {
+    width: calc(100% - 24px);
+    height: 64px;
+  }
+
+  .account-page .site-navigation {
+    gap: 9px;
+  }
+
+  .account-page .site-navigation > a:not(.header-booking-link),
+  .account-page .header-session-button {
+    display: none;
+  }
+
+  .account-page .header-booking-link {
+    min-height: 38px;
+    gap: 7px;
+    padding: 0 12px;
+    font-size: 10px;
+  }
+
+  .account-page .header-booking-link svg {
+    width: 15px;
+  }
+
+  .account-page .header-session-action {
+    gap: 0;
+  }
+
+  .account-page .header-account-link {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .account-page .vishu-brand {
+    gap: 8px;
+  }
+
+  .account-page .brand-monogram {
+    width: 30px;
+    height: 30px;
+    font-size: 17px;
+  }
+
+  .account-page .brand-copy strong {
+    font-size: 13px;
+  }
+
+  .account-page .brand-copy small {
+    font-size: 5px;
+  }
+
+  .account-page .module-label {
+    position: static;
+    color: var(--primary);
+    font-size: 9px;
+  }
+}
+
 @media (max-width: 680px) {
   .header-session-action {
     gap: 0;
@@ -4579,6 +4639,42 @@ button.booking-menu-card.is-selected .round-arrow {
   color: #8b4438;
   font-size: 11px;
   line-height: 1.7;
+}
+
+.login-field-error,
+.login-field-help {
+  margin: -2px 2px 2px;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.login-field-error {
+  color: #8b4438;
+}
+
+.login-field-help {
+  color: var(--text-muted);
+}
+
+.signup-login-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+  margin: 22px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.signup-login-prompt a {
+  color: var(--primary-dark);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.customer-signup-page .admin-login-form-panel {
+  padding-block: 36px;
 }
 
 .auth-divider {

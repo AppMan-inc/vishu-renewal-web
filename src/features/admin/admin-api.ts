@@ -2,6 +2,7 @@
 
 import { firebaseAuth } from "@/lib/firebase/client";
 import type { User } from "firebase/auth";
+import { adminApiUrl } from "@/features/admin/admin-api-url";
 import type { AdminSnapshot } from "@/features/admin/types";
 
 type AdminAccessResult = {
@@ -34,7 +35,7 @@ export async function checkAdminAccess(user: User): Promise<AdminAccessResult> {
 
   let response: Response;
   try {
-    response = await fetch("/api/admin/session", {
+    response = await fetch(adminEndpoint("session"), {
       cache: "no-store",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -101,7 +102,7 @@ export async function uploadAdminMenuImage(file: File) {
   const formData = new FormData();
   formData.set("image", file);
   const token = await user.getIdToken();
-  const response = await fetch("/api/admin/menu-image", {
+  const response = await fetch(adminEndpoint("menu-image"), {
     method: "POST",
     cache: "no-store",
     headers: {
@@ -160,7 +161,7 @@ async function adminRequest<T>(method: "GET" | "POST", body?: Record<string, unk
 
   let response: Response;
   try {
-    response = await fetch("/api/admin", {
+    response = await fetch(adminEndpoint(), {
       method,
       cache: "no-store",
       headers: {
@@ -223,4 +224,12 @@ export class AdminApiError extends Error {
     super(message);
     this.name = "AdminApiError";
   }
+}
+
+function adminEndpoint(route = "") {
+  return adminApiUrl(
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
+    process.env.NEXT_PUBLIC_FIREBASE_ADMIN_API_URL,
+    route,
+  );
 }

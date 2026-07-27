@@ -17,9 +17,10 @@ import { firebaseAuth } from "@/lib/firebase/client";
 import { siteAssetPath } from "@/lib/site-path";
 import {
   isAdminReturnTo,
-  safeAdminReturnTo,
+  loginIntent,
   safeCustomerReturnTo,
 } from "@/features/auth/return-to";
+import { customerSignupHref } from "@/features/auth/customer-signup";
 
 type LoginMethod = "email" | "google" | "apple";
 
@@ -43,15 +44,31 @@ export function CustomerLogin() {
       }
 
       hasStartedNavigation.current = true;
+      const intent = loginIntent(returnTo);
+
+      if (!intent.requiresAdminAuthorization) {
+        console.info("[auth] navigation_started", {
+          destinationPath: pathWithoutQuery(intent.destination),
+          isAdmin: false,
+          requestedAdmin: false,
+          source,
+          uid: user.uid,
+        });
+        router.replace(intent.destination);
+        return;
+      }
+
       console.info("[auth] admin_access_check_started", {
-        requestedAdmin: isAdminReturnTo(returnTo),
+        requestedAdmin: true,
         source,
         uid: user.uid,
       });
 
       try {
         const access = await checkAdminAccess(user);
-        const destination = loginDestination(access.isAdmin, returnTo);
+        const destination = access.isAdmin
+          ? intent.destination
+          : safeCustomerReturnTo(returnTo);
         console.info("[auth] navigation_started", {
           destinationPath: pathWithoutQuery(destination),
           isAdmin: access.isAdmin,
@@ -254,6 +271,11 @@ export function CustomerLogin() {
             </button>
           </div>
 
+          <p className="signup-login-prompt">
+            アカウントをお持ちでない方は
+            <Link href={customerSignupHref(returnTo)}>新規アカウント作成</Link>
+          </p>
+
           <Link className="back-link" href="/">
             <VishuIcon name="arrow" />
             トップページへ戻る
@@ -262,12 +284,6 @@ export function CustomerLogin() {
       </section>
     </main>
   );
-}
-
-function loginDestination(isAdmin: boolean, returnTo: string | null) {
-  return isAdmin
-    ? safeAdminReturnTo(returnTo)
-    : safeCustomerReturnTo(returnTo);
 }
 
 function GoogleIcon() {
