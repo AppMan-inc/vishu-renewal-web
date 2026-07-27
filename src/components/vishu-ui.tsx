@@ -91,7 +91,11 @@ export function VishuIcon({ name, className = "" }: { name: IconName; className?
 
 export function Brand({ owner = false }: { owner?: boolean }) {
   return (
-    <Link className="vishu-brand" href="/" aria-label="Salon Vishu トップへ">
+    <Link
+      className="vishu-brand"
+      href={owner ? "/admin" : "/"}
+      aria-label={owner ? "Vishu 管理画面トップへ" : "Salon Vishu トップへ"}
+    >
       <span className="brand-monogram" aria-hidden="true">V</span>
       <span className="brand-copy">
         <strong>{owner ? "VISHU OWNER" : "VISHU"}</strong>

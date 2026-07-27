@@ -1,11 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { Brand, VishuIcon } from "@/components/vishu-ui";
-import { AdminApiError, fetchAdminSnapshot, mutateAdmin } from "@/features/admin/admin-api";
+import {
+  AdminApiError,
+  fetchAdminSnapshot,
+  mutateAdmin,
+  uploadAdminMenuImage,
+} from "@/features/admin/admin-api";
 import type {
   AdminCustomer,
   AdminMenu,
@@ -26,7 +32,12 @@ const navigation: Array<{ section: AdminSection; href: string; label: string; ic
   { section: "notifications", href: "/admin/notifications", label: "Push通知", icon: "bell" },
 ];
 
-export function AdminConsole({ section }: { section: AdminSection }) {
+export function AdminMenusConsole() {
+  const searchParams = useSearchParams();
+  return <AdminConsole menuId={searchParams.get("menuId") ?? undefined} section="menus" />;
+}
+
+export function AdminConsole({ section, menuId }: { section: AdminSection; menuId?: string }) {
   const router = useRouter();
   const [snapshot, setSnapshot] = useState<AdminSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,6 +159,7 @@ export function AdminConsole({ section }: { section: AdminSection }) {
               mutating={mutating}
               runMutation={runMutation}
               section={section}
+              menuId={menuId}
               snapshot={snapshot}
             />
           )}
@@ -159,6 +171,7 @@ export function AdminConsole({ section }: { section: AdminSection }) {
 
 function AdminSectionContent(props: {
   section: AdminSection;
+  menuId?: string;
   snapshot: AdminSnapshot;
   mutating: boolean;
   runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean>;
@@ -168,7 +181,7 @@ function AdminSectionContent(props: {
     case "reservations": return <Reservations snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
     case "rests": return <Rests snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
     case "customers": return <Customers snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
-    case "menus": return <Menus snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
+    case "menus": return <Menus menuId={props.menuId} snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
     case "sales": return <Sales snapshot={props.snapshot} />;
     case "notifications": return <Notifications snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
   }
@@ -269,22 +282,59 @@ function ReservationDetail({ reservation, mutating, onClose, onStatus }: { reser
   return <div className="admin-detail-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}><aside className="admin-detail-panel"><button className="admin-detail-close" onClick={onClose}>×</button><p className="eyebrow">RESERVATION DETAIL</p><h2>{reservation.customerName}</h2><span className={`admin-status status-${reservation.status}`}>{statusLabel(reservation.status)}</span><dl><div><dt>日時</dt><dd>{formatDateTime(reservation.startTime)} – {formatTime(reservation.finishTime)}</dd></div><div><dt>メニュー</dt><dd>{reservation.treatmentDetail}</dd></div><div><dt>料金</dt><dd>{yen(reservation.price)}</dd></div><div><dt>電話番号</dt><dd>{reservation.telephoneNumber || "未登録"}</dd></div><div><dt>ご希望</dt><dd>{reservation.customerHope || "なし"}</dd></div></dl><div className="admin-detail-actions"><button disabled={mutating || reservation.status === "visited"} onClick={() => void onStatus("visited")}>来店済みにする</button><button disabled={mutating || reservation.status === "confirmed"} onClick={() => void onStatus("confirmed")}>予約済みに戻す</button><button className="is-danger" disabled={mutating || reservation.status === "canceled"} onClick={() => void onStatus("canceled")}>キャンセル</button></div>{reservation.customerId ? <Link className="admin-primary-link" href={`/admin/customers?customer=${encodeURIComponent(reservation.customerId)}`}>顧客・カルテを開く →</Link> : null}</aside></div>;
 }
 
+const BUSINESS_OPEN_MINUTES = 9 * 60;
+const BUSINESS_CLOSE_MINUTES = 18 * 60;
+const ALL_DAY_DURATION_MINUTES = BUSINESS_CLOSE_MINUTES - BUSINESS_OPEN_MINUTES;
+const REST_DURATION_OPTIONS = [
+  { minutes: 30, label: "30分" },
+  { minutes: 60, label: "60分" },
+  { minutes: 90, label: "90分" },
+  { minutes: 120, label: "120分" },
+  { minutes: 150, label: "150分" },
+  { minutes: 180, label: "180分" },
+  { minutes: ALL_DAY_DURATION_MINUTES, label: "終日" },
+];
+
 function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
   const [duration, setDuration] = useState(60);
   const [selectedStart, setSelectedStart] = useState<Date | null>(null);
   const days = Array.from({ length: 7 }, (_, index) => addDays(startOfDay(new Date()), index));
-  const slots = Array.from({ length: 18 }, (_, index) => 9 * 60 + index * 30);
+  const slots = Array.from(
+    { length: (BUSINESS_CLOSE_MINUTES - BUSINESS_OPEN_MINUTES) / 30 },
+    (_, index) => BUSINESS_OPEN_MINUTES + index * 30,
+  );
   const isBlocked = (start: Date) => {
     const end = new Date(start.getTime() + duration * 60_000);
-    return end.getHours() > 18 || (end.getHours() === 18 && end.getMinutes() > 0) || [...props.snapshot.reservations.filter((item) => item.status !== "canceled").map((item) => [new Date(item.startTime), new Date(item.finishTime)]), ...props.snapshot.restBlocks.map((item) => [new Date(item.startTime), new Date(item.endTime)])].some(([blockedStart, blockedEnd]) => start < blockedEnd && blockedStart < end);
+    const endMinutes = end.getHours() * 60 + end.getMinutes();
+    return dayKey(start) !== dayKey(end) || endMinutes > BUSINESS_CLOSE_MINUTES || [...props.snapshot.reservations.filter((item) => item.status !== "canceled").map((item) => [new Date(item.startTime), new Date(item.finishTime)]), ...props.snapshot.restBlocks.map((item) => [new Date(item.startTime), new Date(item.endTime)])].some(([blockedStart, blockedEnd]) => start < blockedEnd && blockedStart < end);
   };
+  const selectedEnd = selectedStart
+    ? new Date(selectedStart.getTime() + duration * 60_000)
+    : null;
+  const selectedIsBlocked = selectedStart
+    ? isBlocked(selectedStart) || selectedStart < new Date()
+    : false;
+
+  function selectDuration(minutes: number) {
+    setDuration(minutes);
+    if (minutes === ALL_DAY_DURATION_MINUTES && selectedStart) {
+      setSelectedStart(new Date(
+        selectedStart.getFullYear(),
+        selectedStart.getMonth(),
+        selectedStart.getDate(),
+        Math.floor(BUSINESS_OPEN_MINUTES / 60),
+        BUSINESS_OPEN_MINUTES % 60,
+      ));
+    }
+  }
+
   async function createRest() {
-    if (!selectedStart) return;
-    const end = new Date(selectedStart.getTime() + duration * 60_000);
-    const ok = await props.runMutation({ action: "rest.create", startTime: selectedStart.toISOString(), endTime: end.toISOString() }, "休憩を登録しました。");
+    if (!selectedStart || !selectedEnd || selectedIsBlocked) return;
+    const ok = await props.runMutation({ action: "rest.create", startTime: selectedStart.toISOString(), endTime: selectedEnd.toISOString() }, "休憩を登録しました。");
     if (ok) setSelectedStart(null);
   }
-  return <><PageTitle eyebrow="AVAILABILITY" title="休憩登録" description="予約と重ならない時間枠を選んで登録します。" /><div className="admin-rest-layout"><section className="admin-panel"><div className="admin-duration-selector"><span>休憩時間</span>{[30, 60, 90, 120].map((minutes) => <button className={duration === minutes ? "is-active" : ""} key={minutes} onClick={() => { setDuration(minutes); setSelectedStart(null); }}>{minutes}分</button>)}</div><div className="admin-slot-grid"><div /><>{days.map((day) => <header key={day.toISOString()}><span>{weekday(day)}</span><strong>{day.getDate()}</strong></header>)}</>{slots.map((minutes) => <div className="admin-slot-row" key={minutes}><time>{minutesLabel(minutes)}</time>{days.map((day) => { const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(minutes / 60), minutes % 60); const blocked = isBlocked(start) || start < new Date(); const selected = selectedStart?.getTime() === start.getTime(); return <button aria-label={`${formatDateTime(start.toISOString())} ${blocked ? "選択不可" : "選択"}`} className={selected ? "is-selected" : ""} disabled={blocked} key={day.toISOString()} onClick={() => setSelectedStart(start)}>{blocked ? "×" : selected ? "●" : "○"}</button>; })}</div>)}</div>{selectedStart ? <div className="admin-selection-confirm"><div><small>選択した休憩</small><strong>{formatDateTime(selectedStart.toISOString())} – {formatTime(new Date(selectedStart.getTime() + duration * 60_000).toISOString())}</strong></div><button disabled={props.mutating} onClick={() => void createRest()}>この時間で登録</button></div> : null}</section><section className="admin-panel admin-rest-list"><SectionHeading eyebrow="REGISTERED" title="登録済みの休憩" />{props.snapshot.restBlocks.filter((item) => new Date(item.endTime) >= startOfDay(new Date())).slice(0, 30).map((item) => <article key={item.id}><div><strong>{formatDateTime(item.startTime)}</strong><span>{formatTime(item.startTime)} – {formatTime(item.endTime)}</span></div><button disabled={props.mutating} onClick={() => { if (confirm("この休憩を削除しますか？")) void props.runMutation({ action: "rest.delete", id: item.id }, "休憩を削除しました。"); }}>削除</button></article>)}{props.snapshot.restBlocks.length === 0 ? <p>登録済みの休憩はありません。</p> : null}</section></div></>;
+
+  return <><PageTitle eyebrow="AVAILABILITY" title="休憩登録" description="予約と重ならない時間枠を選んで登録します。" /><div className="admin-rest-layout"><section className="admin-panel"><div className="admin-duration-selector"><span>休憩時間</span>{REST_DURATION_OPTIONS.map((option) => <button className={duration === option.minutes ? "is-active" : ""} key={option.minutes} onClick={() => selectDuration(option.minutes)} type="button">{option.label}</button>)}</div><div className="admin-slot-grid"><div /><>{days.map((day) => <header key={day.toISOString()}><span>{weekday(day)}</span><strong>{day.getDate()}</strong></header>)}</>{slots.map((minutes) => <div className="admin-slot-row" key={minutes}><time>{minutesLabel(minutes)}</time>{days.map((day) => { const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(minutes / 60), minutes % 60); const blocked = isBlocked(start) || start < new Date(); const selected = selectedStart?.getTime() === start.getTime(); return <button aria-label={`${formatDateTime(start.toISOString())} ${selected ? "選択中" : blocked ? "選択不可" : "選択"}`} className={selected ? "is-selected" : ""} disabled={blocked} key={day.toISOString()} onClick={() => setSelectedStart(start)} type="button">{selected ? "●" : blocked ? "×" : "○"}</button>; })}</div>)}</div>{selectedStart && selectedEnd ? <div className={`admin-selection-confirm${selectedIsBlocked ? " is-blocked" : ""}`}><div><small>{selectedIsBlocked ? "この時間では登録できません" : "選択した休憩"}</small><strong>{formatDateTime(selectedStart.toISOString())} – {formatTime(selectedEnd.toISOString())}</strong>{selectedIsBlocked ? <p>別の開始時間、または短い休憩時間を選択してください。</p> : duration === ALL_DAY_DURATION_MINUTES ? <p>終日は営業時間（9:00〜18:00）で登録します。</p> : null}</div><button disabled={props.mutating || selectedIsBlocked} onClick={() => void createRest()} type="button">この時間で登録</button></div> : null}</section><section className="admin-panel admin-rest-list"><SectionHeading eyebrow="REGISTERED" title="登録済みの休憩" />{props.snapshot.restBlocks.filter((item) => new Date(item.endTime) >= startOfDay(new Date())).slice(0, 30).map((item) => <article key={item.id}><div><strong>{formatDateTime(item.startTime)}</strong><span>{formatTime(item.startTime)} – {formatTime(item.endTime)}</span></div><button disabled={props.mutating} onClick={() => { if (confirm("この休憩を削除しますか？")) void props.runMutation({ action: "rest.delete", id: item.id }, "休憩を削除しました。"); }}>削除</button></article>)}{props.snapshot.restBlocks.length === 0 ? <p>登録済みの休憩はありません。</p> : null}</section></div></>;
 }
 
 function Customers(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
@@ -358,17 +408,137 @@ function KarteForm({ customer, reservations, mutating, runMutation, onSaved }: {
   );
 }
 
-function Menus(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
-  const [editing, setEditing] = useState<AdminMenu | null>(null);
-  return <><PageTitle eyebrow="MENU MANAGEMENT" title="メニュー管理" description="料金、所要時間、予約方法、表示順を編集します。" /><div className="admin-section-action"><span>{props.snapshot.menus.length}件のメニュー</span><button onClick={() => setEditing(emptyMenu())}>+ 新規メニュー</button></div><div className="admin-menu-table"><div className="admin-table-head"><span>メニュー</span><span>所要時間</span><span>料金</span><span>予約</span><span /></div>{props.snapshot.menus.map((menu) => <article key={menu.id}><div><strong>{menu.treatmentDetail}</strong><small>{menu.menuIntroduction || "説明未設定"}</small></div><span>{menu.treatmentTimeMinutes}分</span><span>{yen(menu.afterPrice)}{menu.isNeedExtraMoney ? "〜" : ""}</span><span>{menu.isCallable ? "電話予約" : "Web予約可"}</span><div><button onClick={() => setEditing(menu)}>編集</button><button className="is-danger" disabled={props.mutating} onClick={() => { if (confirm(`${menu.treatmentDetail}を削除しますか？`)) void props.runMutation({ action: "menu.delete", id: menu.id }, "メニューを削除しました。"); }}>削除</button></div></article>)}</div>{editing ? <MenuEditor menu={editing} mutating={props.mutating} onClose={() => setEditing(null)} runMutation={props.runMutation} /> : null}</>;
+function Menus(props: {
+  menuId?: string;
+  snapshot: AdminSnapshot;
+  mutating: boolean;
+  runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean>;
+}) {
+  if (props.menuId !== undefined) {
+    const menu = props.menuId === "new"
+      ? emptyMenu()
+      : props.snapshot.menus.find((item) => item.id === props.menuId);
+    if (!menu) {
+      return <><PageTitle eyebrow="MENU EDITOR" title="メニューが見つかりません" description="削除されたか、URLが正しくない可能性があります。" /><Link className="admin-back-link" href="/admin/menus">← メニュー一覧へ戻る</Link></>;
+    }
+    return <MenuEditor menu={menu} mutating={props.mutating} runMutation={props.runMutation} />;
+  }
+
+  return (
+    <>
+      <PageTitle eyebrow="MENU MANAGEMENT" title="メニュー管理" description="メニューを選択して、内容や画像を編集できます。" />
+      <div className="admin-section-action">
+        <span>{props.snapshot.menus.length}件のメニュー</span>
+        <Link href="/admin/menus?menuId=new">+ 新規メニュー</Link>
+      </div>
+      <div className="admin-menu-table">
+        <div className="admin-table-head"><span>画像</span><span>メニュー</span><span>所要時間</span><span>料金</span><span>予約</span><span /></div>
+        {props.snapshot.menus.map((menu) => (
+          <article key={menu.id}>
+            <Link aria-label={`${menu.treatmentDetail}を編集`} className="admin-menu-row-link" href={`/admin/menus?menuId=${encodeURIComponent(menu.id)}`}>
+              <MenuThumbnail menu={menu} />
+              <div><strong>{menu.treatmentDetail}</strong><small>{menu.menuIntroduction || "説明未設定"}</small></div>
+              <span>{menu.treatmentTimeMinutes}分</span>
+              <span>{yen(menu.afterPrice)}{menu.isNeedExtraMoney ? "〜" : ""}</span>
+              <span>{menu.isCallable ? "電話予約" : "Web予約可"}</span>
+              <b aria-hidden="true">›</b>
+            </Link>
+            <button className="is-danger" disabled={props.mutating} onClick={() => { if (confirm(`${menu.treatmentDetail}を削除しますか？`)) void props.runMutation({ action: "menu.delete", id: menu.id }, "メニューを削除しました。"); }}>削除</button>
+          </article>
+        ))}
+        {props.snapshot.menus.length === 0 ? <p className="admin-menu-empty">登録済みのメニューはありません。</p> : null}
+      </div>
+    </>
+  );
 }
 
-function MenuEditor({ menu, mutating, onClose, runMutation }: { menu: AdminMenu; mutating: boolean; onClose: () => void; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
+function MenuThumbnail({ menu }: { menu: AdminMenu }) {
+  return <div className={`admin-menu-thumbnail${menu.menuImageUrl ? " has-image" : ""}`}>{menu.menuImageUrl ? <Image alt="" fill sizes="72px" src={menu.menuImageUrl} /> : <VishuIcon name="spa" />}</div>;
+}
+
+function MenuEditor({ menu, mutating, runMutation }: { menu: AdminMenu; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
+  const router = useRouter();
   const [draft, setDraft] = useState(menu);
   const [details, setDetails] = useState(menu.treatmentDetailList.join("\n"));
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState(menu.menuImageUrl);
+  const [formError, setFormError] = useState("");
+  const [uploading, setUploading] = useState(false);
   const update = <K extends keyof AdminMenu>(key: K, value: AdminMenu[K]) => setDraft((current) => ({ ...current, [key]: value }));
-  async function submit(event: FormEvent) { event.preventDefault(); const ok = await runMutation({ action: "menu.save", menu: { ...draft, treatmentDetailList: details.split("\n").map((item) => item.trim()).filter(Boolean) } }, "メニューを保存しました。"); if (ok) onClose(); }
-  return <div className="admin-detail-overlay"><aside className="admin-detail-panel admin-menu-editor"><button className="admin-detail-close" onClick={onClose}>×</button><p className="eyebrow">MENU EDITOR</p><h2>{draft.id ? "メニュー編集" : "新規メニュー"}</h2><form onSubmit={submit}><label>メニュー名<input required value={draft.treatmentDetail} onChange={(event) => update("treatmentDetail", event.target.value)} /></label><label>紹介文<textarea rows={3} value={draft.menuIntroduction} onChange={(event) => update("menuIntroduction", event.target.value)} /></label><label>施術内容（1行1項目）<textarea rows={4} value={details} onChange={(event) => setDetails(event.target.value)} /></label><div><label>通常価格<input min="0" type="number" value={draft.beforePrice} onChange={(event) => update("beforePrice", Number(event.target.value))} /></label><label>販売価格<input min="0" required type="number" value={draft.afterPrice} onChange={(event) => update("afterPrice", Number(event.target.value))} /></label></div><div><label>所要時間（分）<input min="1" required type="number" value={draft.treatmentTimeMinutes} onChange={(event) => update("treatmentTimeMinutes", Number(event.target.value))} /></label><label>表示順<input min="0" required type="number" value={draft.priority} onChange={(event) => update("priority", Number(event.target.value))} /></label></div><label className="admin-checkbox"><input checked={draft.isCallable} type="checkbox" onChange={(event) => update("isCallable", event.target.checked)} />電話予約のみ</label><label className="admin-checkbox"><input checked={draft.isNeedExtraMoney} type="checkbox" onChange={(event) => update("isNeedExtraMoney", event.target.checked)} />追加料金あり（価格に「〜」を表示）</label><button disabled={mutating} type="submit">保存する</button></form></aside></div>;
+
+  useEffect(() => () => {
+    if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  function selectImage(file: File | undefined) {
+    setFormError("");
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setFormError("画像は5MB以下にしてください。");
+      return;
+    }
+    setImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  }
+
+  function removeImage() {
+    setImageFile(null);
+    setPreviewUrl("");
+    setDraft((current) => ({ ...current, menuImagePath: "", menuImageUrl: "" }));
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setFormError("");
+    let menuToSave = {
+      ...draft,
+      treatmentDetailList: details.split("\n").map((item) => item.trim()).filter(Boolean),
+    };
+    try {
+      if (imageFile) {
+        setUploading(true);
+        const uploadedImage = await uploadAdminMenuImage(imageFile);
+        menuToSave = { ...menuToSave, ...uploadedImage };
+      }
+      const ok = await runMutation({ action: "menu.save", menu: menuToSave }, "メニューを保存しました。");
+      if (ok) router.push("/admin/menus");
+    } catch (caught) {
+      setFormError(caught instanceof Error ? caught.message : "画像をアップロードできませんでした。");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="admin-menu-editor-page">
+      <Link className="admin-back-link" href="/admin/menus">← メニュー一覧へ戻る</Link>
+      <PageTitle eyebrow="MENU EDITOR" title={draft.id ? "メニュー編集" : "新規メニュー"} description="お客様に表示する内容と画像を設定します。" />
+      <form className="admin-menu-editor" onSubmit={submit}>
+        {formError ? <div className="admin-alert is-error" role="alert">{formError}</div> : null}
+        <section className="admin-panel admin-menu-image-editor">
+          <div className={`admin-menu-image-preview${previewUrl ? " has-image" : ""}`}>
+            {previewUrl ? <Image alt="メニュー画像のプレビュー" fill sizes="(max-width: 760px) 100vw, 360px" src={previewUrl} unoptimized={previewUrl.startsWith("blob:")} /> : <><VishuIcon name="spa" /><span>画像未設定</span></>}
+          </div>
+          <div>
+            <h2>メニュー画像</h2>
+            <p>JPEG・PNG・WebP、5MB以下。予約画面とメニュー一覧に表示されます。</p>
+            <label className="admin-image-picker">画像を選択<input accept="image/jpeg,image/png,image/webp" onChange={(event) => selectImage(event.target.files?.[0])} type="file" /></label>
+            {previewUrl ? <button className="admin-image-remove" onClick={removeImage} type="button">画像を削除</button> : null}
+          </div>
+        </section>
+        <section className="admin-panel admin-menu-fields">
+          <label>メニュー名<input required value={draft.treatmentDetail} onChange={(event) => update("treatmentDetail", event.target.value)} /></label>
+          <label>紹介文<textarea rows={3} value={draft.menuIntroduction} onChange={(event) => update("menuIntroduction", event.target.value)} /></label>
+          <label>施術内容（1行1項目）<textarea rows={4} value={details} onChange={(event) => setDetails(event.target.value)} /></label>
+          <div><label>通常価格<input min="0" type="number" value={draft.beforePrice} onChange={(event) => update("beforePrice", Number(event.target.value))} /></label><label>販売価格<input min="0" required type="number" value={draft.afterPrice} onChange={(event) => update("afterPrice", Number(event.target.value))} /></label></div>
+          <div><label>所要時間（分）<input min="1" required type="number" value={draft.treatmentTimeMinutes} onChange={(event) => update("treatmentTimeMinutes", Number(event.target.value))} /></label><label>表示順<input min="0" required type="number" value={draft.priority} onChange={(event) => update("priority", Number(event.target.value))} /></label></div>
+          <label className="admin-checkbox"><input checked={draft.isCallable} type="checkbox" onChange={(event) => update("isCallable", event.target.checked)} />電話予約のみ</label>
+          <label className="admin-checkbox"><input checked={draft.isNeedExtraMoney} type="checkbox" onChange={(event) => update("isNeedExtraMoney", event.target.checked)} />追加料金あり（価格に「〜」を表示）</label>
+        </section>
+        <div className="admin-menu-editor-actions"><Link href="/admin/menus">キャンセル</Link><button disabled={mutating || uploading} type="submit">{uploading ? "画像をアップロード中…" : mutating ? "保存中…" : "保存する"}</button></div>
+      </form>
+    </div>
+  );
 }
 
 function Sales({ snapshot }: { snapshot: AdminSnapshot }) {
@@ -489,7 +659,7 @@ function PageTitle({ eyebrow, title, description }: { eyebrow: string; title: st
 function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) { return <div className="admin-section-heading"><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>; }
 function Metric({ icon, label, value, compact = false }: { icon: "calendar" | "clock" | "sparkle"; label: string; value: string; compact?: boolean }) { return <article><span><VishuIcon name={icon} /></span><div><small>{label}</small><strong className={compact ? "is-compact" : ""}>{value}</strong></div></article>; }
 function EmptyState({ title, text }: { title: string; text: string }) { return <div className="admin-empty-state"><VishuIcon name="leaf" /><h2>{title}</h2><p>{text}</p></div>; }
-function emptyMenu(): AdminMenu { return { id: "", treatmentDetail: "", menuIntroduction: "", treatmentDetailList: [], treatmentTimeMinutes: 60, beforePrice: 0, afterPrice: 0, isCallable: false, isNeedExtraMoney: false, priority: 999, updatedAt: null }; }
+function emptyMenu(): AdminMenu { return { id: "", treatmentDetail: "", menuIntroduction: "", treatmentDetailList: [], menuImageUrl: "", menuImagePath: "", treatmentTimeMinutes: 60, beforePrice: 0, afterPrice: 0, isCallable: false, isNeedExtraMoney: false, priority: 999, updatedAt: null }; }
 function customerSummary(customer: AdminCustomer, reservations: AdminReservation[], entries: AdminSnapshot["karteEntries"]) { const customerReservations = reservations.filter((item) => item.customerId === customer.id); const visits = customerReservations.filter((item) => item.status === "visited"); const lastVisit = visits.sort((a, b) => b.startTime.localeCompare(a.startTime))[0]?.startTime; const entryIds = new Set(entries.filter((item) => item.customerId === customer.id).map((item) => item.reservationId)); return { visits: visits.length, lastVisit, missingKarte: visits.some((item) => !entryIds.has(item.id)) }; }
 function startOfDay(date: Date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
 function addDays(date: Date, days: number) { const result = new Date(date); result.setDate(result.getDate() + days); return result; }

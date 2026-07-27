@@ -91,6 +91,41 @@ export async function mutateAdmin(body: Record<string, unknown>) {
   await adminRequest<{ ok: true }>("POST", body);
 }
 
+export async function uploadAdminMenuImage(file: File) {
+  const requestId = crypto.randomUUID();
+  const user = firebaseAuth().currentUser;
+  if (!user) {
+    throw new AdminApiError("ログインが必要です。", 401, requestId);
+  }
+
+  const formData = new FormData();
+  formData.set("image", file);
+  const token = await user.getIdToken();
+  const response = await fetch("/api/admin/menu-image", {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-Request-Id": requestId,
+    },
+    body: formData,
+  });
+  const payload = (await response.json().catch(() => ({}))) as {
+    imagePath?: string;
+    imageUrl?: string;
+    message?: string;
+    requestId?: string;
+  };
+  if (!response.ok || !payload.imagePath || !payload.imageUrl) {
+    throw new AdminApiError(
+      payload.message ?? "画像をアップロードできませんでした。",
+      response.status,
+      payload.requestId ?? requestId,
+    );
+  }
+  return { imagePath: payload.imagePath, imageUrl: payload.imageUrl };
+}
+
 async function adminRequest<T>(method: "GET" | "POST", body?: Record<string, unknown>) {
   const requestId = crypto.randomUUID();
   const user = firebaseAuth().currentUser;

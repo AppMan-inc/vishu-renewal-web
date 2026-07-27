@@ -36,6 +36,11 @@ export const adminMutationSchema = z.discriminatedUnion("action", [
       treatmentDetail: z.string().trim().min(1).max(120),
       menuIntroduction: z.string().trim().max(1000),
       treatmentDetailList: z.array(z.string().trim().min(1).max(120)).max(20),
+      menuImageUrl: z.string().trim().max(2048).refine(
+        (value) => !value || isCloudStorageImageUrl(value),
+        { message: "メニュー画像のURLが不正です。" },
+      ),
+      menuImagePath: z.string().trim().max(512),
       treatmentTimeMinutes: z.number().int().min(1).max(720),
       beforePrice: z.number().int().min(0).max(10_000_000),
       afterPrice: z.number().int().min(0).max(10_000_000),
@@ -211,6 +216,8 @@ export async function applyAdminMutation(
           treatmentDetail: mutation.menu.treatmentDetail,
           treatmentDetailList: mutation.menu.treatmentDetailList,
           menuIntroduction: mutation.menu.menuIntroduction,
+          menuImageUrl: mutation.menu.menuImageUrl || null,
+          menuImagePath: mutation.menu.menuImagePath || null,
           beforePrice: mutation.menu.beforePrice || null,
           afterPrice: mutation.menu.afterPrice,
           treatmentTime: mutation.menu.treatmentTimeMinutes,
@@ -347,6 +354,8 @@ function menuFromDocument(id: string, data: Record<string, unknown>): AdminMenu 
     treatmentDetail: stringValue(data.treatmentDetail, "名称未設定"),
     menuIntroduction: stringValue(data.menuIntroduction),
     treatmentDetailList: stringArray(data.treatmentDetailList),
+    menuImageUrl: imageUrlValue(data.menuImageUrl),
+    menuImagePath: stringValue(data.menuImagePath),
     treatmentTimeMinutes: numberValue(data.treatmentTime, 60),
     beforePrice: numberValue(data.beforePrice),
     afterPrice: numberValue(data.afterPrice),
@@ -355,6 +364,24 @@ function menuFromDocument(id: string, data: Record<string, unknown>): AdminMenu 
     priority: numberValue(data.priority, 999),
     updatedAt: dateValue(data.updatedAt)?.toISOString() ?? null,
   };
+}
+
+function imageUrlValue(value: unknown) {
+  const imageUrl = stringValue(value);
+  return isCloudStorageImageUrl(imageUrl) ? imageUrl : "";
+}
+
+function isCloudStorageImageUrl(value: string) {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" && (
+      parsed.hostname === "firebasestorage.googleapis.com" ||
+      parsed.hostname === "storage.googleapis.com"
+    );
+  } catch {
+    return false;
+  }
 }
 
 function reservationFromDocument(

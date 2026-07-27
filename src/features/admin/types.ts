@@ -12,6 +12,8 @@ export type AdminMenu = {
   treatmentDetail: string;
   menuIntroduction: string;
   treatmentDetailList: string[];
+  menuImageUrl: string;
+  menuImagePath: string;
   treatmentTimeMinutes: number;
   beforePrice: number;
   afterPrice: number;

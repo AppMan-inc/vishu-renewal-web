@@ -19,11 +19,18 @@ const adminConfigSchema = z.object({
 });
 
 function getAdminConfig() {
+  const clientEmail = optionalEnvironmentVariable(
+    "FIREBASE_ADMIN_CLIENT_EMAIL",
+  );
+  const privateKey = optionalEnvironmentVariable(
+    "FIREBASE_ADMIN_PRIVATE_KEY",
+  )?.replace(/\\n/g, "\n");
+
   const result = adminConfigSchema.safeParse({
     environment: process.env.VISHU_ENV,
     projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    clientEmail,
+    privateKey,
   });
 
   if (!result.success) {
@@ -48,6 +55,11 @@ function getAdminConfig() {
   }
 
   return result.data;
+}
+
+function optionalEnvironmentVariable(name: string) {
+  const value = process.env[name]?.trim();
+  return value ? value : undefined;
 }
 
 export function getFirebaseAdminApp() {
