@@ -6,6 +6,7 @@ import { adminFirestore } from "@/lib/firebase/admin";
 import type {
   AdminCustomer,
   AdminMenu,
+  AdminPushNotification,
   AdminReservation,
   AdminRestBlock,
   AdminSession,
@@ -35,6 +36,11 @@ export const adminMutationSchema = z.discriminatedUnion("action", [
       treatmentDetail: z.string().trim().min(1).max(120),
       menuIntroduction: z.string().trim().max(1000),
       treatmentDetailList: z.array(z.string().trim().min(1).max(120)).max(20),
+      menuImageUrl: z.string().trim().max(2048).refine(
+        (value) => !value || isCloudStorageImageUrl(value),
+        { message: "メニュー画像のURLが不正です。" },
+      ),
+      menuImagePath: z.string().trim().max(512),
       treatmentTimeMinutes: z.number().int().min(1).max(720),
       beforePrice: z.number().int().min(0).max(10_000_000),
       afterPrice: z.number().int().min(0).max(10_000_000),
@@ -44,6 +50,16 @@ export const adminMutationSchema = z.discriminatedUnion("action", [
     }),
   }),
   z.object({ action: z.literal("menu.delete"), id: z.string().min(1) }),
+  z.object({
+    action: z.literal("notification.send"),
+    target: z.enum(["all", "customer"]),
+    customerId: z.string().trim().max(128),
+    title: z.string().trim().min(1).max(100),
+    content: z.string().trim().min(1).max(1000),
+  }).refine(
+    (value) => value.target === "all" || value.customerId.length > 0,
+    { message: "通知先のユーザーを選択してください。", path: ["customerId"] },
+  ),
   z.object({
     action: z.literal("karte.note"),
     customerId: z.string().min(1),
@@ -70,7 +86,7 @@ export async function loadAdminSnapshot(
   session: AdminSession,
 ): Promise<AdminSnapshot> {
   const database = adminFirestore();
-  const [menus, legacyReservations, renewalReservations, rests, users, notes, entries] =
+  const [menus, legacyReservations, renewalReservations, rests, users, notes, entries, deviceTokens, pushNotifications] =
     await Promise.all([
       database.collection("menu").get(),
       database.collectionGroup("reservations").get(),
@@ -79,7 +95,21 @@ export async function loadAdminSnapshot(
       database.collection("users").get(),
       database.collectionGroup("karteProfile").get(),
       database.collectionGroup("karteEntries").get(),
+      database.collectionGroup("deviceTokenId").get(),
+      database.collection("pushNotification").get(),
     ]);
+
+  const pushTokenCounts = new Map<string, Set<string>>();
+  const notificationDeviceTokens = new Set<string>();
+  for (const document of deviceTokens.docs) {
+    const customerId = document.ref.parent.parent?.id;
+    const token = stringValue(document.data().deviceId);
+    if (!customerId || !token) continue;
+    notificationDeviceTokens.add(token);
+    const tokens = pushTokenCounts.get(customerId) ?? new Set<string>();
+    tokens.add(token);
+    pushTokenCounts.set(customerId, tokens);
+  }
 
   const sharedNotes = new Map<string, string>();
   for (const document of notes.docs) {
@@ -119,12 +149,26 @@ export async function loadAdminSnapshot(
       .filter((item): item is AdminRestBlock => item !== null)
       .sort((a, b) => a.startTime.localeCompare(b.startTime)),
     customers: users.docs
-      .map((document) => customerFromDocument(document.id, document.data(), sharedNotes))
+      .map((document) => customerFromDocument(
+        document.id,
+        document.data(),
+        sharedNotes,
+        pushTokenCounts.get(stringValue(document.data().uid, document.id))?.size ?? 0,
+      ))
       .sort((a, b) => a.displayName.localeCompare(b.displayName, "ja")),
     karteEntries: entries.docs
       .map((document) => karteFromDocument(document.id, document.data(), document.ref.parent.parent?.id ?? ""))
       .filter((item): item is KarteEntry => item !== null)
       .sort((a, b) => b.treatmentAt.localeCompare(a.treatmentAt)),
+    pushNotifications: pushNotifications.docs
+      .map((document) => pushNotificationFromDocument(
+        document.id,
+        document.data(),
+        document.createTime.toDate(),
+      ))
+      .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
+      .slice(0, 30),
+    notificationDeviceCount: notificationDeviceTokens.size,
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -172,6 +216,8 @@ export async function applyAdminMutation(
           treatmentDetail: mutation.menu.treatmentDetail,
           treatmentDetailList: mutation.menu.treatmentDetailList,
           menuIntroduction: mutation.menu.menuIntroduction,
+          menuImageUrl: mutation.menu.menuImageUrl || null,
+          menuImagePath: mutation.menu.menuImagePath || null,
           beforePrice: mutation.menu.beforePrice || null,
           afterPrice: mutation.menu.afterPrice,
           treatmentTime: mutation.menu.treatmentTimeMinutes,
@@ -187,6 +233,51 @@ export async function applyAdminMutation(
     case "menu.delete":
       await database.collection("menu").doc(mutation.id).delete();
       return;
+    case "notification.send": {
+      const targetTokens = mutation.target === "all"
+        ? await database.collectionGroup("deviceTokenId").get()
+        : await database
+            .collection("users")
+            .doc(mutation.customerId)
+            .collection("deviceTokenId")
+            .get();
+      const deviceIdList = [...new Set(
+        targetTokens.docs
+          .map((document) => stringValue(document.data().deviceId))
+          .filter(Boolean),
+      )];
+      if (deviceIdList.length === 0) {
+        throw new Error(
+          mutation.target === "all"
+            ? "通知を受け取れる登録端末がありません。"
+            : "選択したユーザーには通知を受け取れる端末がありません。",
+        );
+      }
+
+      let person: string | null = null;
+      if (mutation.target === "customer") {
+        const customer = await database.collection("users").doc(mutation.customerId).get();
+        if (!customer.exists) throw new Error("選択したユーザーが見つかりません。");
+        const customerData = customer.data() ?? {};
+        person = `${stringValue(customerData.lastName)} ${stringValue(customerData.firstName)}`.trim()
+          || stringValue(customerData.name, "お客様");
+      }
+
+      const reference = database.collection("pushNotification").doc();
+      await reference.set({
+        notificationId: reference.id,
+        person,
+        title: mutation.title,
+        content: mutation.content,
+        deviceIdList,
+        targetType: mutation.target,
+        targetCustomerId: mutation.target === "customer" ? mutation.customerId : null,
+        recipientDeviceCount: deviceIdList.length,
+        createdBy: session.uid,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
     case "karte.note":
       await database
         .collection("users")
@@ -263,6 +354,8 @@ function menuFromDocument(id: string, data: Record<string, unknown>): AdminMenu 
     treatmentDetail: stringValue(data.treatmentDetail, "名称未設定"),
     menuIntroduction: stringValue(data.menuIntroduction),
     treatmentDetailList: stringArray(data.treatmentDetailList),
+    menuImageUrl: imageUrlValue(data.menuImageUrl),
+    menuImagePath: stringValue(data.menuImagePath),
     treatmentTimeMinutes: numberValue(data.treatmentTime, 60),
     beforePrice: numberValue(data.beforePrice),
     afterPrice: numberValue(data.afterPrice),
@@ -271,6 +364,24 @@ function menuFromDocument(id: string, data: Record<string, unknown>): AdminMenu 
     priority: numberValue(data.priority, 999),
     updatedAt: dateValue(data.updatedAt)?.toISOString() ?? null,
   };
+}
+
+function imageUrlValue(value: unknown) {
+  const imageUrl = stringValue(value);
+  return isCloudStorageImageUrl(imageUrl) ? imageUrl : "";
+}
+
+function isCloudStorageImageUrl(value: string) {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" && (
+      parsed.hostname === "firebasestorage.googleapis.com" ||
+      parsed.hostname === "storage.googleapis.com"
+    );
+  } catch {
+    return false;
+  }
 }
 
 function reservationFromDocument(
@@ -319,6 +430,7 @@ function customerFromDocument(
   id: string,
   data: Record<string, unknown>,
   notes: Map<string, string>,
+  pushTokenCount: number,
 ): AdminCustomer {
   const customerId = stringValue(data.uid, id);
   const splitName = `${stringValue(data.lastName)} ${stringValue(data.firstName)}`.trim();
@@ -329,6 +441,23 @@ function customerFromDocument(
     dateOfBirth: displayDateValue(data.dateOfBirth),
     gender: stringValue(data.gender),
     sharedNote: notes.get(customerId) ?? "",
+    pushTokenCount,
+  };
+}
+
+function pushNotificationFromDocument(
+  id: string,
+  data: Record<string, unknown>,
+  fallbackCreatedAt: Date,
+): AdminPushNotification {
+  const tokens = stringArray(data.deviceIdList);
+  return {
+    id: stringValue(data.notificationId, id),
+    title: stringValue(data.title, "タイトル未設定"),
+    content: stringValue(data.content),
+    targetLabel: stringValue(data.person, "全ユーザー"),
+    recipientDeviceCount: numberValue(data.recipientDeviceCount, new Set(tokens).size),
+    createdAt: (dateValue(data.createdAt) ?? fallbackCreatedAt).toISOString(),
   };
 }
 

@@ -1,14 +1,14 @@
 "use client";
 
 import { onAuthStateChanged } from "firebase/auth";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Brand, VishuIcon } from "@/components/vishu-ui";
 import { firebaseAuth } from "@/lib/firebase/client";
 
 type CustomerAuthGuardProps = {
   children: React.ReactNode;
-  returnTo: string;
+  returnTo?: string;
 };
 
 export function CustomerAuthGuard({
@@ -16,6 +16,8 @@ export function CustomerAuthGuard({
   returnTo,
 }: CustomerAuthGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const loginReturnTo = returnTo ?? pathname;
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -31,18 +33,18 @@ export function CustomerAuthGuard({
           }
 
           setIsAuthenticated(false);
-          router.replace(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+          router.replace(`/login?returnTo=${encodeURIComponent(loginReturnTo)}`);
         },
         () => {
-          router.replace(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+          router.replace(`/login?returnTo=${encodeURIComponent(loginReturnTo)}`);
         },
       );
     } catch {
-      router.replace(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+      router.replace(`/login?returnTo=${encodeURIComponent(loginReturnTo)}`);
     }
 
     return unsubscribe;
-  }, [returnTo, router]);
+  }, [loginReturnTo, router]);
 
   if (!isAuthenticated) {
     return (

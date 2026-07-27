@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const environment = process.env.VISHU_ENV;
 const nextMode = process.env.VISHU_NEXT_MODE;
 const isGitHubPagesBuild = process.env.PAGES_BASE_PATH !== undefined;
+const siteBasePath = isGitHubPagesBuild ? process.env.PAGES_BASE_PATH ?? "" : "";
 
 if (environment && environment !== "dev" && environment !== "prod") {
   throw new Error(`Unsupported VISHU_ENV '${environment}'. Use dev or prod.`);
@@ -20,9 +21,13 @@ if (
 
 const nextConfig: NextConfig = {
   output: isGitHubPagesBuild ? "export" : undefined,
-  basePath: isGitHubPagesBuild ? process.env.PAGES_BASE_PATH : undefined,
+  basePath: isGitHubPagesBuild ? siteBasePath : undefined,
   trailingSlash: isGitHubPagesBuild,
+  env: {
+    NEXT_PUBLIC_SITE_BASE_PATH: siteBasePath,
+  },
   images: {
+    unoptimized: isGitHubPagesBuild,
     remotePatterns: [
       {
         protocol: "https",

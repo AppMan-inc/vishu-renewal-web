@@ -1,6 +1,7 @@
 "use client";
 
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { firebaseAuth } from "@/lib/firebase/client";
@@ -40,6 +41,9 @@ export function CustomerSessionAction() {
 
   return (
     <span className="header-session-action">
+      <Link className="header-account-link" href="/mypage">
+        マイページ
+      </Link>
       <button
         className="header-session-button"
         type="button"

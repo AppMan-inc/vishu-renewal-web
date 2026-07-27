@@ -3,6 +3,7 @@ import { CustomerSessionAction } from "@/features/auth/components/customer-sessi
 
 type IconName =
   | "arrow"
+  | "bell"
   | "calendar"
   | "clock"
   | "cut"
@@ -16,6 +17,12 @@ type IconName =
 
 const iconPaths: Record<IconName, React.ReactNode> = {
   arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
+  bell: (
+    <>
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" />
+      <path d="M10 21h4" />
+    </>
+  ),
   calendar: (
     <>
       <rect x="3" y="5" width="18" height="16" rx="3" />
@@ -84,7 +91,11 @@ export function VishuIcon({ name, className = "" }: { name: IconName; className?
 
 export function Brand({ owner = false }: { owner?: boolean }) {
   return (
-    <Link className="vishu-brand" href="/" aria-label="Salon Vishu トップへ">
+    <Link
+      className="vishu-brand"
+      href={owner ? "/admin" : "/"}
+      aria-label={owner ? "Vishu 管理画面トップへ" : "Salon Vishu トップへ"}
+    >
       <span className="brand-monogram" aria-hidden="true">V</span>
       <span className="brand-copy">
         <strong>{owner ? "VISHU OWNER" : "VISHU"}</strong>
@@ -132,7 +143,7 @@ export function PageFooter() {
       </div>
       <div className="footer-links">
         <Link href="/booking">Web予約</Link>
-        <Link href="/admin/login">店主ログイン</Link>
+        <Link href="/login">ログイン</Link>
       </div>
       <p className="copyright">© SALON VISHU</p>
     </footer>

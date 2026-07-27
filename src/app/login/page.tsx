@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { CustomerLogin } from "@/features/auth/components/customer-login";
 
 export const metadata: Metadata = {
-  title: "お客様ログイン",
+  title: "ログイン",
   robots: { index: false, follow: false },
 };
 

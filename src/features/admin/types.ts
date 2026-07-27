@@ -12,6 +12,8 @@ export type AdminMenu = {
   treatmentDetail: string;
   menuIntroduction: string;
   treatmentDetailList: string[];
+  menuImageUrl: string;
+  menuImagePath: string;
   treatmentTimeMinutes: number;
   beforePrice: number;
   afterPrice: number;
@@ -52,6 +54,16 @@ export type AdminCustomer = {
   dateOfBirth: string;
   gender: string;
   sharedNote: string;
+  pushTokenCount: number;
+};
+
+export type AdminPushNotification = {
+  id: string;
+  title: string;
+  content: string;
+  targetLabel: string;
+  recipientDeviceCount: number;
+  createdAt: string | null;
 };
 
 export type KarteEntry = {
@@ -74,6 +86,8 @@ export type AdminSnapshot = {
   restBlocks: AdminRestBlock[];
   customers: AdminCustomer[];
   karteEntries: KarteEntry[];
+  pushNotifications: AdminPushNotification[];
+  notificationDeviceCount: number;
   fetchedAt: string;
 };
 
@@ -83,4 +97,5 @@ export type AdminSection =
   | "rests"
   | "customers"
   | "menus"
-  | "sales";
+  | "sales"
+  | "notifications";
