@@ -4581,6 +4581,42 @@ button.booking-menu-card.is-selected .round-arrow {
   line-height: 1.7;
 }
 
+.login-field-error,
+.login-field-help {
+  margin: -2px 2px 2px;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.login-field-error {
+  color: #8b4438;
+}
+
+.login-field-help {
+  color: var(--text-muted);
+}
+
+.signup-login-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+  margin: 22px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.signup-login-prompt a {
+  color: var(--primary-dark);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.customer-signup-page .admin-login-form-panel {
+  padding-block: 36px;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;

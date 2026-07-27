@@ -23,10 +23,19 @@ test("unsafe and looping customer returnTo values use the customer default", () 
     "https://example.com/steal",
     "//example.com/steal",
     "/\\example.com/steal",
+    "%2F%2Fexample.com/steal",
+    "/%252F%252Fexample.com/steal",
+    "javascript:alert(1)",
+    "/%E0%A4%A",
     "/login",
     "/login?returnTo=/login",
+    "/%256Cogin",
+    "/signup",
+    "/signup?returnTo=/signup",
+    "/%2573ignup",
     "/admin",
     "/admin/customers",
+    "/%2561dmin",
   ]) {
     assert.equal(safeCustomerReturnTo(value), "/mypage", value);
   }
@@ -40,6 +49,7 @@ test("admin returnTo requires authorization and preserves a safe destination", (
   });
   assert.equal(safeAdminReturnTo("/admin/login"), "/admin");
   assert.equal(isAdminReturnTo("/admin/login?returnTo=/admin"), false);
+  assert.equal(isAdminReturnTo("/%2561dmin/customers"), true);
 });
 
 test("unsafe input cannot become an admin destination", () => {

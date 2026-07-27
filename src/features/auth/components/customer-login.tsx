@@ -20,6 +20,7 @@ import {
   loginIntent,
   safeCustomerReturnTo,
 } from "@/features/auth/return-to";
+import { customerSignupHref } from "@/features/auth/customer-signup";
 
 type LoginMethod = "email" | "google" | "apple";
 
@@ -269,6 +270,11 @@ export function CustomerLogin() {
               {pendingMethod === "apple" ? "Appleでログイン中…" : "Appleでログイン"}
             </button>
           </div>
+
+          <p className="signup-login-prompt">
+            アカウントをお持ちでない方は
+            <Link href={customerSignupHref(returnTo)}>新規アカウント作成</Link>
+          </p>
 
           <Link className="back-link" href="/">
             <VishuIcon name="arrow" />

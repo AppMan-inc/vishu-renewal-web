@@ -3,16 +3,17 @@ const defaultAdminRoute = "/admin";
 
 export function safeCustomerReturnTo(value: string | null | undefined) {
   const path = value?.trim();
+  const pathname = path ? safeLocalPathname(path) : null;
 
-  if (!path || !isSafeLocalPath(path)) {
+  if (!path || !pathname) {
     return defaultCustomerRoute;
   }
-
-  const pathname = pathWithoutQuery(path);
 
   if (
     pathname === "/login" ||
     pathname.startsWith("/login/") ||
+    pathname === "/signup" ||
+    pathname.startsWith("/signup/") ||
     pathname.startsWith("/admin")
   ) {
     return defaultCustomerRoute;
@@ -23,12 +24,11 @@ export function safeCustomerReturnTo(value: string | null | undefined) {
 
 export function isAdminReturnTo(value: string | null | undefined) {
   const path = value?.trim();
+  const pathname = path ? safeLocalPathname(path) : null;
 
-  if (!path || !isSafeLocalPath(path)) {
+  if (!pathname) {
     return false;
   }
-
-  const pathname = pathWithoutQuery(path);
 
   return (
     (pathname === "/admin" || pathname.startsWith("/admin/")) &&
@@ -67,6 +67,27 @@ function isSafeLocalPath(path: string) {
     !path.startsWith("//") &&
     !/[\\\u0000-\u001f\u007f]/.test(path)
   );
+}
+
+function safeLocalPathname(path: string) {
+  if (!isSafeLocalPath(path)) return null;
+
+  let pathname = pathWithoutQuery(path);
+  for (let depth = 0; depth < 4; depth += 1) {
+    let decodedPathname: string;
+    try {
+      decodedPathname = decodeURIComponent(pathname);
+    } catch {
+      return null;
+    }
+
+    if (decodedPathname === pathname) {
+      return isSafeLocalPath(pathname) ? pathname : null;
+    }
+    pathname = decodedPathname;
+  }
+
+  return null;
 }
 
 function pathWithoutQuery(path: string) {
