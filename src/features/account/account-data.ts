@@ -13,10 +13,7 @@ import {
   where,
 } from "firebase/firestore";
 import { firestore } from "@/lib/firebase/client";
-import {
-  customerProfileValidationMessage,
-  sanitizePhoneNumber,
-} from "@/features/form-validation";
+import { customerProfileValidationMessage } from "@/features/form-validation";
 
 export type CustomerProfile = {
   uid: string;
@@ -159,9 +156,9 @@ function profileFromData(
     email,
     lastName: stringValue(data.lastName) || nameParts.lastName,
     firstName: stringValue(data.firstName) || nameParts.firstName,
-    telephoneNumber: sanitizePhoneNumber(stringValue(
+    telephoneNumber: stringValue(
       data.telephoneNumber ?? data.phoneNumber ?? data.phone,
-    )),
+    ),
     gender: gender === "男性" || gender === "女性" ? gender : "その他",
     dateOfBirth: dateString(data.dateOfBirth),
   };

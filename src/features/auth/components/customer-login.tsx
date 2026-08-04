@@ -22,8 +22,11 @@ import {
 } from "@/features/auth/return-to";
 import { customerSignupHref } from "@/features/auth/customer-signup";
 import {
+  emailValidationMessage,
   FORM_FIELD_LIMITS,
-  hasValidEmailLength,
+  loginAuthErrorMessage,
+  type LoginFieldErrors,
+  loginValidationErrors,
 } from "@/features/form-validation";
 
 type LoginMethod = "email" | "google" | "apple";
@@ -34,8 +37,11 @@ export function CustomerLogin() {
   const returnTo = searchParams.get("returnTo");
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [pendingMethod, setPendingMethod] = useState<LoginMethod | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const hasStartedNavigation = useRef(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   const navigateAfterSignIn = useCallback(
     async (user: UserCredential["user"], source: "auth-state" | "credential") => {
@@ -133,10 +139,18 @@ export function CustomerLogin() {
   async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "").trim();
+    const rawEmail = String(formData.get("email") ?? "");
+    const email = rawEmail.trim();
     const password = String(formData.get("password") ?? "");
-    if (!hasValidEmailLength(email)) {
-      setErrorMessage("メールアドレスは50文字以内で入力してください。");
+    const errors = loginValidationErrors({ email: rawEmail, password });
+    setFieldErrors(errors);
+    setErrorMessage(null);
+    const firstInvalid = errors.email ? emailRef : errors.password ? passwordRef : null;
+    if (firstInvalid) {
+      requestAnimationFrame(() => {
+        firstInvalid.current?.focus();
+        firstInvalid.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      });
       return;
     }
 
@@ -182,7 +196,7 @@ export function CustomerLogin() {
         method,
         ...authErrorDetails(error),
       });
-      setErrorMessage(authErrorMessage(error));
+      setErrorMessage(loginAuthErrorMessage(error));
       setPendingMethod(null);
     }
   }
@@ -223,34 +237,70 @@ export function CustomerLogin() {
             <div className="login-error" role="alert">{errorMessage}</div>
           ) : null}
 
-          <form className="login-form" onSubmit={handleEmailLogin}>
+          <form className="login-form" onSubmit={handleEmailLogin} noValidate>
             <label htmlFor="customer-email">メールアドレス</label>
-            <div className="input-wrap">
+            <div className={`input-wrap${fieldErrors.email ? " is-invalid" : ""}`}>
               <VishuIcon name="person" />
               <input
                 id="customer-email"
                 name="email"
                 type="email"
+                ref={emailRef}
                 autoComplete="email"
                 placeholder="you@example.com"
-                maxLength={FORM_FIELD_LIMITS.email}
                 required
                 disabled={isPending}
+                aria-invalid={Boolean(fieldErrors.email)}
+                aria-describedby={fieldErrors.email ? "customer-email-error" : undefined}
+                onBlur={(event) => {
+                  const message = emailValidationMessage(event.currentTarget.value);
+                  setFieldErrors((current) => ({ ...current, email: message ?? undefined }));
+                }}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setFieldErrors((current) => {
+                    if (value.length > FORM_FIELD_LIMITS.email || current.email) {
+                      return { ...current, email: emailValidationMessage(value) ?? undefined };
+                    }
+                    return current;
+                  });
+                }}
               />
             </div>
+            {fieldErrors.email ? (
+              <p className="login-field-error" id="customer-email-error" aria-live="polite">{fieldErrors.email}</p>
+            ) : null}
             <label htmlFor="customer-password">パスワード</label>
-            <div className="input-wrap">
+            <div className={`input-wrap${fieldErrors.password ? " is-invalid" : ""}`}>
               <VishuIcon name="lock" />
               <input
                 id="customer-password"
                 name="password"
                 type="password"
+                ref={passwordRef}
                 autoComplete="current-password"
                 placeholder="••••••••"
                 required
                 disabled={isPending}
+                aria-invalid={Boolean(fieldErrors.password)}
+                aria-describedby={fieldErrors.password ? "customer-password-error" : undefined}
+                onBlur={(event) => {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    password: event.currentTarget.value ? undefined : "パスワードを入力してください。",
+                  }));
+                }}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setFieldErrors((current) => current.password
+                    ? { ...current, password: value ? undefined : "パスワードを入力してください。" }
+                    : current);
+                }}
               />
             </div>
+            {fieldErrors.password ? (
+              <p className="login-field-error" id="customer-password-error" aria-live="polite">{fieldErrors.password}</p>
+            ) : null}
             <button className="button button-primary" type="submit" disabled={isPending}>
               {pendingMethod === "email" ? "ログイン中…" : "ログイン"}
               <VishuIcon name="arrow" />
@@ -327,36 +377,6 @@ function AppleIcon() {
       />
     </svg>
   );
-}
-
-function authErrorMessage(error: unknown) {
-  const code = (error as Partial<AuthError>)?.code;
-
-  switch (code) {
-    case "auth/invalid-credential":
-    case "auth/user-not-found":
-    case "auth/wrong-password":
-      return "メールアドレスまたはパスワードが正しくありません。";
-    case "auth/invalid-email":
-      return "メールアドレスの形式を確認してください。";
-    case "auth/too-many-requests":
-      return "ログイン試行回数が多すぎます。時間をおいて再度お試しください。";
-    case "auth/network-request-failed":
-      return "通信できませんでした。ネットワーク接続を確認してください。";
-    case "auth/popup-blocked":
-      return "ログイン画面を開けませんでした。ポップアップを許可して再度お試しください。";
-    case "auth/popup-closed-by-user":
-    case "auth/cancelled-popup-request":
-      return "ログインがキャンセルされました。";
-    case "auth/operation-not-allowed":
-      return "このログイン方法は現在利用できません。";
-    case "auth/unauthorized-domain":
-      return "このドメインではログインできません。Firebase Authenticationの承認済みドメインを確認してください。";
-    case "auth/invalid-api-key":
-      return "FirebaseのAPIキー設定を確認してください。";
-    default:
-      return "ログインできませんでした。時間をおいて再度お試しください。";
-  }
 }
 
 function authErrorDetails(error: unknown) {

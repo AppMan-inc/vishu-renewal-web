@@ -17,7 +17,10 @@ import {
 } from "@/features/auth/customer-signup";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { siteAssetPath } from "@/lib/site-path";
-import { FORM_FIELD_LIMITS } from "@/features/form-validation";
+import {
+  emailValidationMessage,
+  FORM_FIELD_LIMITS,
+} from "@/features/form-validation";
 
 export function CustomerSignup() {
   const router = useRouter();
@@ -30,6 +33,10 @@ export function CustomerSignup() {
   const hasStartedNavigation = useRef(false);
   const submissionInProgress = useRef(false);
   const isMounted = useRef(true);
+  const formRef = useRef<HTMLFormElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const passwordConfirmationRef = useRef<HTMLInputElement>(null);
 
   const navigateAsCustomer = useCallback(() => {
     if (hasStartedNavigation.current) return;
@@ -81,7 +88,20 @@ export function CustomerSignup() {
 
     setFieldErrors(errors);
     setErrorMessage(null);
-    if (Object.keys(errors).length > 0) return;
+    const firstInvalid = errors.email
+      ? emailRef
+      : errors.password
+        ? passwordRef
+        : errors.passwordConfirmation
+          ? passwordConfirmationRef
+          : null;
+    if (firstInvalid) {
+      requestAnimationFrame(() => {
+        firstInvalid.current?.focus();
+        firstInvalid.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      });
+      return;
+    }
 
     if (
       !claimCustomerSignupSubmission(
@@ -105,6 +125,32 @@ export function CustomerSignup() {
   }
 
   const isPending = isCheckingAuth || isSubmitting;
+
+  function currentValues() {
+    const formData = new FormData(formRef.current ?? undefined);
+    return {
+      email: String(formData.get("email") ?? ""),
+      password: String(formData.get("password") ?? ""),
+      passwordConfirmation: String(formData.get("passwordConfirmation") ?? ""),
+    };
+  }
+
+  function validateField(field: keyof CustomerSignupErrors) {
+    const error = validateCustomerSignup(currentValues())[field];
+    setFieldErrors((current) => ({ ...current, [field]: error }));
+  }
+
+  function updateShownErrors(field: keyof CustomerSignupErrors) {
+    const errors = validateCustomerSignup(currentValues());
+    setFieldErrors((current) => {
+      const next = { ...current };
+      if (current[field]) next[field] = errors[field];
+      if (field === "password" && current.passwordConfirmation) {
+        next.passwordConfirmation = errors.passwordConfirmation;
+      }
+      return next;
+    });
+  }
 
   return (
     <main className="admin-login-page customer-login-page customer-signup-page">
@@ -140,32 +186,45 @@ export function CustomerSignup() {
             <div className="login-error" role="alert">{errorMessage}</div>
           ) : null}
 
-          <form className="login-form" onSubmit={handleSubmit} noValidate>
+          <form ref={formRef} className="login-form" onSubmit={handleSubmit} noValidate>
             <label htmlFor="signup-email">メールアドレス</label>
-            <div className="input-wrap">
+            <div className={`input-wrap${fieldErrors.email ? " is-invalid" : ""}`}>
               <VishuIcon name="person" />
               <input
                 id="signup-email"
+                ref={emailRef}
                 name="email"
                 type="email"
                 autoComplete="email"
                 placeholder="you@example.com"
-                maxLength={FORM_FIELD_LIMITS.email}
                 required
                 disabled={isPending}
                 aria-invalid={Boolean(fieldErrors.email)}
                 aria-describedby={fieldErrors.email ? "signup-email-error" : undefined}
+                onBlur={() => validateField("email")}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  if (value.length > FORM_FIELD_LIMITS.email) {
+                    setFieldErrors((current) => ({
+                      ...current,
+                      email: emailValidationMessage(value) ?? undefined,
+                    }));
+                    return;
+                  }
+                  updateShownErrors("email");
+                }}
               />
             </div>
             {fieldErrors.email ? (
-              <p className="login-field-error" id="signup-email-error">{fieldErrors.email}</p>
+              <p className="login-field-error" id="signup-email-error" aria-live="polite">{fieldErrors.email}</p>
             ) : null}
 
             <label htmlFor="signup-password">パスワード</label>
-            <div className="input-wrap">
+            <div className={`input-wrap${fieldErrors.password ? " is-invalid" : ""}`}>
               <VishuIcon name="lock" />
               <input
                 id="signup-password"
+                ref={passwordRef}
                 name="password"
                 type="password"
                 autoComplete="new-password"
@@ -175,19 +234,22 @@ export function CustomerSignup() {
                 disabled={isPending}
                 aria-invalid={Boolean(fieldErrors.password)}
                 aria-describedby={fieldErrors.password ? "signup-password-error" : "signup-password-help"}
+                onBlur={() => validateField("password")}
+                onChange={() => updateShownErrors("password")}
               />
             </div>
             {fieldErrors.password ? (
-              <p className="login-field-error" id="signup-password-error">{fieldErrors.password}</p>
+              <p className="login-field-error" id="signup-password-error" aria-live="polite">{fieldErrors.password}</p>
             ) : (
               <p className="login-field-help" id="signup-password-help">6文字以上で入力してください。</p>
             )}
 
             <label htmlFor="signup-password-confirmation">パスワード（確認）</label>
-            <div className="input-wrap">
+            <div className={`input-wrap${fieldErrors.passwordConfirmation ? " is-invalid" : ""}`}>
               <VishuIcon name="lock" />
               <input
                 id="signup-password-confirmation"
+                ref={passwordConfirmationRef}
                 name="passwordConfirmation"
                 type="password"
                 autoComplete="new-password"
@@ -197,10 +259,12 @@ export function CustomerSignup() {
                 disabled={isPending}
                 aria-invalid={Boolean(fieldErrors.passwordConfirmation)}
                 aria-describedby={fieldErrors.passwordConfirmation ? "signup-password-confirmation-error" : undefined}
+                onBlur={() => validateField("passwordConfirmation")}
+                onChange={() => updateShownErrors("passwordConfirmation")}
               />
             </div>
             {fieldErrors.passwordConfirmation ? (
-              <p className="login-field-error" id="signup-password-confirmation-error">{fieldErrors.passwordConfirmation}</p>
+              <p className="login-field-error" id="signup-password-confirmation-error" aria-live="polite">{fieldErrors.passwordConfirmation}</p>
             ) : null}
 
             <button className="button button-primary" type="submit" disabled={isPending}>

@@ -46,7 +46,7 @@ test("signup validation rejects invalid email and short passwords", () => {
       passwordConfirmation: "12345",
     }),
     {
-      email: "正しい形式のメールアドレスを入力してください。",
+      email: "正しいメールアドレスを入力してください。",
       password: "パスワードは6文字以上で入力してください。",
     },
   );
@@ -158,10 +158,10 @@ test("signup submission lock rejects duplicate requests and pending navigation",
 test("signup errors are translated into customer-facing Japanese", () => {
   const cases = [
     ["auth/email-already-in-use", "すでに登録"],
-    ["auth/invalid-email", "メールアドレスの形式"],
+    ["auth/invalid-email", "正しいメールアドレス"],
     ["auth/weak-password", "6文字以上"],
     ["auth/password-does-not-meet-requirements", "セキュリティ要件"],
-    ["auth/network-request-failed", "ネットワーク接続"],
+    ["auth/network-request-failed", "通信状況"],
     ["auth/too-many-requests", "試行回数"],
     ["auth/operation-not-allowed", "現在利用できません"],
     ["auth/internal-error", "アカウントを作成できませんでした"],

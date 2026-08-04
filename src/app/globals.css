@@ -724,6 +724,18 @@
   box-shadow: 0 0 0 3px rgba(128, 102, 75, .12);
 }
 
+.account-form-grid > label > input[aria-invalid="true"],
+.account-form-grid > label > input[aria-invalid="true"]:focus {
+  border-color: #9a4039;
+  box-shadow: 0 0 0 3px rgba(154, 64, 57, .1);
+}
+
+.field-error {
+  color: #9a4039;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
 .account-form-grid > label > input:disabled {
   background: #f2f0ed;
   color: var(--text-muted);
@@ -4224,6 +4236,29 @@ button.booking-menu-card.is-selected .round-arrow {
   color: var(--text-muted);
 }
 
+.booking-form-grid input[aria-invalid="true"],
+.booking-form-grid textarea[aria-invalid="true"],
+.booking-form-grid input[aria-invalid="true"]:focus,
+.booking-form-grid textarea[aria-invalid="true"]:focus {
+  border-color: #9a4039;
+  box-shadow: 0 0 0 3px rgba(154, 64, 57, .1);
+}
+
+.booking-form-grid .field-feedback {
+  min-height: 16px;
+}
+
+.booking-character-count {
+  justify-self: end;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.booking-character-count.is-error {
+  color: #9a4039;
+}
+
 .booking-form-note {
   margin: 18px 0 0;
   padding-top: 16px;
@@ -4594,6 +4629,12 @@ button.booking-menu-card.is-selected .round-arrow {
 
 .input-wrap input::placeholder {
   color: #b0b4b0;
+}
+
+.input-wrap.is-invalid,
+.input-wrap.is-invalid:focus-within {
+  border-color: #9a4039;
+  box-shadow: 0 0 0 3px rgba(154, 64, 57, .1);
 }
 
 .login-form .button {
