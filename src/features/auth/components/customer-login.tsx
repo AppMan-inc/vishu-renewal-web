@@ -285,9 +285,10 @@ export function CustomerLogin() {
                 aria-invalid={Boolean(fieldErrors.password)}
                 aria-describedby={fieldErrors.password ? "customer-password-error" : undefined}
                 onBlur={(event) => {
+                  const value = event.currentTarget.value;
                   setFieldErrors((current) => ({
                     ...current,
-                    password: event.currentTarget.value ? undefined : "パスワードを入力してください。",
+                    password: value ? undefined : "パスワードを入力してください。",
                   }));
                 }}
                 onChange={(event) => {

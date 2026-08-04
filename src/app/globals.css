@@ -2554,6 +2554,157 @@ svg {
   cursor: wait;
 }
 
+.customer-logout-button {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.customer-logout-button svg {
+  width: 17px;
+  flex: 0 0 auto;
+}
+
+.customer-logout-button.is-header {
+  min-width: 0;
+  min-height: 44px;
+}
+
+.customer-logout-button.is-mobile {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: rgba(253, 251, 248, .94);
+  box-shadow: var(--shadow-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+
+.customer-logout-button.is-mobile:hover:not(:disabled) {
+  border-color: var(--champagne);
+  color: var(--primary-dark);
+}
+
+.customer-logout-button.is-menu {
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.customer-logout-button.is-menu:hover:not(:disabled) {
+  color: var(--primary-dark);
+}
+
+.customer-logout-button:disabled {
+  cursor: wait;
+  opacity: .62;
+}
+
+.account-logout-section {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 48px;
+  padding-top: 18px;
+  border-top: 1px solid var(--divider);
+}
+
+.customer-logout-dialog {
+  width: min(480px, calc(100% - 32px));
+  max-width: none;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .58);
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 28px 90px rgba(41, 38, 33, .3);
+}
+
+.customer-logout-dialog::backdrop {
+  background: rgba(41, 38, 33, .56);
+  backdrop-filter: blur(5px);
+}
+
+.customer-logout-dialog-content {
+  padding: clamp(28px, 5vw, 40px);
+}
+
+.customer-logout-dialog .module-label {
+  margin: 0;
+}
+
+.customer-logout-dialog h2 {
+  margin: 7px 0 18px;
+  font-family: var(--font-serif), "Yu Mincho", serif;
+  font-size: 24px;
+  line-height: 1.5;
+}
+
+.customer-logout-dialog-content > p:not(.module-label, .customer-logout-error) {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.9;
+}
+
+.customer-logout-error {
+  margin: 16px 0 0;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.customer-logout-dialog-actions {
+  display: grid;
+  grid-template-columns: .85fr 1.15fr;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.customer-logout-dialog-actions .button {
+  width: 100%;
+  padding-inline: 14px;
+}
+
+.customer-logout-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, .42);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: customer-logout-spin 700ms linear infinite;
+}
+
+@keyframes customer-logout-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 680px) {
+  .account-logout-section {
+    margin-top: 38px;
+  }
+
+  .customer-logout-dialog {
+    margin-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    border-radius: 22px;
+  }
+
+  .customer-logout-dialog-content {
+    padding: 26px 20px 20px;
+  }
+
+  .customer-logout-dialog-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 .header-booking-link {
   display: inline-flex;
   min-height: 44px;
@@ -6155,6 +6306,10 @@ button.booking-menu-card.is-selected .round-arrow {
   .site-navigation a,
   .header-session-button {
     transition: none;
+  }
+
+  .customer-logout-spinner {
+    animation: none;
   }
 }
 

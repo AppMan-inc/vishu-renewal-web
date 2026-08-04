@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { PageFooter, SiteHeader, VishuIcon } from "@/components/vishu-ui";
+import { CustomerLogoutButton } from "@/features/auth/components/customer-session-provider";
 import { siteAssetPath } from "@/lib/site-path";
 import styles from "./home-page.module.css";
 
@@ -260,6 +261,9 @@ export function HomePage() {
       <SalonInfoSection />
       <FinalReservation />
       <PageFooter />
+      <div className={styles.customerMobileLogoutSlot}>
+        <CustomerLogoutButton variant="mobile" />
+      </div>
       <nav className={styles.mobileBooking} aria-label="モバイル予約ナビゲーション">
         <a href="tel:0721218824"><VishuIcon name="phone" />電話する</a>
         <Link href="/booking"><VishuIcon name="calendar" />Web予約</Link>

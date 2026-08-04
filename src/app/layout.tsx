@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP, Noto_Serif_JP } from "next/font/google";
+import { CustomerSessionProvider } from "@/features/auth/components/customer-session-provider";
 import "./globals.css";
 
 const sans = Noto_Sans_JP({
@@ -30,7 +31,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" data-scroll-behavior="smooth">
-      <body className={`${sans.variable} ${serif.variable}`}>{children}</body>
+      <body className={`${sans.variable} ${serif.variable}`}>
+        <CustomerSessionProvider>{children}</CustomerSessionProvider>
+      </body>
     </html>
   );
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { VishuIcon } from "@/components/vishu-ui";
+import { CustomerLogoutButton } from "@/features/auth/components/customer-session-provider";
 import {
   CustomerAccountSnapshot,
   CustomerProfile,
@@ -146,6 +147,10 @@ export function CustomerAccountOverview() {
           />
         </div>
       </section>
+
+      <div className="account-logout-section">
+        <CustomerLogoutButton variant="menu" />
+      </div>
     </div>
   );
 }

@@ -681,6 +681,10 @@
   display: none;
 }
 
+.customerMobileLogoutSlot {
+  display: none;
+}
+
 @media (min-width: 821px) and (max-width: 1080px) {
   .heroCopy {
     padding-right: 0;
@@ -983,6 +987,14 @@
     background: rgba(253, 251, 248, .96);
     box-shadow: 0 -8px 28px rgba(94, 81, 69, .09);
     backdrop-filter: blur(16px);
+  }
+
+  .customerMobileLogoutSlot {
+    position: fixed;
+    z-index: 101;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    left: max(8px, env(safe-area-inset-left, 0px));
+    display: block;
   }
 
   .mobileBooking a {
