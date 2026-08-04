@@ -32,7 +32,7 @@ export async function createBookingReservation(
   const createReservation = httpsCallable<
     CreateBookingReservationInput,
     CreateBookingReservationResult
-  >(firebaseFunctions(), "createWebReservation");
+  >(firebaseFunctions(), "createReservation");
   const result = await createReservation(input);
   return result.data;
 }

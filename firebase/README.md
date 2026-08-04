@@ -12,7 +12,7 @@ WebとFlutterで共有するFirebase設定の初期雛形です。現時点のRu
 
 ## Admin API Function
 
-管理画面のHTTPS APIは `us-central1` の `adminApi` Functionとして配置します。
+管理画面のHTTPS APIは `asia-northeast2` の `adminApi` Functionとして配置します。
 
 ```bash
 cd firebase

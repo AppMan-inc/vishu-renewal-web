@@ -1,4 +1,4 @@
-const defaultFunctionsRegion = "us-central1";
+const defaultFunctionsRegion = "asia-northeast2";
 const adminFunctionName = "adminApi";
 
 export function adminApiUrl(

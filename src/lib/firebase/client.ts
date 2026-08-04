@@ -55,5 +55,5 @@ export function getFirebaseApp() {
 export const firebaseAuth = () => getAuth(getFirebaseApp());
 export const firestore = () => getFirestore(getFirebaseApp());
 export const firebaseFunctions = () =>
-  getFunctions(getFirebaseApp(), "us-central1");
+  getFunctions(getFirebaseApp(), "asia-northeast2");
 export const firebaseStorage = () => getStorage(getFirebaseApp());

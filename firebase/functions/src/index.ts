@@ -28,7 +28,7 @@ export const adminApi = onRequest(
     invoker: "public",
     maxInstances: 5,
     memory: "512MiB",
-    region: "us-central1",
+    region: "asia-northeast2",
     timeoutSeconds: 60,
   },
   async (request, response) => {
