@@ -1,6 +1,10 @@
 import type { Auth, AuthError, UserCredential } from "firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { safeCustomerReturnTo } from "./return-to.ts";
+import {
+  emailValidationMessage,
+  hasValidEmailLength,
+} from "../form-validation.ts";
 
 export type CustomerSignupValues = {
   email: string;
@@ -25,13 +29,9 @@ export function validateCustomerSignup(
   values: CustomerSignupValues,
 ): CustomerSignupErrors {
   const errors: CustomerSignupErrors = {};
-  const email = values.email.trim();
 
-  if (!email) {
-    errors.email = "メールアドレスを入力してください。";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.email = "正しい形式のメールアドレスを入力してください。";
-  }
+  const emailError = emailValidationMessage(values.email);
+  if (emailError) errors.email = emailError;
 
   if (!values.password) {
     errors.password = "パスワードを入力してください。";
@@ -73,7 +73,11 @@ export async function createCustomerAccount(
   values: Pick<CustomerSignupValues, "email" | "password">,
   createEmailUser: CreateEmailUser = createUserWithEmailAndPassword,
 ) {
-  return createEmailUser(auth, values.email.trim(), values.password);
+  if (!hasValidEmailLength(values.email)) {
+    throw new TypeError("メールアドレスは50文字以内で入力してください。");
+  }
+  const email = values.email.trim();
+  return createEmailUser(auth, email, values.password);
 }
 
 export function claimCustomerSignupSubmission(
@@ -90,15 +94,15 @@ export function customerSignupErrorMessage(error: unknown) {
 
   switch (code) {
     case "auth/email-already-in-use":
-      return "このメールアドレスはすでに登録されています。ログインをお試しください。";
+      return "このメールアドレスはすでに登録されています。";
     case "auth/invalid-email":
-      return "メールアドレスの形式を確認してください。";
+      return "正しいメールアドレスを入力してください。";
     case "auth/weak-password":
       return "パスワードが短すぎます。6文字以上で入力してください。";
     case "auth/password-does-not-meet-requirements":
       return "パスワードがセキュリティ要件を満たしていません。別のパスワードをお試しください。";
     case "auth/network-request-failed":
-      return "通信できませんでした。ネットワーク接続を確認してください。";
+      return "通信状況を確認して、もう一度お試しください。";
     case "auth/too-many-requests":
       return "試行回数が多すぎます。時間をおいて再度お試しください。";
     case "auth/operation-not-allowed":

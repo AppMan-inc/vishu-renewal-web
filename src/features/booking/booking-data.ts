@@ -10,6 +10,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { firestore } from "@/lib/firebase/client";
+import { sanitizePhoneNumber } from "@/features/form-validation";
 
 const cloudStorageImageHosts = new Set([
   "firebasestorage.googleapis.com",
@@ -186,9 +187,9 @@ export async function loadBookingCustomerProfile(
     if (profile) {
       return {
         name: profileName(profile) || fallbackName.trim(),
-        phone: stringValue(
+        phone: sanitizePhoneNumber(stringValue(
           profile.telephoneNumber ?? profile.phoneNumber ?? profile.phone,
-        ),
+        )),
       };
     }
   }

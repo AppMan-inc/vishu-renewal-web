@@ -13,6 +13,7 @@ import {
   where,
 } from "firebase/firestore";
 import { firestore } from "@/lib/firebase/client";
+import { customerProfileValidationMessage } from "@/features/form-validation";
 
 export type CustomerProfile = {
   uid: string;
@@ -82,6 +83,9 @@ export async function saveCustomerProfile(
   uid: string,
   input: CustomerProfileInput,
 ) {
+  const validationMessage = customerProfileValidationMessage(input);
+  if (validationMessage) throw new TypeError(validationMessage);
+
   const lastName = input.lastName.trim();
   const firstName = input.firstName.trim();
 
@@ -92,7 +96,7 @@ export async function saveCustomerProfile(
       name: `${lastName} ${firstName}`,
       lastName,
       firstName,
-      telephoneNumber: input.telephoneNumber.trim(),
+      telephoneNumber: input.telephoneNumber,
       gender: input.gender,
       dateOfBirth: input.dateOfBirth,
       updatedAt: serverTimestamp(),

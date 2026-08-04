@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { VishuIcon } from "@/components/vishu-ui";
 import { firebaseAuth } from "@/lib/firebase/client";
 import {
@@ -16,6 +16,13 @@ import {
   bookingReservationErrorMessage,
   createBookingReservation,
 } from "@/features/booking/reservation-api";
+import {
+  FORM_FIELD_LIMITS,
+  personNameValidationMessage,
+  phoneFieldChangeResult,
+  requiredPhoneValidationMessage,
+  sanitizePhoneNumber,
+} from "@/features/form-validation";
 
 const steps = ["メニュー", "日時", "お客様情報", "確認"];
 const categories = [
@@ -36,6 +43,7 @@ type ReservationSubmission =
   | { status: "submitting" }
   | { status: "success"; reservationId: string }
   | { status: "error"; message: string };
+type BookingFieldErrors = Partial<Record<"name" | "phone" | "request", string>>;
 
 export function BookingFlow() {
   const currentUser = firebaseAuth().currentUser;
@@ -51,8 +59,12 @@ export function BookingFlow() {
   const [customerName, setCustomerName] = useState(currentUser?.displayName ?? "");
   const [phone, setPhone] = useState("");
   const [request, setRequest] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<BookingFieldErrors>({});
   const [reservationSubmission, setReservationSubmission] =
     useState<ReservationSubmission>({ status: "idle" });
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const requestRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -119,7 +131,20 @@ export function BookingFlow() {
       setCurrentStep(2);
       return;
     }
-    if (currentStep === 2 && customerName.trim() && phone.trim()) {
+    if (currentStep === 2) {
+      const errors = bookingFieldErrors(customerName, phone, request);
+      setFieldErrors(errors);
+      const firstInvalid = errors.name
+        ? nameRef
+        : errors.phone
+          ? phoneRef
+          : errors.request
+            ? requestRef
+            : null;
+      if (firstInvalid) {
+        focusField(firstInvalid);
+        return;
+      }
       setCurrentStep(3);
     }
   }
@@ -137,6 +162,19 @@ export function BookingFlow() {
       reservationSubmission.status === "submitting" ||
       reservationSubmission.status === "success"
     ) {
+      return;
+    }
+
+    const errors = bookingFieldErrors(customerName, phone, request);
+    if (Object.values(errors).some(Boolean)) {
+      setFieldErrors(errors);
+      setCurrentStep(2);
+      const firstInvalid = errors.name
+        ? nameRef
+        : errors.phone
+          ? phoneRef
+          : requestRef;
+      focusField(firstInvalid);
       return;
     }
 
@@ -162,18 +200,10 @@ export function BookingFlow() {
     }
   }
 
-  const phoneDigits = phone.replace(/[^0-9]/g, "");
-  const hasValidCustomerDetails =
-    customerName.trim().length > 0 &&
-    customerName.trim().length <= 80 &&
-    phone.trim().length <= 20 &&
-    phoneDigits.length >= 10 &&
-    phoneDigits.length <= 11 &&
-    request.trim().length <= 500;
   const canContinue =
     (currentStep === 0 && Boolean(selectedMenu) && !selectedMenu?.isCallable) ||
     (currentStep === 1 && Boolean(selectedSlot)) ||
-    (currentStep === 2 && hasValidCustomerDetails);
+    currentStep === 2;
 
   return (
     <section className="app-page-shell">
@@ -229,9 +259,15 @@ export function BookingFlow() {
               name={customerName}
               phone={phone}
               request={request}
-              onNameChange={setCustomerName}
-              onPhoneChange={setPhone}
-              onRequestChange={setRequest}
+              fieldErrors={fieldErrors}
+              nameRef={nameRef}
+              phoneRef={phoneRef}
+              requestRef={requestRef}
+              onNameBlur={() => setFieldErrors((current) => ({ ...current, name: personNameValidationMessage(customerName, "お名前") ?? undefined }))}
+              onNameChange={(value) => { setCustomerName(value); setFieldErrors((current) => value.length > FORM_FIELD_LIMITS.personName || current.name ? { ...current, name: personNameValidationMessage(value, "お名前") ?? undefined } : current); }}
+              onPhoneBlur={() => setFieldErrors((current) => ({ ...current, phone: requiredPhoneValidationMessage(phone) ?? undefined }))}
+              onPhoneChange={(rawValue) => { setPhone(sanitizePhoneNumber(rawValue)); setFieldErrors((current) => ({ ...current, phone: phoneFieldChangeResult(rawValue, current.phone).error ?? undefined })); }}
+              onRequestChange={(value) => { setRequest(value); setFieldErrors((current) => ({ ...current, request: value.length > FORM_FIELD_LIMITS.inquiryMessage ? "ご要望・ご相談は300文字以内で入力してください。" : undefined })); }}
             />
           ) : null}
           {currentStep === 3 && selectedMenu && selectedSlot ? (
@@ -572,7 +608,13 @@ function CustomerStep({
   name,
   phone,
   request,
+  fieldErrors,
+  nameRef,
+  phoneRef,
+  requestRef,
+  onNameBlur,
   onNameChange,
+  onPhoneBlur,
   onPhoneChange,
   onRequestChange,
 }: {
@@ -580,7 +622,13 @@ function CustomerStep({
   name: string;
   phone: string;
   request: string;
+  fieldErrors: BookingFieldErrors;
+  nameRef: RefObject<HTMLInputElement | null>;
+  phoneRef: RefObject<HTMLInputElement | null>;
+  requestRef: RefObject<HTMLTextAreaElement | null>;
+  onNameBlur: () => void;
   onNameChange: (value: string) => void;
+  onPhoneBlur: () => void;
   onPhoneChange: (value: string) => void;
   onRequestChange: (value: string) => void;
 }) {
@@ -589,15 +637,38 @@ function CustomerStep({
       <div className="subsection-heading"><span>STEP 03</span><h2>お客様情報を入力</h2></div>
       <div className="booking-form-card">
         <div className="booking-form-grid">
-          <label><span>お名前 <em>必須</em></span><input maxLength={80} value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="山田 花子" /></label>
-          <label><span>電話番号 <em>必須</em></span><input inputMode="tel" maxLength={20} value={phone} onChange={(event) => onPhoneChange(event.target.value)} placeholder="09012345678" /></label>
+          <label><span>お名前 <em>必須</em></span><input ref={nameRef} value={name} onBlur={onNameBlur} onChange={(event) => onNameChange(event.target.value)} placeholder="山田 花子" aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? "booking-name-error" : undefined} /><small className="field-error field-feedback" id="booking-name-error" aria-live="polite">{fieldErrors.name ?? ""}</small></label>
+          <label><span>電話番号 <em>必須</em></span><input ref={phoneRef} autoComplete="tel" inputMode="numeric" pattern="[0-9]*" type="tel" value={phone} onBlur={onPhoneBlur} onChange={(event) => onPhoneChange(event.target.value)} placeholder="09012345678" aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "booking-phone-error" : undefined} /><small className="field-error field-feedback" id="booking-phone-error" aria-live="polite">{fieldErrors.phone ?? ""}</small></label>
           <label className="is-wide"><span>メールアドレス</span><input value={email} disabled /></label>
-          <label className="is-wide"><span>ご要望・ご相談</span><textarea maxLength={500} value={request} onChange={(event) => onRequestChange(event.target.value)} placeholder="髪のお悩みやご希望があればご記入ください。" rows={5} /></label>
+          <label className="is-wide"><span>ご要望・ご相談</span><textarea ref={requestRef} value={request} onChange={(event) => onRequestChange(event.target.value)} placeholder="髪のお悩みやご希望があればご記入ください。" rows={5} aria-invalid={Boolean(fieldErrors.request)} aria-describedby={fieldErrors.request ? "booking-request-count booking-request-error" : "booking-request-count"} /><span className={`booking-character-count${fieldErrors.request ? " is-error" : ""}`} id="booking-request-count">{request.length} / {FORM_FIELD_LIMITS.inquiryMessage}文字</span><small className="field-error field-feedback" id="booking-request-error" aria-live="polite">{fieldErrors.request ?? ""}</small></label>
         </div>
         <p className="booking-form-note">ご入力いただいた情報は、ご予約の確認とサロンからのご連絡に使用します。</p>
       </div>
     </>
   );
+}
+
+function bookingFieldErrors(
+  name: string,
+  phone: string,
+  request: string,
+): BookingFieldErrors {
+  return {
+    name: personNameValidationMessage(name, "お名前") ?? undefined,
+    phone: requiredPhoneValidationMessage(phone) ?? undefined,
+    request: request.length > FORM_FIELD_LIMITS.inquiryMessage
+      ? "ご要望・ご相談は300文字以内で入力してください。"
+      : undefined,
+  };
+}
+
+function focusField(
+  field: RefObject<HTMLInputElement | HTMLTextAreaElement | null>,
+) {
+  requestAnimationFrame(() => {
+    field.current?.focus();
+    field.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  });
 }
 
 function ConfirmationStep({

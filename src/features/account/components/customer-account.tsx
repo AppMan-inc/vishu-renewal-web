@@ -3,7 +3,7 @@
 import { updateProfile } from "firebase/auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { VishuIcon } from "@/components/vishu-ui";
 import {
   CustomerAccountSnapshot,
@@ -18,6 +18,13 @@ import {
   cancelBookingReservation,
 } from "@/features/booking/reservation-api";
 import { firebaseAuth } from "@/lib/firebase/client";
+import {
+  FORM_FIELD_LIMITS,
+  personNameValidationMessage,
+  phoneFieldChangeResult,
+  requiredPhoneValidationMessage,
+  sanitizePhoneNumber,
+} from "@/features/form-validation";
 
 const accountNavigation = [
   { href: "/mypage", label: "マイページ" },
@@ -293,9 +300,14 @@ export function CustomerProfileEditor() {
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<"lastName" | "firstName" | "telephoneNumber", string>>>({});
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const lastNameRef = useRef<HTMLInputElement>(null);
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const dateOfBirthRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -306,7 +318,12 @@ export function CustomerProfileEditor() {
       currentUser.displayName ?? "",
     )
       .then((result) => {
-        if (isActive) setProfile(result);
+        if (isActive) {
+          setProfile({
+            ...result,
+            telephoneNumber: sanitizePhoneNumber(result.telephoneNumber),
+          });
+        }
       })
       .catch(() => {
         if (isActive) {
@@ -324,17 +341,29 @@ export function CustomerProfileEditor() {
     event.preventDefault();
     if (!currentUser || !profile || isSaving) return;
 
-    const phoneDigits = profile.telephoneNumber.replace(/[^0-9]/g, "");
-    if (!profile.lastName.trim() || !profile.firstName.trim()) {
-      setErrorMessage("姓と名を入力してください。");
-      return;
-    }
-    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
-      setErrorMessage("電話番号は10〜11桁で入力してください。");
+    const errors = {
+      lastName: personNameValidationMessage(profile.lastName, "姓") ?? undefined,
+      firstName: personNameValidationMessage(profile.firstName, "名") ?? undefined,
+      telephoneNumber: requiredPhoneValidationMessage(profile.telephoneNumber) ?? undefined,
+    };
+    setFieldErrors(errors);
+    const firstInvalid = errors.lastName
+      ? lastNameRef
+      : errors.firstName
+        ? firstNameRef
+        : errors.telephoneNumber
+          ? phoneRef
+          : null;
+    if (firstInvalid) {
+      requestAnimationFrame(() => {
+        firstInvalid.current?.focus();
+        firstInvalid.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      });
       return;
     }
     if (!profile.dateOfBirth) {
       setErrorMessage("生年月日を入力してください。");
+      requestAnimationFrame(() => dateOfBirthRef.current?.focus());
       return;
     }
 
@@ -374,7 +403,7 @@ export function CustomerProfileEditor() {
         description="Web予約とアプリで使用するお客様情報を変更できます。"
       />
 
-      <form className="account-profile-form" onSubmit={handleSubmit}>
+      <form className="account-profile-form" onSubmit={handleSubmit} noValidate>
         <section>
           <div className="account-form-heading">
             <div className="account-card-icon"><VishuIcon name="person" /></div>
@@ -386,10 +415,10 @@ export function CustomerProfileEditor() {
 
           <div className="account-form-grid">
             <label className="is-wide"><span>メールアドレス</span><input disabled value={profile.email} /></label>
-            <label><span>姓 <em>必須</em></span><input autoComplete="family-name" maxLength={40} required value={profile.lastName} onChange={(event) => setProfile({ ...profile, lastName: event.target.value })} /></label>
-            <label><span>名 <em>必須</em></span><input autoComplete="given-name" maxLength={40} required value={profile.firstName} onChange={(event) => setProfile({ ...profile, firstName: event.target.value })} /></label>
-            <label className="is-wide"><span>電話番号 <em>必須</em></span><input autoComplete="tel" inputMode="tel" maxLength={20} placeholder="09012345678" required value={profile.telephoneNumber} onChange={(event) => setProfile({ ...profile, telephoneNumber: event.target.value })} /></label>
-            <label><span>生年月日 <em>必須</em></span><input max={todayDateString()} min="1920-01-01" required type="date" value={profile.dateOfBirth} onChange={(event) => setProfile({ ...profile, dateOfBirth: event.target.value })} /></label>
+            <label><span>姓 <em>必須</em></span><input ref={lastNameRef} autoComplete="family-name" required value={profile.lastName} aria-invalid={Boolean(fieldErrors.lastName)} aria-describedby={fieldErrors.lastName ? "profile-last-name-error" : undefined} onBlur={() => setFieldErrors((current) => ({ ...current, lastName: personNameValidationMessage(profile.lastName, "姓") ?? undefined }))} onChange={(event) => { const value = event.target.value; setProfile({ ...profile, lastName: value }); setFieldErrors((current) => value.length > FORM_FIELD_LIMITS.personName || current.lastName ? { ...current, lastName: personNameValidationMessage(value, "姓") ?? undefined } : current); }} />{fieldErrors.lastName ? <small className="field-error" id="profile-last-name-error" aria-live="polite">{fieldErrors.lastName}</small> : null}</label>
+            <label><span>名 <em>必須</em></span><input ref={firstNameRef} autoComplete="given-name" required value={profile.firstName} aria-invalid={Boolean(fieldErrors.firstName)} aria-describedby={fieldErrors.firstName ? "profile-first-name-error" : undefined} onBlur={() => setFieldErrors((current) => ({ ...current, firstName: personNameValidationMessage(profile.firstName, "名") ?? undefined }))} onChange={(event) => { const value = event.target.value; setProfile({ ...profile, firstName: value }); setFieldErrors((current) => value.length > FORM_FIELD_LIMITS.personName || current.firstName ? { ...current, firstName: personNameValidationMessage(value, "名") ?? undefined } : current); }} />{fieldErrors.firstName ? <small className="field-error" id="profile-first-name-error" aria-live="polite">{fieldErrors.firstName}</small> : null}</label>
+            <label className="is-wide"><span>電話番号 <em>必須</em></span><input ref={phoneRef} autoComplete="tel" inputMode="numeric" pattern="[0-9]*" placeholder="09012345678" required type="tel" value={profile.telephoneNumber} aria-invalid={Boolean(fieldErrors.telephoneNumber)} aria-describedby={fieldErrors.telephoneNumber ? "profile-phone-error" : undefined} onBlur={() => setFieldErrors((current) => ({ ...current, telephoneNumber: requiredPhoneValidationMessage(profile.telephoneNumber) ?? undefined }))} onChange={(event) => { const rawValue = event.target.value; setProfile({ ...profile, telephoneNumber: sanitizePhoneNumber(rawValue) }); setFieldErrors((current) => ({ ...current, telephoneNumber: phoneFieldChangeResult(rawValue, current.telephoneNumber).error ?? undefined })); }} />{fieldErrors.telephoneNumber ? <small className="field-error" id="profile-phone-error" aria-live="polite">{fieldErrors.telephoneNumber}</small> : null}</label>
+            <label><span>生年月日 <em>必須</em></span><input ref={dateOfBirthRef} max={todayDateString()} min="1920-01-01" required type="date" value={profile.dateOfBirth} onChange={(event) => setProfile({ ...profile, dateOfBirth: event.target.value })} /></label>
             <fieldset>
               <legend>性別</legend>
               <div className="account-gender-options">

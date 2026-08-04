@@ -46,9 +46,31 @@ test("signup validation rejects invalid email and short passwords", () => {
       passwordConfirmation: "12345",
     }),
     {
-      email: "正しい形式のメールアドレスを入力してください。",
+      email: "正しいメールアドレスを入力してください。",
       password: "パスワードは6文字以上で入力してください。",
     },
+  );
+});
+
+test("signup email accepts 50 characters and rejects 51", () => {
+  const emailAtLimit = `${"a".repeat(45)}@a.co`;
+  const emailOverLimit = `${"a".repeat(46)}@a.co`;
+
+  assert.equal(
+    validateCustomerSignup({
+      email: emailAtLimit,
+      password: "secret1",
+      passwordConfirmation: "secret1",
+    }).email,
+    undefined,
+  );
+  assert.equal(
+    validateCustomerSignup({
+      email: emailOverLimit,
+      password: "secret1",
+      passwordConfirmation: "secret1",
+    }).email,
+    "メールアドレスは50文字以内で入力してください。",
   );
 });
 
@@ -81,6 +103,22 @@ test("customer account creation trims email and uses Firebase Auth", async () =>
   assert.deepEqual(calls, [
     { auth, email: "guest@example.com", password: "secret1" },
   ]);
+});
+
+test("customer account creation rejects an over-limit email before Firebase Auth", async () => {
+  let called = false;
+  await assert.rejects(
+    createCustomerAccount(
+      {} as Auth,
+      { email: `${"a".repeat(46)}@a.co`, password: "secret1" },
+      async () => {
+        called = true;
+        return {} as UserCredential;
+      },
+    ),
+    /50文字以内/,
+  );
+  assert.equal(called, false);
 });
 
 test("new customer destinations can never navigate to admin", () => {
@@ -120,10 +158,10 @@ test("signup submission lock rejects duplicate requests and pending navigation",
 test("signup errors are translated into customer-facing Japanese", () => {
   const cases = [
     ["auth/email-already-in-use", "すでに登録"],
-    ["auth/invalid-email", "メールアドレスの形式"],
+    ["auth/invalid-email", "正しいメールアドレス"],
     ["auth/weak-password", "6文字以上"],
     ["auth/password-does-not-meet-requirements", "セキュリティ要件"],
-    ["auth/network-request-failed", "ネットワーク接続"],
+    ["auth/network-request-failed", "通信状況"],
     ["auth/too-many-requests", "試行回数"],
     ["auth/operation-not-allowed", "現在利用できません"],
     ["auth/internal-error", "アカウントを作成できませんでした"],
