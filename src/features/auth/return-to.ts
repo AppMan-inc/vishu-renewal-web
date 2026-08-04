@@ -44,6 +44,10 @@ export function safeAdminReturnTo(value: string | null | undefined) {
     return defaultAdminRoute;
   }
 
+  if (safeLocalPathname(path) === "/admin/rest") {
+    return "/admin/rests";
+  }
+
   return path;
 }
 

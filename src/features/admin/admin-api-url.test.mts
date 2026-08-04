@@ -15,3 +15,14 @@ test("supports an emulator or custom API URL override", () => {
     "http://127.0.0.1:5001/project/asia-northeast2/adminApi/menu-image",
   );
 });
+
+test("uses the same-origin admin API while running on localhost", () => {
+  assert.equal(
+    adminApiUrl("salon-vishu2-dev-30830", undefined, "session", "localhost"),
+    "/api/admin/session",
+  );
+  assert.equal(
+    adminApiUrl("salon-vishu2-dev-30830", undefined, "", "127.0.0.1"),
+    "/api/admin",
+  );
+});

@@ -6605,11 +6605,27 @@ button.booking-menu-card.is-selected .round-arrow {
 }
 
 .admin-toolbar button,
-.admin-toolbar select {
+.admin-toolbar select,
+.admin-rest-register-link {
   height: 38px;
   padding: 0 13px;
   border-radius: 9px;
   font-size: 11px;
+}
+
+.admin-rest-register-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--green-deep);
+  background: var(--green-deep);
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-rest-register-link svg {
+  width: 15px;
 }
 
 .admin-segmented {
@@ -6946,6 +6962,94 @@ button.is-danger {
   padding: 24px;
 }
 
+.admin-rest-week-nav {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-rest-week-nav strong {
+  min-width: 190px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.admin-rest-week-nav button,
+.admin-rest-actions button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid rgba(65, 81, 58, .16);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--green-deep);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.admin-rest-week-nav button:first-child,
+.admin-rest-week-nav button:last-child {
+  width: 36px;
+  padding: 0;
+  font-size: 22px;
+}
+
+.admin-rest-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.admin-rest-actions > strong {
+  font-size: 12px;
+}
+
+.admin-rest-actions > div {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-rest-actions .admin-rest-submit {
+  min-width: 150px;
+  border-color: var(--green-deep);
+  background: var(--green-deep);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(47, 68, 43, .2);
+}
+
+.admin-rest-schedule-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.admin-rest-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.admin-rest-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-rest-legend b {
+  min-width: 14px;
+  color: var(--green-deep);
+  font-size: 12px;
+  text-align: center;
+}
+
 .admin-duration-selector {
   display: flex;
   align-items: center;
@@ -6979,7 +7083,7 @@ button.is-danger {
 .admin-slot-grid {
   display: grid;
   grid-template-columns: 55px repeat(7, minmax(48px, 1fr));
-  max-height: 540px;
+  max-height: 620px;
   overflow: auto;
   border: 1px solid rgba(65, 81, 58, .1);
   border-radius: 12px;
@@ -6996,6 +7100,15 @@ button.is-danger {
   border-bottom: 1px solid rgba(65, 81, 58, .1);
   background: #f7f7f3;
   text-align: center;
+}
+
+.admin-slot-grid > header.is-today {
+  background: #edf3e9;
+}
+
+.admin-slot-grid > header.admin-slot-time-header {
+  color: var(--muted);
+  font-size: 9px;
 }
 
 .admin-slot-grid > header span {
@@ -7027,18 +7140,33 @@ button.is-danger {
   background: #fff;
   color: #6c8a63;
   font: inherit;
-  font-size: 12px;
+  font-size: 18px;
+  font-weight: 800;
   cursor: pointer;
 }
 
-.admin-slot-row button:disabled {
-  background: #f2f1ed;
-  color: #c0beb8;
+.admin-slot-row button.is-unavailable,
+.admin-slot-row button.is-reservation {
+  background: #f7f6f2;
+  color: #aaa9a3;
   cursor: not-allowed;
 }
 
+.admin-slot-row button.is-reservation {
+  color: #687064;
+  font-size: 11px;
+}
+
+.admin-slot-row button.is-rest {
+  color: #b24e45;
+}
+
 .admin-slot-row button.is-selected {
-  background: #dfead9;
+  background: #f4eee9;
+  color: #b24e45;
+}
+
+.admin-slot-row button.is-available {
   color: var(--green-deep);
 }
 
@@ -7940,6 +8068,21 @@ button:disabled {
   opacity: .5;
 }
 
+.admin-rest-actions .admin-rest-submit:not(:disabled) {
+  border-color: #30482d;
+  background: #30482d;
+  color: #fff;
+  opacity: 1;
+}
+
+.admin-rest-actions .admin-rest-submit:disabled {
+  border-color: #d8d8d2;
+  background: #ecece7;
+  color: #85857e;
+  box-shadow: none;
+  opacity: 1;
+}
+
 @media (max-width: 1100px) {
   .admin-console-layout {
     grid-template-columns: 82px minmax(0, 1fr);
@@ -8093,6 +8236,25 @@ button:disabled {
 
   .admin-duration-selector span {
     width: 100%;
+  }
+
+  .admin-rest-week-nav {
+    gap: 6px;
+  }
+
+  .admin-rest-week-nav strong {
+    min-width: 0;
+    flex: 1;
+    font-size: 10px;
+  }
+
+  .admin-rest-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-rest-actions > div button {
+    flex: 1;
   }
 
   .admin-slot-grid {

@@ -21,6 +21,15 @@ import type {
   ReservationStatus,
 } from "@/features/admin/types";
 import { firebaseAuth } from "@/lib/firebase/client";
+import {
+  addMinutes,
+  buildRestChanges,
+  MAX_REST_ADVANCE_DAYS,
+  rangesOverlap,
+  restSlotState,
+  slotKey,
+  type RestSlotState,
+} from "@/features/admin/rest-schedule";
 
 const navigation: Array<{ section: AdminSection; href: string; label: string; icon: "bell" | "calendar" | "clock" | "person" | "spa" | "sparkle" }> = [
   { section: "dashboard", href: "/admin", label: "ホーム", icon: "sparkle" },
@@ -29,7 +38,7 @@ const navigation: Array<{ section: AdminSection; href: string; label: string; ic
   { section: "customers", href: "/admin/customers", label: "顧客・カルテ", icon: "person" },
   { section: "menus", href: "/admin/menus", label: "メニュー", icon: "spa" },
   { section: "sales", href: "/admin/sales", label: "売上", icon: "sparkle" },
-  { section: "notifications", href: "/admin/notifications", label: "Push通知", icon: "bell" },
+  { section: "notifications", href: "/admin/notifications", label: "お知らせ配信", icon: "bell" },
 ];
 
 export function AdminMenusConsole() {
@@ -255,6 +264,7 @@ function Reservations(props: {
         <div className="admin-segmented"><button className={view === "week" ? "is-active" : ""} onClick={() => setView("week")}>週</button><button className={view === "month" ? "is-active" : ""} onClick={() => setView("month")}>月</button></div>
         <div className="admin-period-controls"><button onClick={() => move(-1)}>‹</button><button onClick={() => setAnchor(startOfDay(new Date()))}>今日</button><button onClick={() => move(1)}>›</button><strong>{view === "week" ? weekLabel(anchor) : monthLabel(anchor)}</strong></div>
         <select aria-label="ステータス" onChange={(event) => setStatus(event.target.value as typeof status)} value={status}><option value="active">キャンセル以外</option><option value="all">すべて</option><option value="confirmed">予約済み</option><option value="visited">来店済み</option><option value="canceled">キャンセル</option></select>
+        <Link className="admin-rest-register-link" href="/admin/rests"><VishuIcon name="clock" />休憩登録</Link>
       </div>
       {view === "week" ? (
         <div className="admin-week-grid">
@@ -282,59 +292,161 @@ function ReservationDetail({ reservation, mutating, onClose, onStatus }: { reser
   return <div className="admin-detail-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}><aside className="admin-detail-panel"><button className="admin-detail-close" onClick={onClose}>×</button><p className="eyebrow">RESERVATION DETAIL</p><h2>{reservation.customerName}</h2><span className={`admin-status status-${reservation.status}`}>{statusLabel(reservation.status)}</span><dl><div><dt>日時</dt><dd>{formatDateTime(reservation.startTime)} – {formatTime(reservation.finishTime)}</dd></div><div><dt>メニュー</dt><dd>{reservation.treatmentDetail}</dd></div><div><dt>料金</dt><dd>{yen(reservation.price)}</dd></div><div><dt>電話番号</dt><dd>{reservation.telephoneNumber || "未登録"}</dd></div><div><dt>ご希望</dt><dd>{reservation.customerHope || "なし"}</dd></div></dl><div className="admin-detail-actions"><button disabled={mutating || reservation.status === "visited"} onClick={() => void onStatus("visited")}>来店済みにする</button><button disabled={mutating || reservation.status === "confirmed"} onClick={() => void onStatus("confirmed")}>予約済みに戻す</button><button className="is-danger" disabled={mutating || reservation.status === "canceled"} onClick={() => void onStatus("canceled")}>キャンセル</button></div>{reservation.customerId ? <Link className="admin-primary-link" href={`/admin/customers?customer=${encodeURIComponent(reservation.customerId)}`}>顧客・カルテを開く →</Link> : null}</aside></div>;
 }
 
-const BUSINESS_OPEN_MINUTES = 9 * 60;
-const BUSINESS_CLOSE_MINUTES = 18 * 60;
-const ALL_DAY_DURATION_MINUTES = BUSINESS_CLOSE_MINUTES - BUSINESS_OPEN_MINUTES;
-const REST_DURATION_OPTIONS = [
-  { minutes: 30, label: "30分" },
-  { minutes: 60, label: "60分" },
-  { minutes: 90, label: "90分" },
-  { minutes: 120, label: "120分" },
-  { minutes: 150, label: "150分" },
-  { minutes: 180, label: "180分" },
-  { minutes: ALL_DAY_DURATION_MINUTES, label: "終日" },
-];
-
 function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
-  const [duration, setDuration] = useState(60);
-  const [selectedStart, setSelectedStart] = useState<Date | null>(null);
-  const days = Array.from({ length: 7 }, (_, index) => addDays(startOfDay(new Date()), index));
+  const [weekStart, setWeekStart] = useState(() => startOfDay(new Date()));
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set());
+  const [pendingDeletionKeys, setPendingDeletionKeys] = useState<Set<string>>(() => new Set());
+  const settings = props.snapshot.bookingSettings;
+  const hasChanges = selectedKeys.size > 0 || pendingDeletionKeys.size > 0;
+  const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
   const slots = Array.from(
-    { length: (BUSINESS_CLOSE_MINUTES - BUSINESS_OPEN_MINUTES) / 30 },
-    (_, index) => BUSINESS_OPEN_MINUTES + index * 30,
+    { length: Math.ceil((settings.closingMinutes - settings.openingMinutes) / settings.slotIntervalMinutes) },
+    (_, index) => settings.openingMinutes + index * settings.slotIntervalMinutes,
   );
-  const isBlocked = (start: Date) => {
-    const end = new Date(start.getTime() + duration * 60_000);
-    const endMinutes = end.getHours() * 60 + end.getMinutes();
-    return dayKey(start) !== dayKey(end) || endMinutes > BUSINESS_CLOSE_MINUTES || [...props.snapshot.reservations.filter((item) => item.status !== "canceled").map((item) => [new Date(item.startTime), new Date(item.finishTime)]), ...props.snapshot.restBlocks.map((item) => [new Date(item.startTime), new Date(item.endTime)])].some(([blockedStart, blockedEnd]) => start < blockedEnd && blockedStart < end);
-  };
-  const selectedEnd = selectedStart
-    ? new Date(selectedStart.getTime() + duration * 60_000)
-    : null;
-  const selectedIsBlocked = selectedStart
-    ? isBlocked(selectedStart) || selectedStart < new Date()
-    : false;
 
-  function selectDuration(minutes: number) {
-    setDuration(minutes);
-    if (minutes === ALL_DAY_DURATION_MINUTES && selectedStart) {
-      setSelectedStart(new Date(
-        selectedStart.getFullYear(),
-        selectedStart.getMonth(),
-        selectedStart.getDate(),
-        Math.floor(BUSINESS_OPEN_MINUTES / 60),
-        BUSINESS_OPEN_MINUTES % 60,
-      ));
+  useEffect(() => {
+    if (!hasChanges) return;
+    const warnOnUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    const warnOnNavigation = (event: MouseEvent) => {
+      const anchor = (event.target as Element | null)?.closest("a");
+      if (anchor && !confirm("選択中の休憩時間を破棄しますか？\nまだ反映されていない変更があります。")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    window.addEventListener("beforeunload", warnOnUnload);
+    document.addEventListener("click", warnOnNavigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", warnOnUnload);
+      document.removeEventListener("click", warnOnNavigation, true);
+    };
+  }, [hasChanges]);
+
+  function clearSelection() {
+    setSelectedKeys(new Set());
+    setPendingDeletionKeys(new Set());
+  }
+
+  function toggleSlot(start: Date, state: RestSlotState) {
+    if (props.mutating || state === "reservation" || state === "unavailable") return;
+    const key = slotKey(start);
+    const end = addMinutes(start, settings.slotIntervalMinutes);
+    const isRegistered = props.snapshot.restBlocks.some((block) => rangesOverlap(
+      start,
+      end,
+      new Date(block.startTime),
+      new Date(block.endTime),
+    ));
+    if (isRegistered) {
+      setPendingDeletionKeys((current) => {
+        const next = new Set(current);
+        if (!next.delete(key)) next.add(key);
+        return next;
+      });
+      return;
     }
+    setSelectedKeys((current) => {
+      const next = new Set(current);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
   }
 
-  async function createRest() {
-    if (!selectedStart || !selectedEnd || selectedIsBlocked) return;
-    const ok = await props.runMutation({ action: "rest.create", startTime: selectedStart.toISOString(), endTime: selectedEnd.toISOString() }, "休憩を登録しました。");
-    if (ok) setSelectedStart(null);
+  async function applyChanges() {
+    if (!hasChanges) return;
+    const changes = buildRestChanges(
+      selectedKeys,
+      pendingDeletionKeys,
+      props.snapshot.restBlocks,
+      settings.slotIntervalMinutes,
+    );
+    const registrationCount = selectedKeys.size;
+    const deletionCount = pendingDeletionKeys.size;
+    const ok = await props.runMutation(
+      { action: "rest.apply", ...changes },
+      `休憩を更新しました（登録 ${registrationCount}枠・削除 ${deletionCount}枠）。`,
+    );
+    if (ok) clearSelection();
   }
 
-  return <><PageTitle eyebrow="AVAILABILITY" title="休憩登録" description="予約と重ならない時間枠を選んで登録します。" /><div className="admin-rest-layout"><section className="admin-panel"><div className="admin-duration-selector"><span>休憩時間</span>{REST_DURATION_OPTIONS.map((option) => <button className={duration === option.minutes ? "is-active" : ""} key={option.minutes} onClick={() => selectDuration(option.minutes)} type="button">{option.label}</button>)}</div><div className="admin-slot-grid"><div /><>{days.map((day) => <header key={day.toISOString()}><span>{weekday(day)}</span><strong>{day.getDate()}</strong></header>)}</>{slots.map((minutes) => <div className="admin-slot-row" key={minutes}><time>{minutesLabel(minutes)}</time>{days.map((day) => { const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(minutes / 60), minutes % 60); const blocked = isBlocked(start) || start < new Date(); const selected = selectedStart?.getTime() === start.getTime(); return <button aria-label={`${formatDateTime(start.toISOString())} ${selected ? "選択中" : blocked ? "選択不可" : "選択"}`} className={selected ? "is-selected" : ""} disabled={blocked} key={day.toISOString()} onClick={() => setSelectedStart(start)} type="button">{selected ? "●" : blocked ? "×" : "○"}</button>; })}</div>)}</div>{selectedStart && selectedEnd ? <div className={`admin-selection-confirm${selectedIsBlocked ? " is-blocked" : ""}`}><div><small>{selectedIsBlocked ? "この時間では登録できません" : "選択した休憩"}</small><strong>{formatDateTime(selectedStart.toISOString())} – {formatTime(selectedEnd.toISOString())}</strong>{selectedIsBlocked ? <p>別の開始時間、または短い休憩時間を選択してください。</p> : duration === ALL_DAY_DURATION_MINUTES ? <p>終日は営業時間（9:00〜18:00）で登録します。</p> : null}</div><button disabled={props.mutating || selectedIsBlocked} onClick={() => void createRest()} type="button">この時間で登録</button></div> : null}</section><section className="admin-panel admin-rest-list"><SectionHeading eyebrow="REGISTERED" title="登録済みの休憩" />{props.snapshot.restBlocks.filter((item) => new Date(item.endTime) >= startOfDay(new Date())).slice(0, 30).map((item) => <article key={item.id}><div><strong>{formatDateTime(item.startTime)}</strong><span>{formatTime(item.startTime)} – {formatTime(item.endTime)}</span></div><button disabled={props.mutating} onClick={() => { if (confirm("この休憩を削除しますか？")) void props.runMutation({ action: "rest.delete", id: item.id }, "休憩を削除しました。"); }}>削除</button></article>)}{props.snapshot.restBlocks.length === 0 ? <p>登録済みの休憩はありません。</p> : null}</section></div></>;
+  async function deleteRest(item: AdminSnapshot["restBlocks"][number]) {
+    if (!confirm("休憩を削除しますか？")) return;
+    const ok = await props.runMutation(
+      { action: "rest.delete", id: item.id },
+      "休憩を削除しました。",
+    );
+    if (!ok) return;
+    setPendingDeletionKeys((current) => new Set([...current].filter((key) => {
+      const start = new Date(key);
+      return !rangesOverlap(
+        start,
+        addMinutes(start, settings.slotIntervalMinutes),
+        new Date(item.startTime),
+        new Date(item.endTime),
+      );
+    })));
+  }
+
+  const visibleRests = props.snapshot.restBlocks.filter((block) => {
+    const start = new Date(block.startTime);
+    return start >= weekStart && start < addDays(weekStart, 7);
+  });
+  const rangeEnd = addDays(weekStart, 6);
+  const today = startOfDay(new Date());
+  const canMovePrevious = weekStart > today;
+  const canMoveNext = addDays(weekStart, 7) <= addDays(today, MAX_REST_ADVANCE_DAYS);
+
+  return <>
+    <PageTitle eyebrow="AVAILABILITY" title="休憩登録" description="○をタップして休憩にする時間を選択してください。複数の日時をまとめて登録できます。" />
+    <div className="admin-rest-week-nav">
+      <button aria-label="前の週" disabled={!canMovePrevious || props.mutating} onClick={() => setWeekStart((current) => addDays(current, -7))} type="button">‹</button>
+      <strong>{weekStart.getFullYear()}/{weekStart.getMonth() + 1}/{weekStart.getDate()} - {rangeEnd.getMonth() + 1}/{rangeEnd.getDate()}</strong>
+      <button disabled={props.mutating || weekStart.getTime() === today.getTime()} onClick={() => setWeekStart(today)} type="button">今日</button>
+      <button aria-label="次の週" disabled={!canMoveNext || props.mutating} onClick={() => setWeekStart((current) => addDays(current, 7))} type="button">›</button>
+    </div>
+    <section className="admin-panel admin-rest-actions">
+      <strong>{hasChanges ? `変更中 ${selectedKeys.size + pendingDeletionKeys.size}枠（登録 ${selectedKeys.size}・解除 ${pendingDeletionKeys.size}）` : "時間割から休憩時間を選択してください"}</strong>
+      <div>
+        <button disabled={!hasChanges || props.mutating} onClick={clearSelection} type="button">すべて解除</button>
+        <button className="admin-rest-submit" disabled={!hasChanges || props.mutating} onClick={() => void applyChanges()} type="button">
+          {props.mutating
+            ? "登録中…"
+            : selectedKeys.size > 0
+              ? `休憩を登録（${selectedKeys.size}枠）`
+              : "変更を反映"}
+        </button>
+      </div>
+    </section>
+    <div className="admin-rest-layout">
+      <section className="admin-panel admin-rest-schedule-panel">
+        <div className="admin-slot-grid">
+          <header className="admin-slot-time-header">時間</header>
+          {days.map((day) => <header className={dayKey(day) === dayKey(new Date()) ? "is-today" : ""} key={day.toISOString()}><strong>{day.getMonth() + 1}/{day.getDate()}</strong><span>{dayKey(day) === dayKey(new Date()) ? "今日" : weekday(day)}</span></header>)}
+          {slots.map((minutes) => <div className="admin-slot-row" key={minutes}>
+            <time>{minutesLabel(minutes)}</time>
+            {days.map((day) => {
+              const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(minutes / 60), minutes % 60);
+              const state = restSlotState({ slot: start, now: new Date(), settings, reservations: props.snapshot.reservations, restBlocks: props.snapshot.restBlocks, selectedKeys, pendingDeletionKeys });
+              const label = state === "reservation" ? "予" : state === "unavailable" ? "－" : state === "available" ? "○" : "×";
+              const semantic = state === "reservation" ? "予約済み" : state === "rest" ? "休憩登録済み" : state === "selected" ? "選択中" : state === "available" ? "休憩登録可能" : "選択不可";
+              return <button aria-label={`${start.getMonth() + 1}月${start.getDate()}日 ${minutesLabel(minutes)} ${semantic}`} aria-pressed={state === "selected"} className={`is-${state}`} disabled={props.mutating || state === "reservation" || state === "unavailable"} key={day.toISOString()} onClick={() => toggleSlot(start, state)} type="button">{label}</button>;
+            })}
+          </div>)}
+        </div>
+        <div className="admin-rest-legend" aria-label="時間枠の記号">
+          <span><b>○</b> 登録可能</span>
+          <span><b>×</b> 休憩</span>
+          <span><b>予</b> 予約あり</span>
+          <span><b>－</b> 選択不可</span>
+        </div>
+      </section>
+      <section className="admin-panel admin-rest-list">
+        <SectionHeading eyebrow="REGISTERED" title="表示中の休憩" />
+        {visibleRests.map((item) => <article key={item.id}><div><strong>{new Date(item.startTime).getMonth() + 1}/{new Date(item.startTime).getDate()} {formatTime(item.startTime)} - {formatTime(item.endTime)}</strong></div><button disabled={props.mutating} onClick={() => void deleteRest(item)} type="button">削除</button></article>)}
+        {visibleRests.length === 0 ? <p>表示中の休憩はありません。</p> : null}
+      </section>
+    </div>
+  </>;
 }
 
 function Customers(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
@@ -554,26 +666,31 @@ function Notifications({ snapshot, mutating, runMutation }: {
   mutating: boolean;
   runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean>;
 }) {
+  const [channel, setChannel] = useState<"push" | "email">("push");
   const [target, setTarget] = useState<"all" | "customer">("all");
   const [customerId, setCustomerId] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const selectedCustomer = snapshot.customers.find((customer) => customer.id === customerId);
-  const recipientDeviceCount = target === "all"
-    ? snapshot.notificationDeviceCount
-    : selectedCustomer?.pushTokenCount ?? 0;
+  const recipientCount = target === "all"
+    ? channel === "push" ? snapshot.notificationDeviceCount : snapshot.notificationEmailCount
+    : channel === "push" ? selectedCustomer?.pushTokenCount ?? 0 : selectedCustomer?.email ? 1 : 0;
+  const recipientUnit = channel === "push" ? "台" : "件";
+  const channelLabel = channel === "push" ? "Push通知" : "メール";
+  const history = channel === "push" ? snapshot.pushNotifications : snapshot.emailNotifications;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     const audience = target === "all" ? "全ユーザー" : selectedCustomer?.displayName;
-    if (!audience || !confirm(`${audience}（登録端末 ${recipientDeviceCount}台）へ通知を送信しますか？`)) return;
+    if (!audience || !confirm(`${audience}（送信先 ${recipientCount}${recipientUnit}）へ${channelLabel}を送信しますか？`)) return;
     const ok = await runMutation({
       action: "notification.send",
+      channel,
       target,
       customerId: target === "customer" ? customerId : "",
       title,
       content,
-    }, `${audience}へのPush通知を受け付けました。`);
+    }, `${audience}への${channelLabel}送信を受け付けました。`);
     if (ok) {
       setTitle("");
       setContent("");
@@ -582,21 +699,36 @@ function Notifications({ snapshot, mutating, runMutation }: {
 
   return (
     <>
-      <PageTitle eyebrow="PUSH NOTIFICATIONS" title="Push通知" description="iOS・Androidアプリへ、自由に入力したお知らせを配信します。" />
+      <PageTitle eyebrow="CUSTOMER MESSAGING" title="お知らせ配信" description="送信方法を選び、全ユーザーまたは特定のユーザーへお知らせを配信します。" />
       <div className="admin-notification-layout">
         <form className="admin-panel admin-notification-form" onSubmit={submit}>
+          <fieldset>
+            <legend>送信方法</legend>
+            <div className="admin-notification-targets">
+              <label className={channel === "push" ? "is-active" : ""}>
+                <input checked={channel === "push"} name="notification-channel" onChange={() => setChannel("push")} type="radio" />
+                <VishuIcon name="bell" />
+                <span><strong>Push通知</strong><small>iOS・Androidアプリへ配信</small></span>
+              </label>
+              <label className={channel === "email" ? "is-active" : ""}>
+                <input checked={channel === "email"} name="notification-channel" onChange={() => setChannel("email")} type="radio" />
+                <VishuIcon name="mail" />
+                <span><strong>メール</strong><small>登録メールアドレスへ配信</small></span>
+              </label>
+            </div>
+          </fieldset>
           <fieldset>
             <legend>通知先</legend>
             <div className="admin-notification-targets">
               <label className={target === "all" ? "is-active" : ""}>
                 <input checked={target === "all"} name="notification-target" onChange={() => setTarget("all")} type="radio" />
                 <VishuIcon name="person" />
-                <span><strong>全ユーザー</strong><small>通知許可済みの登録端末すべて</small></span>
+                <span><strong>全ユーザー</strong><small>{channel === "push" ? "通知許可済みの登録端末すべて" : "メール登録済みのユーザーすべて"}</small></span>
               </label>
               <label className={target === "customer" ? "is-active" : ""}>
                 <input checked={target === "customer"} name="notification-target" onChange={() => setTarget("customer")} type="radio" />
                 <VishuIcon name="person" />
-                <span><strong>特定ユーザー</strong><small>選択した1名の登録端末</small></span>
+                <span><strong>特定ユーザー</strong><small>選択した1名へ送信</small></span>
               </label>
             </div>
           </fieldset>
@@ -606,8 +738,8 @@ function Notifications({ snapshot, mutating, runMutation }: {
               <select required value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
                 <option value="">ユーザーを選択してください</option>
                 {snapshot.customers.map((customer) => (
-                  <option disabled={customer.pushTokenCount === 0} key={customer.id} value={customer.id}>
-                    {customer.displayName}（{customer.pushTokenCount > 0 ? `登録端末 ${customer.pushTokenCount}台` : "通知端末なし"}）
+                  <option disabled={channel === "push" ? customer.pushTokenCount === 0 : !customer.email} key={customer.id} value={customer.id}>
+                    {customer.displayName}（{channel === "push" ? customer.pushTokenCount > 0 ? `登録端末 ${customer.pushTokenCount}台` : "通知端末なし" : customer.email || "メール未登録"}）
                   </option>
                 ))}
               </select>
@@ -622,21 +754,21 @@ function Notifications({ snapshot, mutating, runMutation }: {
             <textarea maxLength={1000} placeholder="お客様へお知らせする内容を入力してください。" required rows={8} value={content} onChange={(event) => setContent(event.target.value)} />
           </label>
           <div className="admin-notification-summary">
-            <VishuIcon name="bell" />
+            <VishuIcon name={channel === "push" ? "bell" : "mail"} />
             <div>
               <small>送信対象</small>
               <strong>{target === "all" ? "全ユーザー" : selectedCustomer?.displayName || "未選択"}</strong>
-              <span>登録端末 {recipientDeviceCount}台</span>
+              <span>{channel === "push" ? "登録端末" : "メールアドレス"} {recipientCount}{recipientUnit}</span>
             </div>
           </div>
-          <button className="admin-notification-submit" disabled={mutating || recipientDeviceCount === 0} type="submit">
+          <button className="admin-notification-submit" disabled={mutating || recipientCount === 0} type="submit">
             {mutating ? "送信処理中…" : "確認して送信"}
           </button>
-          <p className="admin-notification-help">通知を許可している端末に配信されます。端末の通信状況などにより、到着まで時間がかかる場合があります。</p>
+          <p className="admin-notification-help">{channel === "push" ? "通知を許可している端末に配信されます。端末の通信状況などにより、到着まで時間がかかる場合があります。" : "Firebase Authenticationに登録されたメールアドレスへ、ユーザーごとに個別送信されます。"}</p>
         </form>
         <section className="admin-panel admin-notification-history">
           <SectionHeading eyebrow="HISTORY" title="送信履歴" />
-          {snapshot.pushNotifications.map((notification) => (
+          {history.map((notification) => (
             <article key={notification.id}>
               <div>
                 <span>{notification.targetLabel}</span>
@@ -644,10 +776,10 @@ function Notifications({ snapshot, mutating, runMutation }: {
               </div>
               <strong>{notification.title}</strong>
               <p>{notification.content}</p>
-              <small>送信対象 {notification.recipientDeviceCount}台</small>
+              <small>送信対象 {"recipientDeviceCount" in notification ? `${notification.recipientDeviceCount}台` : `${notification.recipientEmailCount}件 · ${notification.status === "sent" ? "送信済み" : notification.status === "failed" ? "送信失敗" : "処理中"}`}</small>
             </article>
           ))}
-          {snapshot.pushNotifications.length === 0 ? <p className="admin-notification-empty">送信履歴はありません。</p> : null}
+          {history.length === 0 ? <p className="admin-notification-empty">送信履歴はありません。</p> : null}
         </section>
       </div>
     </>

@@ -5,6 +5,8 @@ import { z } from "zod";
 import { adminFirestore } from "@/lib/firebase/admin";
 import type {
   AdminCustomer,
+  AdminBookingSettings,
+  AdminEmailNotification,
   AdminMenu,
   AdminPushNotification,
   AdminReservation,
@@ -30,6 +32,17 @@ export const adminMutationSchema = z.discriminatedUnion("action", [
   }),
   z.object({ action: z.literal("rest.delete"), id: z.string().min(1) }),
   z.object({
+    action: z.literal("rest.apply"),
+    blocks: z.array(z.object({
+      startTime: z.iso.datetime(),
+      endTime: z.iso.datetime(),
+    })).max(200),
+    deleteIds: z.array(z.string().min(1).max(256)).max(200),
+  }).refine(
+    (value) => value.blocks.length > 0 || value.deleteIds.length > 0,
+    { message: "変更する休憩時間を選択してください。" },
+  ),
+  z.object({
     action: z.literal("menu.save"),
     menu: z.object({
       id: z.string(),
@@ -52,6 +65,7 @@ export const adminMutationSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("menu.delete"), id: z.string().min(1) }),
   z.object({
     action: z.literal("notification.send"),
+    channel: z.enum(["push", "email"]),
     target: z.enum(["all", "customer"]),
     customerId: z.string().trim().max(128),
     title: z.string().trim().min(1).max(100),
@@ -86,7 +100,7 @@ export async function loadAdminSnapshot(
   session: AdminSession,
 ): Promise<AdminSnapshot> {
   const database = adminFirestore();
-  const [menus, legacyReservations, renewalReservations, rests, users, notes, entries, deviceTokens, pushNotifications] =
+  const [menus, legacyReservations, renewalReservations, rests, users, notes, entries, deviceTokens, pushNotifications, emailNotifications, bookingSettings] =
     await Promise.all([
       database.collection("menu").get(),
       database.collectionGroup("reservations").get(),
@@ -97,6 +111,8 @@ export async function loadAdminSnapshot(
       database.collectionGroup("karteEntries").get(),
       database.collectionGroup("deviceTokenId").get(),
       database.collection("pushNotification").get(),
+      database.collection("emailNotification").get(),
+      database.collection("settings").doc("businessHours").get(),
     ]);
 
   const pushTokenCounts = new Map<string, Set<string>>();
@@ -148,6 +164,7 @@ export async function loadAdminSnapshot(
       .map((document) => restFromDocument(document.id, document.data()))
       .filter((item): item is AdminRestBlock => item !== null)
       .sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    bookingSettings: bookingSettingsFromDocument(bookingSettings.data()),
     customers: users.docs
       .map((document) => customerFromDocument(
         document.id,
@@ -168,7 +185,16 @@ export async function loadAdminSnapshot(
       ))
       .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
       .slice(0, 30),
+    emailNotifications: emailNotifications.docs
+      .map((document) => emailNotificationFromDocument(
+        document.id,
+        document.data(),
+        document.createTime.toDate(),
+      ))
+      .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
+      .slice(0, 30),
     notificationDeviceCount: notificationDeviceTokens.size,
+    notificationEmailCount: users.docs.filter((document) => stringValue(document.data().email)).length,
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -207,6 +233,16 @@ export async function applyAdminMutation(
     case "rest.delete":
       await database.collection("rests").doc(mutation.id).delete();
       return;
+    case "rest.apply":
+      await applyRestChanges(
+        mutation.blocks.map((block) => ({
+          start: new Date(block.startTime),
+          end: new Date(block.endTime),
+        })),
+        new Set(mutation.deleteIds),
+        session.uid,
+      );
+      return;
     case "menu.save": {
       const collection = database.collection("menu");
       const reference = mutation.menu.id ? collection.doc(mutation.menu.id) : collection.doc();
@@ -234,6 +270,9 @@ export async function applyAdminMutation(
       await database.collection("menu").doc(mutation.id).delete();
       return;
     case "notification.send": {
+      if (mutation.channel !== "push") {
+        throw new Error("メール送信は管理APIから実行してください。");
+      }
       const targetTokens = mutation.target === "all"
         ? await database.collectionGroup("deviceTokenId").get()
         : await database
@@ -348,6 +387,176 @@ async function ensureRestDoesNotOverlap(start: Date, end: Date) {
   }
 }
 
+type RestChangeRange = { start: Date; end: Date };
+
+async function applyRestChanges(
+  blocks: RestChangeRange[],
+  deleteIds: Set<string>,
+  uid: string,
+) {
+  validateRestChangeRanges(blocks);
+  const database = adminFirestore();
+  await database.runTransaction(async (transaction) => {
+    const settingsReference = database.collection("settings").doc("businessHours");
+    const [settingsDocument, rests, legacyReservations, renewalReservations] =
+      await Promise.all([
+        transaction.get(settingsReference),
+        transaction.get(database.collection("rests")),
+        transaction.get(database.collectionGroup("reservations")),
+        transaction.get(database.collection("reservation")),
+      ]);
+    const settings = bookingSettingsFromDocument(settingsDocument.data());
+    for (const block of blocks) validateRestBusinessHours(block, settings);
+
+    const existingRanges = rests.docs
+      .filter((document) => !deleteIds.has(document.id))
+      .map((document) => ({
+        start: dateValue(document.data().startTime),
+        end: dateValue(document.data().endTime),
+      }));
+    const reservationRanges = [...legacyReservations.docs, ...renewalReservations.docs]
+      .filter((document) => normalizeStatus(document.data().status) !== "canceled")
+      .map((document) => ({
+        start: dateValue(document.data().startAt ?? document.data().startTime),
+        end: dateValue(document.data().endAt ?? document.data().finishTime),
+      }));
+    const conflicts = [...existingRanges, ...reservationRanges];
+    if (blocks.some((block) => conflicts.some((item) =>
+      item.start && item.end && rangesOverlap(block, {
+        start: item.start,
+        end: item.end,
+      })))) {
+      throw new Error("予約または登録済みの休憩と重複しています。");
+    }
+
+    for (const id of deleteIds) {
+      transaction.delete(database.collection("rests").doc(id));
+    }
+    for (const block of blocks) {
+      const reference = database.collection("rests").doc();
+      transaction.set(reference, {
+        restId: reference.id,
+        startTime: Timestamp.fromDate(block.start),
+        endTime: Timestamp.fromDate(block.end),
+        createdBy: uid,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
+  });
+}
+
+function validateRestChangeRanges(blocks: RestChangeRange[]) {
+  const now = new Date();
+  const latest = new Date(now.getTime() + 90 * 24 * 60 * 60_000);
+  const sorted = [...blocks].sort((a, b) => a.start.getTime() - b.start.getTime());
+  for (const block of sorted) {
+    if (!(block.start < block.end)) {
+      throw new Error("終了時刻は開始時刻より後にしてください。");
+    }
+    if (block.start < now || block.start > latest) {
+      throw new Error("休憩は現在から90日以内で選択してください。");
+    }
+    if (
+      block.start.getUTCSeconds() !== 0 || block.start.getUTCMilliseconds() !== 0 ||
+      block.end.getUTCSeconds() !== 0 || block.end.getUTCMilliseconds() !== 0
+    ) {
+      throw new Error("休憩時間を予約枠の境界に合わせてください。");
+    }
+  }
+  for (let index = 1; index < sorted.length; index += 1) {
+    if (rangesOverlap(sorted[index - 1], sorted[index])) {
+      throw new Error("選択した休憩時間が重複しています。");
+    }
+  }
+}
+
+function validateRestBusinessHours(
+  block: RestChangeRange,
+  settings: AdminBookingSettings,
+) {
+  const start = tokyoDateParts(block.start);
+  const end = tokyoDateParts(block.end);
+  const sameDay = start.year === end.year && start.month === end.month &&
+    start.day === end.day;
+  const startMinutes = start.hour * 60 + start.minute;
+  const endMinutes = end.hour * 60 + end.minute;
+  if (
+    !sameDay ||
+    settings.closedWeekdays.includes(start.weekday) ||
+    startMinutes < settings.openingMinutes ||
+    endMinutes > settings.closingMinutes ||
+    (startMinutes - settings.openingMinutes) % settings.slotIntervalMinutes !== 0 ||
+    (endMinutes - settings.openingMinutes) % settings.slotIntervalMinutes !== 0
+  ) {
+    throw new Error("営業時間内の予約枠を選択してください。");
+  }
+}
+
+function rangesOverlap(a: RestChangeRange, b: RestChangeRange) {
+  return a.start < b.end && b.start < a.end;
+}
+
+function tokyoDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const year = value("year");
+  const month = value("month");
+  const day = value("day");
+  const jsWeekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return {
+    year,
+    month,
+    day,
+    hour: value("hour"),
+    minute: value("minute"),
+    weekday: jsWeekday === 0 ? 7 : jsWeekday,
+  };
+}
+
+function bookingSettingsFromDocument(
+  data: Record<string, unknown> | undefined,
+): AdminBookingSettings {
+  const openingMinutes = minutesFromDayTime(data?.openingTime) ?? 9 * 60;
+  const closingMinutes = minutesFromDayTime(data?.closingTime) ?? 18 * 60;
+  const interval = numberValue(data?.slotIntervalMinutes, 30);
+  return {
+    openingMinutes,
+    closingMinutes: closingMinutes > openingMinutes ? closingMinutes : 18 * 60,
+    slotIntervalMinutes: interval > 0 ? interval : 30,
+    closedWeekdays: Array.isArray(data?.closedWeekdays)
+      ? data.closedWeekdays.map((value) => numberValue(value)).filter((value) =>
+        value >= 1 && value <= 7)
+      : [],
+  };
+}
+
+function minutesFromDayTime(value: unknown) {
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const hour = numberValue(record.hour, -1);
+    const minute = numberValue(record.minute);
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+      return hour * 60 + minute;
+    }
+  }
+  if (typeof value === "string" && /^\d{1,2}:\d{2}$/.test(value)) {
+    const [hour, minute] = value.split(":").map(Number);
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+      return hour * 60 + minute;
+    }
+  }
+  return null;
+}
+
 function menuFromDocument(id: string, data: Record<string, unknown>): AdminMenu {
   return {
     id,
@@ -437,6 +646,7 @@ function customerFromDocument(
   return {
     id: customerId,
     displayName: splitName || stringValue(data.name, "お客様"),
+    email: stringValue(data.email),
     telephoneNumber: stringValue(data.telephoneNumber),
     dateOfBirth: displayDateValue(data.dateOfBirth),
     gender: stringValue(data.gender),
@@ -457,6 +667,23 @@ function pushNotificationFromDocument(
     content: stringValue(data.content),
     targetLabel: stringValue(data.person, "全ユーザー"),
     recipientDeviceCount: numberValue(data.recipientDeviceCount, new Set(tokens).size),
+    createdAt: (dateValue(data.createdAt) ?? fallbackCreatedAt).toISOString(),
+  };
+}
+
+function emailNotificationFromDocument(
+  id: string,
+  data: Record<string, unknown>,
+  fallbackCreatedAt: Date,
+): AdminEmailNotification {
+  const status = stringValue(data.status);
+  return {
+    id: stringValue(data.notificationId, id),
+    title: stringValue(data.title, "タイトル未設定"),
+    content: stringValue(data.content),
+    targetLabel: stringValue(data.person, "全ユーザー"),
+    recipientEmailCount: numberValue(data.recipientEmailCount),
+    status: status === "sent" || status === "failed" ? status : "queued",
     createdAt: (dateValue(data.createdAt) ?? fallbackCreatedAt).toISOString(),
   };
 }

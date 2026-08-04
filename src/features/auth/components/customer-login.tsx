@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
 } from "firebase/auth";
 import type { AuthError, UserCredential } from "firebase/auth";
 import Link from "next/link";
@@ -170,7 +171,29 @@ export function CustomerLogin() {
       provider.addScope("name");
     }
 
-    await authenticate(method, () => signInWithPopup(firebaseAuth(), provider));
+    if (method === "google") {
+      await authenticate("google", () =>
+        signInWithPopup(firebaseAuth(), provider),
+      );
+      return;
+    }
+
+    setPendingMethod(method);
+    setErrorMessage(null);
+    console.info("[auth] redirect_sign_in_started", {
+      method,
+      requestedAdmin: isAdminReturnTo(returnTo),
+    });
+    try {
+      await signInWithRedirect(firebaseAuth(), provider);
+    } catch (error) {
+      const details = authErrorDetails(error);
+      console.error(
+        `[auth] redirect_sign_in_failed method=${method} code=${details.code} name=${details.name} message=${details.message}`,
+      );
+      setErrorMessage(loginAuthErrorMessage(error));
+      setPendingMethod(null);
+    }
   }
 
   async function authenticate(
@@ -192,10 +215,10 @@ export function CustomerLogin() {
       });
       void navigateAfterSignIn(credential.user, "credential");
     } catch (error) {
-      console.error("[auth] sign_in_failed", {
-        method,
-        ...authErrorDetails(error),
-      });
+      const details = authErrorDetails(error);
+      console.error(
+        `[auth] sign_in_failed method=${method} code=${details.code} name=${details.name} message=${details.message}`,
+      );
       setErrorMessage(loginAuthErrorMessage(error));
       setPendingMethod(null);
     }
@@ -386,6 +409,7 @@ function authErrorDetails(error: unknown) {
   return {
     code: candidate?.code ?? "unknown",
     name: error instanceof Error ? error.name : typeof error,
+    message: error instanceof Error ? error.message : "unknown",
   };
 }
 

@@ -9,6 +9,7 @@ type IconName =
   | "cut"
   | "leaf"
   | "lock"
+  | "mail"
   | "phone"
   | "pin"
   | "person"
@@ -47,6 +48,12 @@ const iconPaths: Record<IconName, React.ReactNode> = {
     <>
       <rect x="4" y="10" width="16" height="11" rx="3" />
       <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3" />
+    </>
+  ),
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m4 7 8 6 8-6" />
     </>
   ),
   phone: <path d="M5.4 3.8 8.7 3l1.7 4.3-2.2 1.3a15 15 0 0 0 7.2 7.2l1.3-2.2 4.3 1.7-.8 3.3c-.3 1.2-1.4 2-2.6 1.9C10.2 19.7 4.3 13.8 3.5 6.4c-.1-1.2.7-2.3 1.9-2.6Z" />,

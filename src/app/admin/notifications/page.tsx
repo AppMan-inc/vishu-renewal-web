@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AdminConsole } from "@/features/admin/components/admin-console";
 
 export const metadata: Metadata = {
-  title: "Push通知",
+  title: "お知らせ配信",
   robots: { index: false, follow: false },
 };
 

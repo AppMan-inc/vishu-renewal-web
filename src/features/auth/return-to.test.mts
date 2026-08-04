@@ -48,6 +48,7 @@ test("admin returnTo requires authorization and preserves a safe destination", (
     requiresAdminAuthorization: true,
   });
   assert.equal(safeAdminReturnTo("/admin/login"), "/admin");
+  assert.equal(safeAdminReturnTo("/admin/rest"), "/admin/rests");
   assert.equal(isAdminReturnTo("/admin/login?returnTo=/admin"), false);
   assert.equal(isAdminReturnTo("/%2561dmin/customers"), true);
 });

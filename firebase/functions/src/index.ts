@@ -1,5 +1,7 @@
 import Busboy from "busboy";
 import { getAuth } from "firebase-admin/auth";
+import type { DocumentData, Firestore } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { logger } from "firebase-functions";
 import { onRequest, type Request } from "firebase-functions/v2/https";
@@ -7,12 +9,13 @@ import {
   adminMutationSchema,
   applyAdminMutation,
   loadAdminSnapshot,
+  type AdminMutation,
 } from "../../../src/features/admin/server/admin-data";
 import type {
   AdminRole,
   AdminSession,
 } from "../../../src/features/admin/types";
-import { adminFirestore, getFirebaseAdminApp } from "./firebase-admin-adapter";
+import { adminAuth, adminFirestore, getFirebaseAdminApp } from "./firebase-admin-adapter";
 
 const ADMIN_UIDS = new Set(["FQNtPf0iDcMpKh98F47Q4if0tXp1"]);
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -30,6 +33,7 @@ export const adminApi = onRequest(
     memory: "512MiB",
     region: "asia-northeast2",
     timeoutSeconds: 60,
+    secrets: ["RESEND_API_KEY"],
   },
   async (request, response) => {
     const requestId = requestIdFor(request);
@@ -100,6 +104,12 @@ async function handleSnapshot(
 ) {
   const session = await requireAdmin(request, requestId);
   const snapshot = await loadAdminSnapshot(session);
+  const customerEmails = await customerEmailMap(snapshot.customers.map((customer) => customer.id));
+  snapshot.customers = snapshot.customers.map((customer) => ({
+    ...customer,
+    email: customerEmails.get(customer.id) ?? customer.email,
+  }));
+  snapshot.notificationEmailCount = snapshot.customers.filter((customer) => customer.email).length;
   log("info", "snapshot_loaded", { requestId, uid: session.uid });
   jsonResponse(response, snapshot, 200, requestId);
 }
@@ -120,13 +130,146 @@ async function handleMutation(
     );
     return;
   }
-  await applyAdminMutation(body.data, session);
+  if (body.data.action === "notification.send" && body.data.channel === "email") {
+    await sendEmailNotification(body.data, session, requestId);
+  } else {
+    await applyAdminMutation(body.data, session);
+  }
   log("info", "mutation_applied", {
     action: body.data.action,
     requestId,
     uid: session.uid,
   });
   jsonResponse(response, { ok: true }, 200, requestId);
+}
+
+async function sendEmailNotification(
+  mutation: Extract<AdminMutation, { action: "notification.send" }>,
+  session: AdminSession,
+  requestId: string,
+) {
+  const database = adminFirestore();
+  const customers = mutation.target === "all"
+    ? (await database.collection("users").get()).docs.map((document) => ({
+        id: stringValue(document.data().uid, document.id),
+        name: customerName(document.data()),
+      }))
+    : await selectedCustomer(database, mutation.customerId);
+  const emails = await customerEmailMap(customers.map((customer) => customer.id));
+  const recipients = customers.flatMap((customer) => {
+    const email = emails.get(customer.id);
+    return email ? [{ email, name: customer.name }] : [];
+  });
+  if (recipients.length === 0) {
+    throw new RequestError(
+      mutation.target === "all"
+        ? "メールアドレスが登録されているユーザーがいません。"
+        : "選択したユーザーにはメールアドレスが登録されていません。",
+      400,
+    );
+  }
+
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.NOTIFICATION_EMAIL_FROM?.trim();
+  if (!apiKey || !from) {
+    throw new Error("Email delivery is not configured.");
+  }
+  const person = mutation.target === "all" ? null : customers[0]?.name || "お客様";
+  const history = database.collection("emailNotification").doc(requestId);
+  await history.set({
+    notificationId: history.id,
+    person,
+    title: mutation.title,
+    content: mutation.content,
+    targetType: mutation.target,
+    targetCustomerId: mutation.target === "customer" ? mutation.customerId : null,
+    recipientEmailCount: recipients.length,
+    status: "queued",
+    createdBy: session.uid,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  try {
+    for (let index = 0; index < recipients.length; index += 100) {
+      const batch = recipients.slice(index, index + 100).map((recipient) => ({
+        from,
+        to: [recipient.email],
+        subject: mutation.title,
+        text: mutation.content,
+        html: emailHtml(mutation.title, mutation.content, recipient.name),
+      }));
+      const response = await fetch("https://api.resend.com/emails/batch", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(batch),
+      });
+      if (!response.ok) {
+        const details = await response.text();
+        logger.error("[admin-api] email_delivery_failed", {
+          requestId,
+          status: response.status,
+          details: details.slice(0, 500),
+        });
+        throw new Error(`Resend returned ${response.status}.`);
+      }
+    }
+    await history.update({ status: "sent", sentAt: FieldValue.serverTimestamp() });
+  } catch (error) {
+    await history.update({
+      status: "failed",
+      failedAt: FieldValue.serverTimestamp(),
+      errorCode: String(errorCode(error)),
+    });
+    throw error;
+  }
+}
+
+async function selectedCustomer(database: Firestore, customerId: string) {
+  const document = await database.collection("users").doc(customerId).get();
+  if (!document.exists) {
+    throw new RequestError("選択したユーザーが見つかりません。", 404);
+  }
+  return [{ id: customerId, name: customerName(document.data() ?? {}) }];
+}
+
+async function customerEmailMap(customerIds: string[]) {
+  const result = new Map<string, string>();
+  for (let index = 0; index < customerIds.length; index += 100) {
+    const identifiers = customerIds.slice(index, index + 100).map((uid) => ({ uid }));
+    if (identifiers.length === 0) continue;
+    const users = await adminAuth().getUsers(identifiers);
+    for (const user of users.users) {
+      if (!user.disabled && user.email) result.set(user.uid, user.email);
+    }
+  }
+  return result;
+}
+
+function customerName(data: DocumentData) {
+  return `${stringValue(data.lastName)} ${stringValue(data.firstName)}`.trim()
+    || stringValue(data.name, "お客様");
+}
+
+function stringValue(value: unknown, fallback = "") {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function emailHtml(title: string, content: string, customer: string) {
+  const paragraphs = escapeHtml(content).replace(/\n/g, "<br>");
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#263023;line-height:1.8;max-width:640px;margin:auto"><p>${escapeHtml(customer)} 様</p><h1 style="font-size:20px">${escapeHtml(title)}</h1><p>${paragraphs}</p><hr style="border:0;border-top:1px solid #e4e9e1;margin:32px 0"><p style="color:#697365;font-size:12px">Salon Vishu</p></div>`;
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[character] ?? character);
 }
 
 async function handleMenuImage(

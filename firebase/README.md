@@ -25,3 +25,19 @@ firebase deploy --only functions:adminApi --project salon-vishu2-dev-30830
 `NEXT_PUBLIC_FIREBASE_ADMIN_API_URL` に `adminApi` のベースURLを設定します。
 
 既存プロジェクトへ `firebase deploy` する前に、現在のRulesとIndexesを必ず取得して差分を確認してください。このディレクトリからのデプロイは今回行っていません。
+
+## 管理者メール配信
+
+管理画面のメール配信は Resend を利用します。Resend で送信ドメインを認証した後、Functions の Secret と送信元を設定してください。
+
+```bash
+firebase functions:secrets:set RESEND_API_KEY --project salon-vishu2-dev-30830
+```
+
+`firebase/functions/.env.<project-id>` には、認証済みドメインの送信元を設定します。
+
+```dotenv
+NOTIFICATION_EMAIL_FROM=Salon Vishu <notifications@example.com>
+```
+
+本番環境では `--project salon-vishu` に置き換え、同様に設定します。全体配信も宛先ごとの個別メールとして送信されるため、受信者同士にメールアドレスは公開されません。

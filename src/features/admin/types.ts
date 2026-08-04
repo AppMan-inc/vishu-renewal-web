@@ -47,9 +47,17 @@ export type AdminRestBlock = {
   createdAt: string;
 };
 
+export type AdminBookingSettings = {
+  openingMinutes: number;
+  closingMinutes: number;
+  slotIntervalMinutes: number;
+  closedWeekdays: number[];
+};
+
 export type AdminCustomer = {
   id: string;
   displayName: string;
+  email: string;
   telephoneNumber: string;
   dateOfBirth: string;
   gender: string;
@@ -63,6 +71,16 @@ export type AdminPushNotification = {
   content: string;
   targetLabel: string;
   recipientDeviceCount: number;
+  createdAt: string | null;
+};
+
+export type AdminEmailNotification = {
+  id: string;
+  title: string;
+  content: string;
+  targetLabel: string;
+  recipientEmailCount: number;
+  status: "queued" | "sent" | "failed";
   createdAt: string | null;
 };
 
@@ -84,10 +102,13 @@ export type AdminSnapshot = {
   menus: AdminMenu[];
   reservations: AdminReservation[];
   restBlocks: AdminRestBlock[];
+  bookingSettings: AdminBookingSettings;
   customers: AdminCustomer[];
   karteEntries: KarteEntry[];
   pushNotifications: AdminPushNotification[];
+  emailNotifications: AdminEmailNotification[];
   notificationDeviceCount: number;
+  notificationEmailCount: number;
   fetchedAt: string;
 };
 
