@@ -13,6 +13,10 @@ import {
   where,
 } from "firebase/firestore";
 import { firestore } from "@/lib/firebase/client";
+import {
+  customerProfileValidationMessage,
+  sanitizePhoneNumber,
+} from "@/features/form-validation";
 
 export type CustomerProfile = {
   uid: string;
@@ -82,6 +86,9 @@ export async function saveCustomerProfile(
   uid: string,
   input: CustomerProfileInput,
 ) {
+  const validationMessage = customerProfileValidationMessage(input);
+  if (validationMessage) throw new TypeError(validationMessage);
+
   const lastName = input.lastName.trim();
   const firstName = input.firstName.trim();
 
@@ -92,7 +99,7 @@ export async function saveCustomerProfile(
       name: `${lastName} ${firstName}`,
       lastName,
       firstName,
-      telephoneNumber: input.telephoneNumber.trim(),
+      telephoneNumber: input.telephoneNumber,
       gender: input.gender,
       dateOfBirth: input.dateOfBirth,
       updatedAt: serverTimestamp(),
@@ -152,9 +159,9 @@ function profileFromData(
     email,
     lastName: stringValue(data.lastName) || nameParts.lastName,
     firstName: stringValue(data.firstName) || nameParts.firstName,
-    telephoneNumber: stringValue(
+    telephoneNumber: sanitizePhoneNumber(stringValue(
       data.telephoneNumber ?? data.phoneNumber ?? data.phone,
-    ),
+    )),
     gender: gender === "男性" || gender === "女性" ? gender : "その他",
     dateOfBirth: dateString(data.dateOfBirth),
   };

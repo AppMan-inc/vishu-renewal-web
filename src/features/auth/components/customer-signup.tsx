@@ -17,6 +17,7 @@ import {
 } from "@/features/auth/customer-signup";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { siteAssetPath } from "@/lib/site-path";
+import { FORM_FIELD_LIMITS } from "@/features/form-validation";
 
 export function CustomerSignup() {
   const router = useRouter();
@@ -149,6 +150,7 @@ export function CustomerSignup() {
                 type="email"
                 autoComplete="email"
                 placeholder="you@example.com"
+                maxLength={FORM_FIELD_LIMITS.email}
                 required
                 disabled={isPending}
                 aria-invalid={Boolean(fieldErrors.email)}

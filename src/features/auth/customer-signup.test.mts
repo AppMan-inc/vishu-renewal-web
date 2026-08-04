@@ -52,6 +52,28 @@ test("signup validation rejects invalid email and short passwords", () => {
   );
 });
 
+test("signup email accepts 50 characters and rejects 51", () => {
+  const emailAtLimit = `${"a".repeat(45)}@a.co`;
+  const emailOverLimit = `${"a".repeat(46)}@a.co`;
+
+  assert.equal(
+    validateCustomerSignup({
+      email: emailAtLimit,
+      password: "secret1",
+      passwordConfirmation: "secret1",
+    }).email,
+    undefined,
+  );
+  assert.equal(
+    validateCustomerSignup({
+      email: emailOverLimit,
+      password: "secret1",
+      passwordConfirmation: "secret1",
+    }).email,
+    "メールアドレスは50文字以内で入力してください。",
+  );
+});
+
 test("signup validation rejects a password confirmation mismatch", () => {
   assert.deepEqual(
     validateCustomerSignup({
@@ -81,6 +103,22 @@ test("customer account creation trims email and uses Firebase Auth", async () =>
   assert.deepEqual(calls, [
     { auth, email: "guest@example.com", password: "secret1" },
   ]);
+});
+
+test("customer account creation rejects an over-limit email before Firebase Auth", async () => {
+  let called = false;
+  await assert.rejects(
+    createCustomerAccount(
+      {} as Auth,
+      { email: `${"a".repeat(46)}@a.co`, password: "secret1" },
+      async () => {
+        called = true;
+        return {} as UserCredential;
+      },
+    ),
+    /50文字以内/,
+  );
+  assert.equal(called, false);
 });
 
 test("new customer destinations can never navigate to admin", () => {

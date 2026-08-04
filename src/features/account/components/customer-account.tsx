@@ -18,6 +18,11 @@ import {
   cancelBookingReservation,
 } from "@/features/booking/reservation-api";
 import { firebaseAuth } from "@/lib/firebase/client";
+import {
+  customerProfileValidationMessage,
+  FORM_FIELD_LIMITS,
+  sanitizePhoneNumber,
+} from "@/features/form-validation";
 
 const accountNavigation = [
   { href: "/mypage", label: "マイページ" },
@@ -324,13 +329,9 @@ export function CustomerProfileEditor() {
     event.preventDefault();
     if (!currentUser || !profile || isSaving) return;
 
-    const phoneDigits = profile.telephoneNumber.replace(/[^0-9]/g, "");
-    if (!profile.lastName.trim() || !profile.firstName.trim()) {
-      setErrorMessage("姓と名を入力してください。");
-      return;
-    }
-    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
-      setErrorMessage("電話番号は10〜11桁で入力してください。");
+    const validationMessage = customerProfileValidationMessage(profile);
+    if (validationMessage) {
+      setErrorMessage(validationMessage);
       return;
     }
     if (!profile.dateOfBirth) {
@@ -386,9 +387,9 @@ export function CustomerProfileEditor() {
 
           <div className="account-form-grid">
             <label className="is-wide"><span>メールアドレス</span><input disabled value={profile.email} /></label>
-            <label><span>姓 <em>必須</em></span><input autoComplete="family-name" maxLength={40} required value={profile.lastName} onChange={(event) => setProfile({ ...profile, lastName: event.target.value })} /></label>
-            <label><span>名 <em>必須</em></span><input autoComplete="given-name" maxLength={40} required value={profile.firstName} onChange={(event) => setProfile({ ...profile, firstName: event.target.value })} /></label>
-            <label className="is-wide"><span>電話番号 <em>必須</em></span><input autoComplete="tel" inputMode="tel" maxLength={20} placeholder="09012345678" required value={profile.telephoneNumber} onChange={(event) => setProfile({ ...profile, telephoneNumber: event.target.value })} /></label>
+            <label><span>姓 <em>必須</em></span><input autoComplete="family-name" maxLength={FORM_FIELD_LIMITS.personName} required value={profile.lastName} onChange={(event) => setProfile({ ...profile, lastName: event.target.value })} /></label>
+            <label><span>名 <em>必須</em></span><input autoComplete="given-name" maxLength={FORM_FIELD_LIMITS.personName} required value={profile.firstName} onChange={(event) => setProfile({ ...profile, firstName: event.target.value })} /></label>
+            <label className="is-wide"><span>電話番号 <em>必須</em></span><input autoComplete="tel" inputMode="numeric" maxLength={FORM_FIELD_LIMITS.phone} pattern="[0-9]*" placeholder="09012345678" required type="tel" value={profile.telephoneNumber} onChange={(event) => setProfile({ ...profile, telephoneNumber: sanitizePhoneNumber(event.target.value) })} /></label>
             <label><span>生年月日 <em>必須</em></span><input max={todayDateString()} min="1920-01-01" required type="date" value={profile.dateOfBirth} onChange={(event) => setProfile({ ...profile, dateOfBirth: event.target.value })} /></label>
             <fieldset>
               <legend>性別</legend>

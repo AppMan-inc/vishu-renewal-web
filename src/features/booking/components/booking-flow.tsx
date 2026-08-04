@@ -16,6 +16,11 @@ import {
   bookingReservationErrorMessage,
   createBookingReservation,
 } from "@/features/booking/reservation-api";
+import {
+  bookingCustomerValidationMessage,
+  FORM_FIELD_LIMITS,
+  sanitizePhoneNumber,
+} from "@/features/form-validation";
 
 const steps = ["メニュー", "日時", "お客様情報", "確認"];
 const categories = [
@@ -162,14 +167,11 @@ export function BookingFlow() {
     }
   }
 
-  const phoneDigits = phone.replace(/[^0-9]/g, "");
-  const hasValidCustomerDetails =
-    customerName.trim().length > 0 &&
-    customerName.trim().length <= 80 &&
-    phone.trim().length <= 20 &&
-    phoneDigits.length >= 10 &&
-    phoneDigits.length <= 11 &&
-    request.trim().length <= 500;
+  const hasValidCustomerDetails = !bookingCustomerValidationMessage({
+    customerName,
+    telephoneNumber: phone,
+    request,
+  });
   const canContinue =
     (currentStep === 0 && Boolean(selectedMenu) && !selectedMenu?.isCallable) ||
     (currentStep === 1 && Boolean(selectedSlot)) ||
@@ -230,7 +232,7 @@ export function BookingFlow() {
               phone={phone}
               request={request}
               onNameChange={setCustomerName}
-              onPhoneChange={setPhone}
+              onPhoneChange={(value) => setPhone(sanitizePhoneNumber(value))}
               onRequestChange={setRequest}
             />
           ) : null}
@@ -589,10 +591,10 @@ function CustomerStep({
       <div className="subsection-heading"><span>STEP 03</span><h2>お客様情報を入力</h2></div>
       <div className="booking-form-card">
         <div className="booking-form-grid">
-          <label><span>お名前 <em>必須</em></span><input maxLength={80} value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="山田 花子" /></label>
-          <label><span>電話番号 <em>必須</em></span><input inputMode="tel" maxLength={20} value={phone} onChange={(event) => onPhoneChange(event.target.value)} placeholder="09012345678" /></label>
+          <label><span>お名前 <em>必須</em></span><input maxLength={FORM_FIELD_LIMITS.personName} value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="山田 花子" /></label>
+          <label><span>電話番号 <em>必須</em></span><input autoComplete="tel" inputMode="numeric" maxLength={FORM_FIELD_LIMITS.phone} pattern="[0-9]*" type="tel" value={phone} onChange={(event) => onPhoneChange(event.target.value)} placeholder="09012345678" /></label>
           <label className="is-wide"><span>メールアドレス</span><input value={email} disabled /></label>
-          <label className="is-wide"><span>ご要望・ご相談</span><textarea maxLength={500} value={request} onChange={(event) => onRequestChange(event.target.value)} placeholder="髪のお悩みやご希望があればご記入ください。" rows={5} /></label>
+          <label className="is-wide"><span>ご要望・ご相談</span><textarea maxLength={FORM_FIELD_LIMITS.inquiryMessage} value={request} onChange={(event) => onRequestChange(event.target.value)} placeholder="髪のお悩みやご希望があればご記入ください。" rows={5} /></label>
         </div>
         <p className="booking-form-note">ご入力いただいた情報は、ご予約の確認とサロンからのご連絡に使用します。</p>
       </div>

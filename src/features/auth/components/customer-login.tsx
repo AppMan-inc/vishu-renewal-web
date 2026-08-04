@@ -21,6 +21,10 @@ import {
   safeCustomerReturnTo,
 } from "@/features/auth/return-to";
 import { customerSignupHref } from "@/features/auth/customer-signup";
+import {
+  FORM_FIELD_LIMITS,
+  hasValidEmailLength,
+} from "@/features/form-validation";
 
 type LoginMethod = "email" | "google" | "apple";
 
@@ -131,6 +135,10 @@ export function CustomerLogin() {
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
+    if (!hasValidEmailLength(email)) {
+      setErrorMessage("メールアドレスは50文字以内で入力してください。");
+      return;
+    }
 
     await authenticate("email", () =>
       signInWithEmailAndPassword(firebaseAuth(), email, password),
@@ -225,6 +233,7 @@ export function CustomerLogin() {
                 type="email"
                 autoComplete="email"
                 placeholder="you@example.com"
+                maxLength={FORM_FIELD_LIMITS.email}
                 required
                 disabled={isPending}
               />

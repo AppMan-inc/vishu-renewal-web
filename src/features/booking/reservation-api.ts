@@ -3,6 +3,7 @@ import "client-only";
 import { FirebaseError } from "firebase/app";
 import { httpsCallable } from "firebase/functions";
 import { firebaseFunctions } from "@/lib/firebase/client";
+import { bookingCustomerValidationMessage } from "@/features/form-validation";
 
 export type CreateBookingReservationInput = {
   menuId: string;
@@ -25,6 +26,9 @@ type CancelBookingReservationResult = {
 export async function createBookingReservation(
   input: CreateBookingReservationInput,
 ) {
+  const validationMessage = bookingCustomerValidationMessage(input);
+  if (validationMessage) throw new TypeError(validationMessage);
+
   const createReservation = httpsCallable<
     CreateBookingReservationInput,
     CreateBookingReservationResult

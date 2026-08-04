@@ -1,6 +1,7 @@
 import type { Auth, AuthError, UserCredential } from "firebase/auth";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { safeCustomerReturnTo } from "./return-to.ts";
+import { hasValidEmailLength } from "../form-validation.ts";
 
 export type CustomerSignupValues = {
   email: string;
@@ -29,6 +30,8 @@ export function validateCustomerSignup(
 
   if (!email) {
     errors.email = "メールアドレスを入力してください。";
+  } else if (!hasValidEmailLength(email)) {
+    errors.email = "メールアドレスは50文字以内で入力してください。";
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.email = "正しい形式のメールアドレスを入力してください。";
   }
@@ -73,7 +76,11 @@ export async function createCustomerAccount(
   values: Pick<CustomerSignupValues, "email" | "password">,
   createEmailUser: CreateEmailUser = createUserWithEmailAndPassword,
 ) {
-  return createEmailUser(auth, values.email.trim(), values.password);
+  const email = values.email.trim();
+  if (!hasValidEmailLength(email)) {
+    throw new TypeError("メールアドレスは50文字以内で入力してください。");
+  }
+  return createEmailUser(auth, email, values.password);
 }
 
 export function claimCustomerSignupSubmission(
