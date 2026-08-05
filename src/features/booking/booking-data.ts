@@ -7,10 +7,15 @@ import {
   getDocs,
   orderBy,
   query,
-  Timestamp,
 } from "firebase/firestore";
-import { firestore } from "@/lib/firebase/client";
+import { httpsCallable } from "firebase/functions";
+import { firebaseFunctions, firestore } from "@/lib/firebase/client";
 import { sanitizePhoneNumber } from "@/features/form-validation";
+import {
+  type BookingAvailability,
+  bookingAvailabilityFromData,
+  unavailableBookingAvailability,
+} from "@/features/booking/booking-availability";
 
 const cloudStorageImageHosts = new Set([
   "firebasestorage.googleapis.com",
@@ -31,21 +36,9 @@ export type BookingMenu = {
   priority: number;
 };
 
-export type TimeRange = {
-  start: Date;
-  end: Date;
-};
-
-export type BookingCatalog = {
+export type BookingCatalog = BookingAvailability & {
   menus: BookingMenu[];
-  openingMinutes: number;
-  closingMinutes: number;
-  slotIntervalMinutes: number;
-  closedWeekdays: Set<number>;
-  reservations: TimeRange[];
-  restBlocks: TimeRange[];
   usesSampleMenus: boolean;
-  availabilityIsLive: boolean;
 };
 
 export type BookingCustomerProfile = {
@@ -95,14 +88,13 @@ const sampleMenus: BookingMenu[] = [
   },
 ];
 
-export async function loadBookingCatalog(uid?: string): Promise<BookingCatalog> {
+export async function loadBookingCatalog(args: {
+  from: Date;
+  until: Date;
+}): Promise<BookingCatalog> {
   const database = firestore();
   let menus = sampleMenus;
   let usesSampleMenus = true;
-  let openingMinutes = 9 * 60;
-  let closingMinutes = 18 * 60;
-  let slotIntervalMinutes = 30;
-  let closedWeekdays = new Set<number>();
 
   const menuResult = await settled(async () => {
     const snapshot = await getDocs(
@@ -116,59 +108,23 @@ export async function loadBookingCatalog(uid?: string): Promise<BookingCatalog> 
     usesSampleMenus = false;
   }
 
-  const settings = await settled(async () => {
-    const snapshot = await getDoc(doc(database, "settings", "businessHours"));
-    return snapshot.data();
-  });
-
-  if (settings) {
-    openingMinutes = minutesFromDayTime(settings.openingTime) ?? openingMinutes;
-    closingMinutes = minutesFromDayTime(settings.closingTime) ?? closingMinutes;
-    slotIntervalMinutes = positiveInteger(settings.slotIntervalMinutes) ?? slotIntervalMinutes;
-    closedWeekdays = new Set(
-      Array.isArray(settings.closedWeekdays)
-        ? settings.closedWeekdays.map(numberValue).filter(isNumber)
-        : [],
-    );
-  }
-
-  const [reservationResult, userReservationResult, restResult] = await Promise.all([
-    settled(async () => {
-      const snapshot = await getDocs(collection(database, "reservation"));
-      return snapshot.docs
-        .filter((document) => !isCancelled(document.data().status))
-        .map((document) => rangeFromData(document.data()))
-        .filter(isTimeRange);
-    }),
-    settled(async () => {
-      if (!uid) return [];
-      const snapshot = await getDocs(
-        collection(database, "users", uid, "reservations"),
-      );
-      return snapshot.docs
-        .filter((document) => !isCancelled(document.data().status))
-        .map((document) => rangeFromData(document.data()))
-        .filter(isTimeRange);
-    }),
-    settled(async () => {
-      const snapshot = await getDocs(collection(database, "rests"));
-      return snapshot.docs.map((document) => rangeFromData(document.data())).filter(isTimeRange);
-    }),
-  ]);
+  const availability =
+    (await settled(async () => {
+      const getAvailability = httpsCallable<
+        { from: string; until: string },
+        unknown
+      >(firebaseFunctions(), "getReservationAvailability");
+      const result = await getAvailability({
+        from: args.from.toISOString(),
+        until: args.until.toISOString(),
+      });
+      return bookingAvailabilityFromData(result.data);
+    })) ?? unavailableBookingAvailability();
 
   return {
     menus,
-    openingMinutes,
-    closingMinutes,
-    slotIntervalMinutes,
-    closedWeekdays,
-    reservations: [...(reservationResult ?? []), ...(userReservationResult ?? [])],
-    restBlocks: restResult ?? [],
+    ...availability,
     usesSampleMenus,
-    availabilityIsLive:
-      reservationResult !== null &&
-      userReservationResult !== null &&
-      restResult !== null,
   };
 }
 
@@ -237,36 +193,6 @@ function cloudStorageImageUrl(value: unknown) {
   }
 }
 
-function rangeFromData(data: Record<string, unknown>): TimeRange | null {
-  const start = dateValue(data.startAt ?? data.startTime);
-  const end = dateValue(data.endAt ?? data.finishTime);
-  return start && end ? { start, end } : null;
-}
-
-function dateValue(value: unknown) {
-  if (value instanceof Timestamp) return value.toDate();
-  if (value instanceof Date) return value;
-  if (typeof value === "string") {
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-  return null;
-}
-
-function minutesFromDayTime(value: unknown) {
-  if (typeof value === "string") {
-    const [hour, minute] = value.split(":").map(Number);
-    return Number.isInteger(hour) && Number.isInteger(minute)
-      ? hour * 60 + minute
-      : null;
-  }
-  if (!value || typeof value !== "object") return null;
-  const record = value as Record<string, unknown>;
-  const hour = numberValue(record.hour);
-  const minute = numberValue(record.minute) ?? 0;
-  return hour === null ? null : hour * 60 + minute;
-}
-
 function stringValue(value: unknown) {
   return typeof value === "string" ? value.trim() : value?.toString().trim() ?? "";
 }
@@ -294,17 +220,4 @@ function positiveInteger(value: unknown) {
 
 function booleanValue(value: unknown) {
   return value === true || value === 1 || value === "true" || value === "1";
-}
-
-function isCancelled(value: unknown) {
-  const status = stringValue(value).toLowerCase();
-  return status === "canceled" || status === "cancelled" || status === "キャンセル";
-}
-
-function isNumber(value: number | null): value is number {
-  return value !== null;
-}
-
-function isTimeRange(value: TimeRange | null): value is TimeRange {
-  return value !== null;
 }
