@@ -111,12 +111,7 @@
 
 ```ts
 {
-  salonIds: string[];
-  role: "owner" | "manager" | "staff";
-  active: boolean;
-  schemaVersion: 2;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  uid: string;
 }
 ```
 

@@ -6,6 +6,13 @@ import { siteAssetPath } from "@/lib/site-path";
 import styles from "./home-page.module.css";
 
 const hotPepperUrl = "https://beauty.hotpepper.jp/slnH000583006/";
+const googleMapsUrl =
+  "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent("Salon Vishu 大阪府河内長野市荘園町18-14");
+const googleMapsEmbedUrl =
+  "https://www.google.com/maps?q=" +
+  encodeURIComponent("Salon Vishu 大阪府河内長野市荘園町18-14") +
+  "&output=embed";
 
 const services = [
   {
@@ -231,6 +238,25 @@ function SalonInfoSection() {
         <div className={styles.contact}>
           <span><VishuIcon name="phone" /> ご予約・お問い合わせ</span>
           <a href="tel:0721218824">0721-21-8824</a>
+        </div>
+        <div className={styles.mapBlock}>
+          <div className={styles.mapHeading}>
+            <div>
+              <span>ACCESS MAP</span>
+              <p>大阪府河内長野市荘園町18-14</p>
+            </div>
+            <a href={googleMapsUrl} target="_blank" rel="noreferrer">
+              Google マップで見る <VishuIcon name="arrow" />
+            </a>
+          </div>
+          <iframe
+            className={styles.mapFrame}
+            src={googleMapsEmbedUrl}
+            title="Salon Vishu 周辺地図"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
         </div>
       </div>
     </section>

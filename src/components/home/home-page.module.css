@@ -643,6 +643,57 @@
   font-size: clamp(25px, 3vw, 36px);
 }
 
+.mapBlock {
+  margin-top: 42px;
+}
+
+.mapHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 14px;
+}
+
+.mapHeading span {
+  color: var(--gold);
+  font-family: Georgia, serif;
+  font-size: 9px;
+  letter-spacing: .16em;
+}
+
+.mapHeading p {
+  margin: 7px 0 0;
+  color: #5f5851;
+  font-size: 11px;
+}
+
+.mapHeading a {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #cfc2b3;
+  color: var(--taupe);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.mapHeading a svg {
+  width: 13px;
+}
+
+.mapFrame {
+  display: block;
+  width: 100%;
+  height: 310px;
+  border: 1px solid var(--line);
+  border-radius: 4px 30px 4px 4px;
+  background: var(--warm);
+  filter: saturate(.78) contrast(.94);
+}
+
 .finalCta {
   position: relative;
   display: flex;
@@ -961,6 +1012,21 @@
   .contact {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .mapBlock {
+    margin-top: 38px;
+  }
+
+  .mapHeading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  .mapFrame {
+    height: 280px;
+    border-radius: 3px 24px 3px 3px;
   }
 
   .finalCta {

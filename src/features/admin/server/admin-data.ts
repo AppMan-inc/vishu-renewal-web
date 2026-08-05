@@ -3,6 +3,7 @@ import "server-only";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { z } from "zod";
 import { adminFirestore } from "@/lib/firebase/admin";
+import { adminLog } from "@/features/admin/server/admin-log";
 import type {
   AdminCustomer,
   AdminBookingSettings,
@@ -100,7 +101,7 @@ export async function loadAdminSnapshot(
   session: AdminSession,
 ): Promise<AdminSnapshot> {
   const database = adminFirestore();
-  const [menus, legacyReservations, renewalReservations, rests, users, notes, entries, deviceTokens, pushNotifications, emailNotifications, bookingSettings] =
+  const [menus, legacyReservations, renewalReservations, rests, users, notes, entries, currentDeviceTokens, legacyDeviceTokens, pushNotifications, emailNotifications, bookingSettings] =
     await Promise.all([
       database.collection("menu").get(),
       database.collectionGroup("reservations").get(),
@@ -109,6 +110,7 @@ export async function loadAdminSnapshot(
       database.collection("users").get(),
       database.collectionGroup("karteProfile").get(),
       database.collectionGroup("karteEntries").get(),
+      database.collectionGroup("deviceTokens").get(),
       database.collectionGroup("deviceTokenId").get(),
       database.collection("pushNotification").get(),
       database.collection("emailNotification").get(),
@@ -117,9 +119,9 @@ export async function loadAdminSnapshot(
 
   const pushTokenCounts = new Map<string, Set<string>>();
   const notificationDeviceTokens = new Set<string>();
-  for (const document of deviceTokens.docs) {
+  for (const document of [...currentDeviceTokens.docs, ...legacyDeviceTokens.docs]) {
     const customerId = document.ref.parent.parent?.id;
-    const token = stringValue(document.data().deviceId);
+    const token = stringValue(document.data().token ?? document.data().deviceId);
     if (!customerId || !token) continue;
     notificationDeviceTokens.add(token);
     const tokens = pushTokenCounts.get(customerId) ?? new Set<string>();
@@ -273,19 +275,48 @@ export async function applyAdminMutation(
       if (mutation.channel !== "push") {
         throw new Error("メール送信は管理APIから実行してください。");
       }
-      const targetTokens = mutation.target === "all"
-        ? await database.collectionGroup("deviceTokenId").get()
-        : await database
-            .collection("users")
-            .doc(mutation.customerId)
-            .collection("deviceTokenId")
-            .get();
+      adminLog("info", "admin-notification", "target_resolution_started", {
+        stage: "target_resolution.started",
+        target: mutation.target,
+        requestedBy: session.uid,
+      });
+      const targetTokenSnapshots = mutation.target === "all"
+        ? await Promise.all([
+            database.collectionGroup("deviceTokens").get(),
+            database.collectionGroup("deviceTokenId").get(),
+          ])
+        : await Promise.all([
+            database
+              .collection("users")
+              .doc(mutation.customerId)
+              .collection("deviceTokens")
+              .get(),
+            database
+              .collection("users")
+              .doc(mutation.customerId)
+              .collection("deviceTokenId")
+              .get(),
+          ]);
       const deviceIdList = [...new Set(
-        targetTokens.docs
-          .map((document) => stringValue(document.data().deviceId))
+        targetTokenSnapshots
+          .flatMap((snapshot) => snapshot.docs)
+          .map((document) => stringValue(document.data().token ?? document.data().deviceId))
           .filter(Boolean),
       )];
+      adminLog("info", "admin-notification", "target_resolution_completed", {
+        stage: "target_resolution.completed",
+        target: mutation.target,
+        currentDocumentCount: targetTokenSnapshots[0].size,
+        legacyDocumentCount: targetTokenSnapshots[1].size,
+        recipientDeviceCount: deviceIdList.length,
+        requestedBy: session.uid,
+      });
       if (deviceIdList.length === 0) {
+        adminLog("warn", "admin-notification", "target_resolution_empty", {
+          stage: "target_resolution.empty",
+          target: mutation.target,
+          requestedBy: session.uid,
+        });
         throw new Error(
           mutation.target === "all"
             ? "通知を受け取れる登録端末がありません。"
@@ -314,6 +345,13 @@ export async function applyAdminMutation(
         recipientDeviceCount: deviceIdList.length,
         createdBy: session.uid,
         createdAt: FieldValue.serverTimestamp(),
+      });
+      adminLog("info", "admin-notification", "notification_document_created", {
+        stage: "notification_document.created",
+        notificationId: reference.id,
+        target: mutation.target,
+        recipientDeviceCount: deviceIdList.length,
+        requestedBy: session.uid,
       });
       return;
     }
