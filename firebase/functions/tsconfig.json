@@ -15,6 +15,7 @@
   },
   "include": [
     "src/**/*.ts",
+    "../../src/features/admin/admin-authorization.ts",
     "../../src/features/admin/server/admin-data.ts",
     "../../src/features/admin/types.ts",
     "../../src/lib/firebase/admin.ts"

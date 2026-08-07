@@ -65,7 +65,7 @@ MVPは匿名認証を推奨する。予約完了後にメールリンク等で�
 1. Firebase Authでログインする。
 2. ID Tokenをサーバー側セッションCookieへ交換する。
 3. サーバーでセッションを検証する。
-4. `adminUsers/{uid}` の `uid`、またはCustom Claimsを検証する。
+4. `adminUsers/{uid}` の `uid` フィールドが認証UIDと一致することを検証する。
 5. Firestore Rulesでも同等の権限を検証する。
 
 画面上のリダイレクトだけを権限保護には使用しない。

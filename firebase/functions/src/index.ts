@@ -11,13 +11,13 @@ import {
   loadAdminSnapshot,
   type AdminMutation,
 } from "../../../src/features/admin/server/admin-data";
+import { isAdminDocumentForUid } from "../../../src/features/admin/admin-authorization";
 import type {
   AdminRole,
   AdminSession,
 } from "../../../src/features/admin/types";
 import { adminAuth, adminFirestore, getFirebaseAdminApp } from "./firebase-admin-adapter";
 
-const ADMIN_UIDS = new Set(["FQNtPf0iDcMpKh98F47Q4if0tXp1"]);
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const imageTypes = {
   "image/jpeg": "jpg",
@@ -336,24 +336,17 @@ async function requireAdmin(
     );
   }
 
-  const roleFromClaim = normalizeRole(token.role);
-  const hasAdminClaim = token.admin === true || roleFromClaim !== null;
-  const configuredUids = (process.env.FIREBASE_ADMIN_UIDS ?? "")
-    .split(",")
-    .map((uid) => uid.trim())
-    .filter(Boolean);
-  const isAllowedUid = ADMIN_UIDS.has(token.uid) || configuredUids.includes(token.uid);
-
-  let role = roleFromClaim;
-  let active = false;
+  let role: AdminRole | null = null;
+  let hasValidAdminDocument = false;
   try {
     const adminDocument = await adminFirestore()
       .collection("adminUsers")
       .doc(token.uid)
       .get();
     const data = adminDocument.data();
-    active = adminDocument.exists && data?.active !== false;
-    role ??= normalizeRole(data?.role);
+    hasValidAdminDocument =
+      adminDocument.exists && isAdminDocumentForUid(data, token.uid);
+    role = normalizeRole(data?.role);
   } catch (error) {
     log("warn", "admin_document_lookup_failed", {
       code: errorCode(error),
@@ -362,7 +355,7 @@ async function requireAdmin(
     });
   }
 
-  if (!active && !hasAdminClaim && !isAllowedUid) {
+  if (!hasValidAdminDocument) {
     throw new AdminAuthorizationError(
       "管理者権限がありません。",
       403,
@@ -371,9 +364,7 @@ async function requireAdmin(
   }
 
   log("info", "permission_granted", {
-    activeAdminDocument: active,
-    hasAdminClaim,
-    isAllowedUid,
+    hasValidAdminDocument,
     requestId,
     uid: token.uid,
   });

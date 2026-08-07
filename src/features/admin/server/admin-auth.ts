@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { DecodedIdToken } from "firebase-admin/auth";
-import { appAdminUids } from "@/features/admin/admin-access";
+import { isAdminDocumentForUid } from "@/features/admin/admin-authorization";
 import { adminLog } from "@/features/admin/server/admin-log";
 import { adminAuth, adminFirestore } from "@/lib/firebase/admin";
 import type { AdminRole, AdminSession } from "@/features/admin/types";
@@ -44,28 +44,17 @@ export async function requireAdmin(
     );
   }
 
-  const roleFromClaim = normalizeRole(token.role);
-  const hasAdminClaim = token.admin === true || roleFromClaim !== null;
-  const allowedUids = new Set(
-    [
-      ...appAdminUids,
-      ...(process.env.FIREBASE_ADMIN_UIDS ?? "")
-        .split(",")
-        .map((uid) => uid.trim())
-        .filter(Boolean),
-    ],
-  );
-
-  let role = roleFromClaim;
-  let active = false;
+  let role: AdminRole | null = null;
+  let hasValidAdminDocument = false;
   try {
     const adminDocument = await adminFirestore()
       .collection("adminUsers")
       .doc(token.uid)
       .get();
     const data = adminDocument.data();
-    active = adminDocument.exists && data?.active !== false;
-    role ??= normalizeRole(data?.role);
+    hasValidAdminDocument =
+      adminDocument.exists && isAdminDocumentForUid(data, token.uid);
+    role = normalizeRole(data?.role);
   } catch (error) {
     adminLog("warn", "admin-auth", "admin_document_lookup_failed", {
       code: errorCode(error),
@@ -73,16 +62,11 @@ export async function requireAdmin(
       requestId,
       uid: token.uid,
     });
-    // The legacy production project does not have adminUsers yet. The explicit
-    // UID allow-list and custom claims remain valid migration paths.
   }
 
-  const isAllowedUid = allowedUids.has(token.uid);
-  if (!active && !hasAdminClaim && !isAllowedUid) {
+  if (!hasValidAdminDocument) {
     adminLog("warn", "admin-auth", "permission_denied", {
-      activeAdminDocument: active,
-      hasAdminClaim,
-      isAllowedUid,
+      hasValidAdminDocument,
       requestId,
       uid: token.uid,
     });
@@ -94,9 +78,7 @@ export async function requireAdmin(
   }
 
   adminLog("info", "admin-auth", "permission_granted", {
-    activeAdminDocument: active,
-    hasAdminClaim,
-    isAllowedUid,
+    hasValidAdminDocument,
     requestId,
     role: role ?? "owner",
     uid: token.uid,

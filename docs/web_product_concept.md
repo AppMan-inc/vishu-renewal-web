@@ -55,7 +55,7 @@ Salon Vishuのホームページ、Web予約、店主管理をひとつのサー
 ## 基本方針
 
 - お客様はアカウント作成を強制しない。MVPはFirebase Anonymous Authを内部的に利用し、連絡先で予約できる方式を推奨する。
-- 店主はFirebase Authのメール・パスワード認証を利用し、Custom Claimsまたは `adminUsers/{uid}` で権限を確認する。
+- 店主はFirebase Authのメール・パスワード認証を利用し、`adminUsers/{uid}` の `uid` フィールド一致で権限を確認する。
 - 日時はFirestore Timestampで保存し、表示・営業時間判定は `Asia/Tokyo` とする。
 - 空き枠表示は参考情報、予約確定時のサーバー側トランザクションを最終判定とする。
 - 旧 `salon_vishu` の本番データを直接変更せず、開発プロジェクトで検証してから移行方針を決める。
