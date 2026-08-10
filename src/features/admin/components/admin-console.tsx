@@ -30,6 +30,7 @@ import {
   slotKey,
   type RestSlotState,
 } from "@/features/admin/rest-schedule";
+import { japaneseHolidayName } from "@/features/admin/japanese-holidays";
 
 const navigation: Array<{ section: AdminSection; href: string; label: string; icon: "bell" | "calendar" | "clock" | "person" | "spa" | "sparkle" }> = [
   { section: "dashboard", href: "/admin", label: "ホーム", icon: "sparkle" },
@@ -294,11 +295,12 @@ function ReservationDetail({ reservation, mutating, onClose, onStatus }: { reser
 }
 
 function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
-  const [weekStart, setWeekStart] = useState(() => startOfDay(new Date()));
+  const [calendarDate, setCalendarDate] = useState(() => startOfDay(new Date()));
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set());
   const [pendingDeletionKeys, setPendingDeletionKeys] = useState<Set<string>>(() => new Set());
   const settings = props.snapshot.bookingSettings;
   const hasChanges = selectedKeys.size > 0 || pendingDeletionKeys.size > 0;
+  const weekStart = weekDays(calendarDate)[0];
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
   const slots = Array.from(
     { length: Math.ceil((settings.closingMinutes - settings.openingMinutes) / settings.slotIntervalMinutes) },
@@ -394,16 +396,43 @@ function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation:
   });
   const rangeEnd = addDays(weekStart, 6);
   const today = startOfDay(new Date());
-  const canMovePrevious = weekStart > today;
-  const canMoveNext = addDays(weekStart, 7) <= addDays(today, MAX_REST_ADVANCE_DAYS);
+  const currentWeekStart = weekDays(today)[0];
+  const maxDate = addDays(today, MAX_REST_ADVANCE_DAYS);
+  const canMovePrevious = weekStart > currentWeekStart;
+  const canMoveNext = addDays(weekStart, 7) <= maxDate;
+
+  function moveWeek(direction: -1 | 1) {
+    const nextWeekStart = addDays(weekStart, direction * 7);
+    setCalendarDate(nextWeekStart < currentWeekStart ? today : nextWeekStart);
+  }
+
+  function selectCalendarDate(value: string) {
+    const selectedDate = dateFromInput(value);
+    if (!selectedDate || selectedDate < today || selectedDate > maxDate) return;
+    setCalendarDate(selectedDate);
+  }
 
   return <>
     <PageTitle eyebrow="AVAILABILITY" title="休憩登録" description="○をタップして休憩にする時間を選択してください。複数の日時をまとめて登録できます。" />
-    <div className="admin-rest-week-nav">
-      <button aria-label="前の週" disabled={!canMovePrevious || props.mutating} onClick={() => setWeekStart((current) => addDays(current, -7))} type="button">‹</button>
-      <strong>{weekStart.getFullYear()}/{weekStart.getMonth() + 1}/{weekStart.getDate()} - {rangeEnd.getMonth() + 1}/{rangeEnd.getDate()}</strong>
-      <button disabled={props.mutating || weekStart.getTime() === today.getTime()} onClick={() => setWeekStart(today)} type="button">今日</button>
-      <button aria-label="次の週" disabled={!canMoveNext || props.mutating} onClick={() => setWeekStart((current) => addDays(current, 7))} type="button">›</button>
+    <div className="admin-rest-calendar-controls">
+      <label className="admin-rest-date-jump">
+        <span>表示する日付</span>
+        <input
+          aria-label="表示する日付"
+          disabled={props.mutating}
+          max={toDateInput(maxDate)}
+          min={toDateInput(today)}
+          onChange={(event) => selectCalendarDate(event.target.value)}
+          type="date"
+          value={toDateInput(calendarDate)}
+        />
+      </label>
+      <div className="admin-rest-week-nav">
+        <button aria-label="前の週" disabled={!canMovePrevious || props.mutating} onClick={() => moveWeek(-1)} type="button">‹</button>
+        <strong>{weekStart.getFullYear()}/{weekStart.getMonth() + 1}/{weekStart.getDate()} - {rangeEnd.getMonth() + 1}/{rangeEnd.getDate()}</strong>
+        <button disabled={props.mutating || dayKey(calendarDate) === dayKey(today)} onClick={() => setCalendarDate(today)} type="button">今日</button>
+        <button aria-label="次の週" disabled={!canMoveNext || props.mutating} onClick={() => moveWeek(1)} type="button">›</button>
+      </div>
     </div>
     <section className="admin-panel admin-rest-actions">
       <strong>{hasChanges ? `変更中 ${selectedKeys.size + pendingDeletionKeys.size}枠（登録 ${selectedKeys.size}・解除 ${pendingDeletionKeys.size}）` : "時間割から休憩時間を選択してください"}</strong>
@@ -422,7 +451,16 @@ function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation:
       <section className="admin-panel admin-rest-schedule-panel">
         <div className="admin-slot-grid">
           <header className="admin-slot-time-header">時間</header>
-          {days.map((day) => <header className={dayKey(day) === dayKey(new Date()) ? "is-today" : ""} key={day.toISOString()}><strong>{day.getMonth() + 1}/{day.getDate()}</strong><span>{dayKey(day) === dayKey(new Date()) ? "今日" : weekday(day)}</span></header>)}
+          {days.map((day) => {
+            const holidayName = japaneseHolidayName(day);
+            const isSundayOrHoliday = day.getDay() === 0 || Boolean(holidayName);
+            const className = [
+              dayKey(day) === dayKey(new Date()) ? "is-today" : "",
+              isSundayOrHoliday ? "is-holiday" : day.getDay() === 6 ? "is-saturday" : "",
+            ].filter(Boolean).join(" ");
+            const label = dayKey(day) === dayKey(new Date()) ? "今日" : weekday(day);
+            return <header aria-label={`${day.getMonth() + 1}月${day.getDate()}日 ${label}${holidayName ? ` ${holidayName}` : ""}`} className={className} key={day.toISOString()} title={holidayName ?? undefined}><strong>{day.getMonth() + 1}/{day.getDate()}</strong><span>{label}</span></header>;
+          })}
           {slots.map((minutes) => <div className="admin-slot-row" key={minutes}>
             <time>{minutesLabel(minutes)}</time>
             {days.map((day) => {
@@ -810,3 +848,4 @@ function minutesLabel(minutes: number) { return `${String(Math.floor(minutes / 6
 function statusLabel(status: ReservationStatus) { return { confirmed: "予約済み", visited: "来店済み", canceled: "キャンセル" }[status]; }
 function yen(value: number) { return `¥${value.toLocaleString("ja-JP")}`; }
 function toDateInput(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
+function dateFromInput(value: string) { const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value); if (!match) return null; const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])); return toDateInput(date) === value ? date : null; }

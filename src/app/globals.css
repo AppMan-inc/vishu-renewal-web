@@ -6964,13 +6964,45 @@ button.is-danger {
   padding: 24px;
 }
 
-.admin-rest-week-nav {
+.admin-rest-calendar-controls {
   display: flex;
   min-height: 44px;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.admin-rest-date-jump {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.admin-rest-date-jump input {
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid rgba(65, 81, 58, .16);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--green-deep);
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-rest-date-jump input:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.admin-rest-week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
 .admin-rest-week-nav strong {
@@ -7106,6 +7138,21 @@ button.is-danger {
 
 .admin-slot-grid > header.is-today {
   background: #edf3e9;
+}
+
+.admin-slot-grid > header.is-saturday {
+  background: #f0f5fa;
+  color: #35658f;
+}
+
+.admin-slot-grid > header.is-holiday {
+  background: #fbf0ef;
+  color: #a54a48;
+}
+
+.admin-slot-grid > header.is-saturday span,
+.admin-slot-grid > header.is-holiday span {
+  color: currentColor;
 }
 
 .admin-slot-grid > header.admin-slot-time-header {
@@ -8242,6 +8289,15 @@ button:disabled {
 
   .admin-rest-week-nav {
     gap: 6px;
+  }
+
+  .admin-rest-calendar-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-rest-date-jump {
+    justify-content: space-between;
   }
 
   .admin-rest-week-nav strong {
