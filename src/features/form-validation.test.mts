@@ -104,6 +104,14 @@ test("login validation and Firebase errors use secure approved messages", () => 
     loginAuthErrorMessage({ code: "auth/network-request-failed" }),
     "通信状況を確認して、もう一度お試しください。",
   );
+  assert.equal(
+    loginAuthErrorMessage({ code: "auth/operation-not-allowed" }, "apple"),
+    "Appleログインは現在利用できません。別のログイン方法をお試しください。",
+  );
+  assert.equal(
+    loginAuthErrorMessage({ code: "auth/operation-not-allowed" }, "google"),
+    "このログイン方法は現在利用できません。",
+  );
 });
 
 test("phone sanitization keeps only the first 11 ASCII digits", () => {

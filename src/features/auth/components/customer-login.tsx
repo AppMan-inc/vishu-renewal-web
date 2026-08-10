@@ -2,6 +2,7 @@
 
 import {
   GoogleAuthProvider,
+  getRedirectResult,
   OAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -111,10 +112,12 @@ export function CustomerLogin() {
 
   useEffect(() => {
     let unsubscribe: () => void = () => {};
+    let isActive = true;
 
     try {
+      const auth = firebaseAuth();
       unsubscribe = onAuthStateChanged(
-        firebaseAuth(),
+        auth,
         (user) => {
           if (user) {
             console.info("[auth] session_detected", { uid: user.uid });
@@ -129,12 +132,35 @@ export function CustomerLogin() {
           setIsCheckingAuth(false);
         },
       );
+
+      void getRedirectResult(auth)
+        .then((credential) => {
+          if (!credential || !isActive) return;
+          console.info("[auth] redirect_sign_in_succeeded", {
+            method: "apple",
+            uid: credential.user.uid,
+          });
+          void navigateAfterSignIn(credential.user, "credential");
+        })
+        .catch((error) => {
+          const details = authErrorDetails(error);
+          console.error(
+            `[auth] redirect_result_failed method=apple code=${details.code} name=${details.name} message=${details.message}`,
+          );
+          if (!isActive) return;
+          setErrorMessage(loginAuthErrorMessage(error, "apple"));
+          setIsCheckingAuth(false);
+          setPendingMethod(null);
+        });
     } catch (error) {
       console.error("[auth] session_check_initialization_failed", authErrorDetails(error));
       queueMicrotask(() => setIsCheckingAuth(false));
     }
 
-    return unsubscribe;
+    return () => {
+      isActive = false;
+      unsubscribe();
+    };
   }, [navigateAfterSignIn]);
 
   async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
@@ -178,21 +204,52 @@ export function CustomerLogin() {
       return;
     }
 
-    setPendingMethod(method);
+    setPendingMethod("apple");
     setErrorMessage(null);
-    console.info("[auth] redirect_sign_in_started", {
-      method,
+    console.info("[auth] sign_in_started", {
+      method: "apple",
+      mode: "popup",
       requestedAdmin: isAdminReturnTo(returnTo),
     });
+
     try {
-      await signInWithRedirect(firebaseAuth(), provider);
+      const credential = await signInWithPopup(firebaseAuth(), provider);
+      console.info("[auth] sign_in_succeeded", {
+        method: "apple",
+        mode: "popup",
+        uid: credential.user.uid,
+      });
+      void navigateAfterSignIn(credential.user, "credential");
     } catch (error) {
       const details = authErrorDetails(error);
-      console.error(
-        `[auth] redirect_sign_in_failed method=${method} code=${details.code} name=${details.name} message=${details.message}`,
+
+      if (!shouldFallbackToRedirect(error)) {
+        console.error(
+          `[auth] sign_in_failed method=apple mode=popup code=${details.code} name=${details.name} message=${details.message}`,
+        );
+        setErrorMessage(loginAuthErrorMessage(error, "apple"));
+        setPendingMethod(null);
+        return;
+      }
+
+      console.warn(
+        `[auth] popup_fallback_to_redirect method=apple code=${details.code} name=${details.name} message=${details.message}`,
       );
-      setErrorMessage(loginAuthErrorMessage(error));
-      setPendingMethod(null);
+      console.info("[auth] redirect_sign_in_started", {
+        method: "apple",
+        requestedAdmin: isAdminReturnTo(returnTo),
+      });
+
+      try {
+        await signInWithRedirect(firebaseAuth(), provider);
+      } catch (redirectError) {
+        const redirectDetails = authErrorDetails(redirectError);
+        console.error(
+          `[auth] redirect_sign_in_failed method=apple code=${redirectDetails.code} name=${redirectDetails.name} message=${redirectDetails.message}`,
+        );
+        setErrorMessage(loginAuthErrorMessage(redirectError, "apple"));
+        setPendingMethod(null);
+      }
     }
   }
 
@@ -219,7 +276,7 @@ export function CustomerLogin() {
       console.error(
         `[auth] sign_in_failed method=${method} code=${details.code} name=${details.name} message=${details.message}`,
       );
-      setErrorMessage(loginAuthErrorMessage(error));
+      setErrorMessage(loginAuthErrorMessage(error, method));
       setPendingMethod(null);
     }
   }
@@ -411,6 +468,13 @@ function authErrorDetails(error: unknown) {
     name: error instanceof Error ? error.name : typeof error,
     message: error instanceof Error ? error.message : "unknown",
   };
+}
+
+function shouldFallbackToRedirect(error: unknown) {
+  const code = (error as Partial<AuthError> | null)?.code;
+
+  return code === "auth/popup-blocked"
+    || code === "auth/operation-not-supported-in-this-environment";
 }
 
 function pathWithoutQuery(value: string) {

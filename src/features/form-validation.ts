@@ -72,7 +72,10 @@ export function loginValidationErrors(values: {
   return errors;
 }
 
-export function loginAuthErrorMessage(error: unknown) {
+export function loginAuthErrorMessage(
+  error: unknown,
+  method?: "email" | "google" | "apple",
+) {
   const code = (error as { code?: string } | null)?.code;
   switch (code) {
     case "auth/invalid-credential":
@@ -90,6 +93,9 @@ export function loginAuthErrorMessage(error: unknown) {
     case "auth/cancelled-popup-request":
       return "ログインがキャンセルされました。";
     case "auth/operation-not-allowed":
+      if (method === "apple") {
+        return "Appleログインは現在利用できません。別のログイン方法をお試しください。";
+      }
       return "このログイン方法は現在利用できません。";
     case "auth/unauthorized-domain":
       return "このドメインではログインできません。Firebase Authenticationの承認済みドメインを確認してください。";
