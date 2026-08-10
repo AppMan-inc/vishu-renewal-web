@@ -7,14 +7,22 @@ import {
   safeCustomerReturnTo,
 } from "./return-to.ts";
 
-test("normal customer login does not require admin authorization", () => {
+test("every login checks whether the user is an admin", () => {
   assert.deepEqual(loginIntent(null), {
-    destination: "/mypage",
-    requiresAdminAuthorization: false,
+    destination: "/admin",
+    requiresAdminAuthorization: true,
+  });
+  assert.deepEqual(loginIntent("  "), {
+    destination: "/admin",
+    requiresAdminAuthorization: true,
   });
   assert.deepEqual(loginIntent("/booking?step=confirm"), {
-    destination: "/booking?step=confirm",
-    requiresAdminAuthorization: false,
+    destination: "/admin",
+    requiresAdminAuthorization: true,
+  });
+  assert.deepEqual(loginIntent("/mypage"), {
+    destination: "/admin",
+    requiresAdminAuthorization: true,
   });
 });
 
@@ -62,6 +70,9 @@ test("unsafe input cannot become an admin destination", () => {
   ]) {
     assert.equal(isAdminReturnTo(value), false, value);
     assert.equal(safeAdminReturnTo(value), "/admin", value);
-    assert.equal(loginIntent(value).requiresAdminAuthorization, false, value);
+    assert.deepEqual(loginIntent(value), {
+      destination: "/admin",
+      requiresAdminAuthorization: true,
+    }, value);
   }
 });

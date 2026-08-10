@@ -60,8 +60,8 @@ export function loginIntent(value: string | null | undefined) {
   }
 
   return {
-    destination: safeCustomerReturnTo(value),
-    requiresAdminAuthorization: false,
+    destination: defaultAdminRoute,
+    requiresAdminAuthorization: true,
   } as const;
 }
 
