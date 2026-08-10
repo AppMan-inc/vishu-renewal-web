@@ -253,6 +253,7 @@ function Reservations(props: {
 
   async function updateStatus(nextStatus: ReservationStatus) {
     if (!selected) return;
+    if (nextStatus === "canceled" && !confirm("本当にキャンセルしますか？")) return;
     const ok = await props.runMutation({ action: "reservation.status", sourcePath: selected.sourcePath, status: nextStatus }, "予約ステータスを更新しました。");
     if (ok) setSelected(null);
   }
