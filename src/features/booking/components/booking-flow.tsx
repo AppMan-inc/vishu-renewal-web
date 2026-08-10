@@ -10,8 +10,8 @@ import {
   BookingMenu,
   loadBookingCatalog,
   loadBookingCustomerProfile,
-  TimeRange,
 } from "@/features/booking/booking-data";
+import { bookingSlotsForDate } from "@/features/booking/booking-availability";
 import {
   bookingReservationErrorMessage,
   createBookingReservation,
@@ -68,7 +68,10 @@ export function BookingFlow() {
 
   useEffect(() => {
     let isActive = true;
-    loadBookingCatalog(currentUser?.uid)
+    const from = dates[0];
+    const until = new Date(from);
+    until.setDate(until.getDate() + dates.length);
+    loadBookingCatalog({ from, until })
       .then((loadedCatalog) => {
         if (!isActive) return;
         setCatalog(loadedCatalog);
@@ -81,7 +84,7 @@ export function BookingFlow() {
     return () => {
       isActive = false;
     };
-  }, [currentUser?.uid, reloadKey]);
+  }, [currentUser?.uid, dates, reloadKey]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -243,6 +246,16 @@ export function BookingFlow() {
               selectedSlot={selectedSlot}
               weekOffset={weekOffset}
               onWeekChange={(offset) => {
+                setCatalog((current) =>
+                  current
+                    ? {
+                        ...current,
+                        reservations: [],
+                        restBlocks: [],
+                        availabilityIsLive: false,
+                      }
+                    : current,
+                );
                 setWeekOffset(offset);
                 setSelectedSlot(null);
                 setReservationSubmission({ status: "idle" });
@@ -505,7 +518,13 @@ function DateTimeStep({
   onSlotSelect: (slot: Date) => void;
 }) {
   const scheduleRows = useMemo(() => {
-    const columns = dates.map((date) => slotsForDate(date, menu, catalog));
+    const columns = dates.map((date) =>
+      bookingSlotsForDate({
+        date,
+        durationMinutes: menu.durationMinutes,
+        availability: catalog,
+      }),
+    );
     return (columns[0] ?? []).map((slot, rowIndex) => ({
       time: slot.start,
       slots: columns.map((column) => column[rowIndex]),
@@ -525,7 +544,7 @@ function DateTimeStep({
       {!catalog.availabilityIsLive ? (
         <div className="booking-info-banner is-warning">
           <VishuIcon name="clock" />
-          <p><strong>確認用の空き枠です</strong>予約・休業データの読み取り接続後にリアルタイム表示へ切り替わります。</p>
+          <p><strong>空き状況を確認できません</strong>安全のため日時選択を停止しています。時間をおいて再度お試しください。</p>
         </div>
       ) : null}
       <div className="booking-schedule-card">
@@ -773,29 +792,6 @@ function BookingSummary({
 
 function BookingLoading() {
   return <div className="booking-state-card is-loading"><span className="booking-spinner" /><p>メニューを読み込んでいます…</p></div>;
-}
-
-function slotsForDate(date: Date, menu: BookingMenu, catalog: BookingCatalog) {
-  const result: { start: Date; available: boolean }[] = [];
-  const now = new Date();
-  const weekday = date.getDay() === 0 ? 7 : date.getDay();
-  for (let minutes = catalog.openingMinutes; minutes < catalog.closingMinutes; minutes += catalog.slotIntervalMinutes) {
-    const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), Math.floor(minutes / 60), minutes % 60);
-    const end = new Date(start.getTime() + menu.durationMinutes * 60_000);
-    const closesAt = new Date(date.getFullYear(), date.getMonth(), date.getDate(), Math.floor(catalog.closingMinutes / 60), catalog.closingMinutes % 60);
-    const available =
-      start > now &&
-      !catalog.closedWeekdays.has(weekday) &&
-      end <= closesAt &&
-      !overlapsAny(start, end, catalog.reservations) &&
-      !overlapsAny(start, end, catalog.restBlocks);
-    result.push({ start, available });
-  }
-  return result;
-}
-
-function overlapsAny(start: Date, end: Date, ranges: TimeRange[]) {
-  return ranges.some((range) => start < range.end && range.start < end);
 }
 
 function nextDates(count: number, offsetDays = 0) {
