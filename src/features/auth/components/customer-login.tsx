@@ -23,6 +23,7 @@ import {
   safeCustomerReturnTo,
 } from "@/features/auth/return-to";
 import { customerSignupHref } from "@/features/auth/customer-signup";
+import { customerPasswordResetHref } from "@/features/auth/customer-password-reset";
 import {
   emailValidationMessage,
   FORM_FIELD_LIMITS,
@@ -253,6 +254,10 @@ export function CustomerLogin() {
     }
   }
 
+  function openPasswordReset() {
+    router.push(customerPasswordResetHref(returnTo, emailRef.current?.value));
+  }
+
   async function authenticate(
     method: LoginMethod,
     action: () => Promise<UserCredential>,
@@ -288,7 +293,8 @@ export function CustomerLogin() {
       <section
         className="admin-login-brand-panel"
         style={{
-          backgroundImage: `linear-gradient(180deg, rgba(41, 38, 33, .12), rgba(41, 38, 33, .72)), url("${siteAssetPath("/images/salon-vishu-hero.jpg")}")`,
+          backgroundImage: `linear-gradient(180deg, rgba(41, 38, 33, .12), rgba(41, 38, 33, .72)), url("${siteAssetPath("/images/salon-vishu-exterior.png")}")`,
+          backgroundPosition: "42% center",
         }}
       >
         <div className="login-panel-decoration" aria-hidden="true">
@@ -385,6 +391,14 @@ export function CustomerLogin() {
             <button className="button button-primary" type="submit" disabled={isPending}>
               {pendingMethod === "email" ? "ログイン中…" : "ログイン"}
               <VishuIcon name="arrow" />
+            </button>
+            <button
+              className="forgot-password-button"
+              type="button"
+              disabled={isPending}
+              onClick={openPasswordReset}
+            >
+              パスワードをお忘れですか？
             </button>
           </form>
 

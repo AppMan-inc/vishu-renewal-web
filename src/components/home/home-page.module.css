@@ -277,6 +277,7 @@
   display: block;
   width: 100%;
   height: auto;
+  aspect-ratio: 3 / 2;
   border-radius: 4px 72px 4px 4px;
   object-fit: cover;
 }
@@ -377,6 +378,118 @@
 .valueList strong {
   color: var(--ink);
   font-size: 13px;
+}
+
+.straightening {
+  padding: 72px 0;
+  border-block: 1px solid var(--line);
+  background: color-mix(in srgb, var(--warm) 62%, var(--ivory));
+}
+
+.straighteningInner {
+  display: grid;
+  width: min(1180px, calc(100% - 64px));
+  grid-template-columns: minmax(400px, .85fr) minmax(0, 1.15fr);
+  gap: clamp(48px, 5vw, 80px);
+  align-items: center;
+  margin: 0 auto;
+}
+
+.straighteningCopy {
+  max-width: 460px;
+}
+
+.straighteningMainCopy {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--font-serif), "Yu Mincho", serif;
+  font-size: clamp(30px, 2.2vw, 34px);
+  font-weight: 400;
+  letter-spacing: -.015em;
+  line-height: 1.68;
+  text-wrap: balance;
+}
+
+.straighteningMainCopy span {
+  display: block;
+}
+
+.straighteningSubCopy {
+  max-width: 420px;
+  margin: 28px 0 0;
+  color: #6f675e;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: .035em;
+  line-height: 2.05;
+}
+
+.straighteningPairs {
+  display: grid;
+  min-width: 0;
+  gap: 32px;
+}
+
+.straighteningPair {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+}
+
+.straighteningArrow {
+  position: absolute;
+  z-index: 2;
+  top: calc(50% + 10px);
+  left: 50%;
+  display: grid;
+  width: 34px;
+  height: 24px;
+  place-items: center;
+  color: var(--taupe);
+  transform: translate(-50%, -50%);
+}
+
+.straighteningArrow svg {
+  width: 30px;
+  height: 20px;
+  stroke-width: 1.2;
+}
+
+.straighteningPair figure {
+  min-width: 0;
+  margin: 0;
+}
+
+.straighteningPair figcaption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: var(--gold);
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .24em;
+  line-height: 1;
+}
+
+.straighteningPair figcaption::after {
+  height: 1px;
+  flex: 1;
+  background: color-mix(in srgb, var(--taupe) 10%, var(--line));
+  content: "";
+}
+
+.straighteningImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+  border-radius: 2px;
+  object-fit: cover;
+  object-position: center;
 }
 
 .services {
@@ -742,6 +855,22 @@
   }
 }
 
+@media (max-width: 1120px) {
+  .straightening {
+    padding: 56px 0;
+  }
+
+  .straighteningInner {
+    width: min(720px, calc(100% - 64px));
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .straighteningCopy {
+    max-width: 620px;
+  }
+}
+
 @media (max-width: 1020px) {
   .hero {
     grid-template-columns: minmax(0, .95fr) minmax(430px, 1.05fr);
@@ -903,6 +1032,7 @@
   }
 
   .philosophy,
+  .straightening,
   .services,
   .guide,
   .info {
@@ -910,7 +1040,57 @@
   }
 
   .philosophy {
-    gap: 62px;
+    gap: 48px;
+    padding-block: 52px;
+  }
+
+  .straighteningMainCopy {
+    font-size: 26px;
+    line-height: 1.7;
+  }
+
+  .straighteningSubCopy {
+    margin-top: 22px;
+    font-size: 12px;
+    line-height: 2;
+  }
+
+  .straighteningPairs {
+    gap: 44px;
+  }
+
+  .straighteningPair {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    justify-items: center;
+  }
+
+  .straighteningArrow {
+    top: 50%;
+    width: 30px;
+    height: 30px;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+
+  .straighteningArrow svg {
+    width: 28px;
+    height: 18px;
+  }
+
+  .straighteningPair figure {
+    width: min(100%, 300px);
+  }
+
+  .straighteningImage {
+    aspect-ratio: 4 / 5;
+  }
+
+  .straightening {
+    padding: 44px 0;
+  }
+
+  .straighteningInner {
+    width: calc(100% - 36px);
   }
 
   .philosophyImage {
@@ -1154,7 +1334,7 @@
     grid-column: 1;
     grid-row: 4;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin: 36px 18px 56px;
+    margin: 36px 18px 32px;
   }
 
   .heroFacts div {
