@@ -41,6 +41,17 @@ const services = [
   },
 ] as const;
 
+const straighteningPairs = [
+  {
+    before: "/images/salon-vishu-straightening-before-01.jpg",
+    after: "/images/salon-vishu-straightening-after-01.jpg",
+  },
+  {
+    before: "/images/salon-vishu-straightening-before-02.jpg",
+    after: "/images/salon-vishu-straightening-after-02.jpg",
+  },
+] as const;
+
 const salonDetails = [
   ["OPEN", "9:00 — 18:00"],
   ["CLOSED", "不定休"],
@@ -102,7 +113,7 @@ function HeroSection() {
           fill
           preload
           sizes="(max-width: 760px) 100vw, 54vw"
-          src={siteAssetPath("/images/salon-vishu-hero.jpg")}
+          src={siteAssetPath("/images/salon-vishu-exterior.png")}
         />
         <div className={styles.heroImageShade} />
         <p className={styles.heroImageNote}>HAIR &amp; RELAXATION</p>
@@ -125,13 +136,9 @@ function PhilosophySection() {
           className={styles.philosophyImage}
           height={1024}
           sizes="(max-width: 760px) 100vw, 56vw"
-          src={siteAssetPath("/images/salon-vishu-care.jpg")}
+          src={siteAssetPath("/images/salon-vishu-interior.png")}
           width={1536}
         />
-        <div className={styles.imageCaption}>
-          <span>01</span>
-          <p>ONE SEAT<br />JUST FOR YOU</p>
-        </div>
       </div>
       <div className={styles.philosophyCopy}>
         <SectionLabel>OUR PHILOSOPHY</SectionLabel>
@@ -147,6 +154,58 @@ function PhilosophySection() {
           <li><VishuIcon name="spa" /><span><strong>静かな空間</strong>一席だけの貸切サロン</span></li>
           <li><VishuIcon name="sparkle" /><span><strong>丁寧な施術</strong>髪への負担にも配慮</span></li>
         </ul>
+      </div>
+    </section>
+  );
+}
+
+function StraighteningSection() {
+  return (
+    <section className={styles.straightening} id="straightening" aria-label="縮毛調整の施術例">
+      <div className={styles.straighteningInner}>
+        <div className={styles.straighteningCopy}>
+          <p className={styles.straighteningMainCopy}>
+            <span>ボリュームを自然に</span>
+            <span>整えながら、毛先まで</span>
+            <span>なめらかに。</span>
+          </p>
+          <p className={styles.straighteningSubCopy}>VISHUでは髪の状態を丁寧に見極めながら、髪本来の美しさを活かした、自然なストレートに仕上げます。</p>
+        </div>
+        <div className={styles.straighteningPairs}>
+          {straighteningPairs.map((pair, index) => (
+            <div
+              className={styles.straighteningPair}
+              id={`straightening-pair-${index + 1}`}
+              key={pair.before}
+            >
+              <figure>
+                <figcaption>Before</figcaption>
+                <Image
+                  alt={`縮毛調整${index + 1}組目の施術前`}
+                  className={styles.straighteningImage}
+                  height={4032}
+                  sizes="(max-width: 680px) 300px, 33vw"
+                  src={siteAssetPath(pair.before)}
+                  width={3024}
+                />
+              </figure>
+              <figure>
+                <figcaption>After</figcaption>
+                <Image
+                  alt={`縮毛調整${index + 1}組目の施術後`}
+                  className={styles.straighteningImage}
+                  height={4032}
+                  sizes="(max-width: 680px) 300px, 33vw"
+                  src={siteAssetPath(pair.after)}
+                  width={3024}
+                />
+              </figure>
+              <span className={styles.straighteningArrow} aria-hidden="true">
+                <VishuIcon name="arrow" />
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -282,6 +341,7 @@ export function HomePage() {
       <div className={styles.headerWrap}><SiteHeader /></div>
       <HeroSection />
       <PhilosophySection />
+      <StraighteningSection />
       <ServicesSection />
       <BookingGuideSection />
       <SalonInfoSection />

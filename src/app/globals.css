@@ -4794,6 +4794,51 @@ button.booking-menu-card.is-selected .round-arrow {
   margin-top: 16px;
 }
 
+.forgot-password-button,
+.password-reset-text-button {
+  width: fit-content;
+  margin-inline: auto;
+  padding: 7px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--primary-dark);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.forgot-password-button:disabled,
+.password-reset-text-button:disabled {
+  cursor: wait;
+  opacity: .55;
+}
+
+.password-reset-guidance {
+  line-height: 1.8;
+}
+
+.password-reset-complete {
+  display: grid;
+  gap: 10px;
+}
+
+.password-reset-note {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.password-reset-complete .button {
+  width: 100%;
+}
+
+.password-reset-back-link {
+  margin-top: 20px;
+}
+
 .login-preview-notice {
   margin-top: 18px;
 }
