@@ -16,7 +16,6 @@ import {
   validateCustomerSignup,
 } from "@/features/auth/customer-signup";
 import { firebaseAuth } from "@/lib/firebase/client";
-import { siteAssetPath } from "@/lib/site-path";
 import {
   emailValidationMessage,
   FORM_FIELD_LIMITS,
@@ -154,29 +153,10 @@ export function CustomerSignup() {
 
   return (
     <main className="admin-login-page customer-login-page customer-signup-page">
-      <section
-        className="admin-login-brand-panel"
-        style={{
-          backgroundImage: `linear-gradient(180deg, rgba(41, 38, 33, .12), rgba(41, 38, 33, .72)), url("${siteAssetPath("/images/salon-vishu-hero.jpg")}")`,
-        }}
-      >
-        <div className="login-panel-decoration" aria-hidden="true">
-          <VishuIcon name="leaf" />
-        </div>
-        <Brand />
-        <div className="login-brand-copy">
-          <p className="eyebrow">CREATE YOUR ACCOUNT</p>
-          <h1>
-            <span className="login-headline-line">いつものきれいを、</span>
-            <span className="login-headline-line">もっと身近に。</span>
-          </h1>
-          <p>アカウントを作成すると、ご予約やプロフィールをひとつのマイページで確認できます。</p>
-        </div>
-        <p className="login-panel-note">FOR SALON GUESTS · SECURE BOOKING</p>
-      </section>
-
       <section className="admin-login-form-panel">
-        <div className="admin-login-card">
+        <div className="customer-signup-shell">
+          <Brand />
+          <div className="admin-login-card">
           <div className="login-icon"><VishuIcon name="person" /></div>
           <p className="eyebrow">CREATE ACCOUNT</p>
           <h2>新規アカウント作成</h2>
@@ -282,6 +262,7 @@ export function CustomerSignup() {
             <VishuIcon name="arrow" />
             トップページへ戻る
           </Link>
+          </div>
         </div>
       </section>
     </main>

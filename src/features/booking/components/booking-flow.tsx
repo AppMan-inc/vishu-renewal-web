@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { useRouter, useSearchParams } from "next/navigation";
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { VishuIcon } from "@/components/vishu-ui";
 import { firebaseAuth } from "@/lib/firebase/client";
@@ -12,6 +14,7 @@ import {
   loadBookingCustomerProfile,
 } from "@/features/booking/booking-data";
 import { bookingSlotsForDate } from "@/features/booking/booking-availability";
+import { bookingLoginHref } from "@/features/booking/booking-navigation";
 import {
   bookingReservationErrorMessage,
   createBookingReservation,
@@ -46,7 +49,10 @@ type ReservationSubmission =
 type BookingFieldErrors = Partial<Record<"name" | "phone" | "request", string>>;
 
 export function BookingFlow() {
-  const currentUser = firebaseAuth().currentUser;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedMenuId = searchParams.get("menuId");
+  const [currentUser, setCurrentUser] = useState<User | null>(initialCurrentUser);
   const [catalog, setCatalog] = useState<BookingCatalog | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -59,12 +65,28 @@ export function BookingFlow() {
   const [customerName, setCustomerName] = useState(currentUser?.displayName ?? "");
   const [phone, setPhone] = useState("");
   const [request, setRequest] = useState("");
+  const [confirmedVisitNotice, setConfirmedVisitNotice] = useState(false);
+  const [confirmedSalonNotice, setConfirmedSalonNotice] = useState(false);
+  const [confirmedLongHairCharge, setConfirmedLongHairCharge] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<BookingFieldErrors>({});
   const [reservationSubmission, setReservationSubmission] =
     useState<ReservationSubmission>({ status: "idle" });
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const requestRef = useRef<HTMLTextAreaElement>(null);
+  const restoredMenuIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    try {
+      return onAuthStateChanged(
+        firebaseAuth(),
+        setCurrentUser,
+        () => setCurrentUser(null),
+      );
+    } catch {
+      return undefined;
+    }
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -119,10 +141,55 @@ export function BookingFlow() {
     return menus.filter((menu) => menuMatches(menu, category.terms));
   }, [catalog, selectedCategory]);
 
+  useEffect(() => {
+    if (
+      !currentUser ||
+      !requestedMenuId ||
+      !catalog ||
+      restoredMenuIdRef.current === requestedMenuId
+    ) {
+      return;
+    }
+
+    const requestedMenu = catalog.menus.find(
+      (menu) => menu.id === requestedMenuId,
+    );
+    if (!requestedMenu) return;
+
+    let isActive = true;
+    queueMicrotask(() => {
+      if (!isActive) return;
+      restoredMenuIdRef.current = requestedMenuId;
+      setSelectedMenu(requestedMenu);
+      setSelectedSlot(null);
+      setConfirmedVisitNotice(false);
+      setConfirmedSalonNotice(false);
+      setConfirmedLongHairCharge(false);
+      setReservationSubmission({ status: "idle" });
+      if (!requestedMenu.isCallable) setCurrentStep(1);
+      router.replace("/booking", { scroll: false });
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [catalog, currentUser, requestedMenuId, router]);
+
+  useEffect(() => {
+    if (currentUser || currentStep === 0 || !selectedMenu) return;
+    router.replace(bookingLoginHref(selectedMenu.id));
+  }, [currentStep, currentUser, router, selectedMenu]);
+
   function chooseMenu(menu: BookingMenu) {
     setSelectedMenu(menu);
     setSelectedSlot(null);
+    setConfirmedVisitNotice(false);
+    setConfirmedSalonNotice(false);
+    setConfirmedLongHairCharge(false);
     setReservationSubmission({ status: "idle" });
+    if (!currentUser) {
+      router.push(bookingLoginHref(menu.id));
+    }
   }
 
   function goForward() {
@@ -162,6 +229,9 @@ export function BookingFlow() {
       !selectedMenu ||
       !selectedSlot ||
       !currentUser ||
+      !confirmedVisitNotice ||
+      !confirmedSalonNotice ||
+      (selectedMenu.needsExtraMoney && !confirmedLongHairCharge) ||
       reservationSubmission.status === "submitting" ||
       reservationSubmission.status === "success"
     ) {
@@ -207,6 +277,10 @@ export function BookingFlow() {
     (currentStep === 0 && Boolean(selectedMenu) && !selectedMenu?.isCallable) ||
     (currentStep === 1 && Boolean(selectedSlot)) ||
     currentStep === 2;
+  const canConfirm =
+    confirmedVisitNotice &&
+    confirmedSalonNotice &&
+    (!selectedMenu?.needsExtraMoney || confirmedLongHairCharge);
 
   return (
     <section className="app-page-shell">
@@ -291,11 +365,18 @@ export function BookingFlow() {
               phone={phone}
               request={request}
               slot={selectedSlot}
+              confirmedVisitNotice={confirmedVisitNotice}
+              confirmedSalonNotice={confirmedSalonNotice}
+              confirmedLongHairCharge={confirmedLongHairCharge}
+              onVisitNoticeChange={setConfirmedVisitNotice}
+              onSalonNoticeChange={setConfirmedSalonNotice}
+              onLongHairChargeChange={setConfirmedLongHairCharge}
             />
           ) : null}
 
           <MobileBookingAction
             canContinue={canContinue}
+            canConfirm={canConfirm}
             currentStep={currentStep}
             menu={selectedMenu}
             reservationSubmission={reservationSubmission}
@@ -317,12 +398,21 @@ export function BookingFlow() {
           menu={selectedMenu}
           slot={selectedSlot}
           canContinue={canContinue}
+          canConfirm={canConfirm}
           onContinue={goForward}
           onConfirm={confirmReservation}
         />
       </div>
     </section>
   );
+}
+
+function initialCurrentUser() {
+  try {
+    return firebaseAuth().currentUser;
+  } catch {
+    return null;
+  }
 }
 
 function BookingProgress({ currentStep }: { currentStep: Step }) {
@@ -349,6 +439,7 @@ function BookingProgress({ currentStep }: { currentStep: Step }) {
 
 function MobileBookingAction({
   canContinue,
+  canConfirm,
   currentStep,
   menu,
   reservationSubmission,
@@ -356,6 +447,7 @@ function MobileBookingAction({
   onContinue,
 }: {
   canContinue: boolean;
+  canConfirm: boolean;
   currentStep: Step;
   menu: BookingMenu | null;
   reservationSubmission: ReservationSubmission;
@@ -379,7 +471,7 @@ function MobileBookingAction({
       ) : (
         <button
           type="button"
-          disabled={isSubmitting || isSuccess}
+          disabled={!canConfirm || isSubmitting || isSuccess}
           onClick={() => void onConfirm()}
         >
           {isSubmitting ? "保存中…" : isSuccess ? "予約確定" : "予約を確定する"}
@@ -579,7 +671,6 @@ function DateTimeStep({
                     <small>（{formatWeekday(date)}）</small>
                   </th>
                 ))}
-                <th className="schedule-time-cell is-right">時間</th>
               </tr>
             </thead>
             <tbody>
@@ -605,7 +696,6 @@ function DateTimeStep({
                       </td>
                     );
                   })}
-                  <th className="schedule-time-cell is-right">{formatTime(row.time)}</th>
                 </tr>
               ))}
             </tbody>
@@ -697,6 +787,12 @@ function ConfirmationStep({
   phone,
   request,
   slot,
+  confirmedVisitNotice,
+  confirmedSalonNotice,
+  confirmedLongHairCharge,
+  onVisitNoticeChange,
+  onSalonNoticeChange,
+  onLongHairChargeChange,
 }: {
   email: string;
   menu: BookingMenu;
@@ -704,6 +800,12 @@ function ConfirmationStep({
   phone: string;
   request: string;
   slot: Date;
+  confirmedVisitNotice: boolean;
+  confirmedSalonNotice: boolean;
+  confirmedLongHairCharge: boolean;
+  onVisitNoticeChange: (value: boolean) => void;
+  onSalonNoticeChange: (value: boolean) => void;
+  onLongHairChargeChange: (value: boolean) => void;
 }) {
   return (
     <>
@@ -714,8 +816,61 @@ function ConfirmationStep({
         <ConfirmationRow label="お客様" value={name} detail={`${phone}${email ? ` · ${email}` : ""}`} />
         <ConfirmationRow label="ご要望" value={request || "なし"} />
       </div>
-      <div className="booking-policy-note"><VishuIcon name="leaf" /><p>内容をご確認のうえ予約を確定してください。確定後の変更・キャンセルはサロンへご連絡ください。</p></div>
+      <div className="booking-confirmation-notices">
+        <h3>サロンからお客様への確認事項</h3>
+        <RequiredConfirmation
+          checked={confirmedVisitNotice}
+          title="ご来店に際してのご注意事項"
+          onChange={onVisitNoticeChange}
+        >
+          お客様から当日キャンセル、10分以上遅れる場合はご連絡ください。また、大幅に遅れる場合は、メニューを変更させていただく場合がございます。
+        </RequiredConfirmation>
+        <RequiredConfirmation
+          checked={confirmedSalonNotice}
+          title="サロンからの質問"
+          onChange={onSalonNoticeChange}
+        >
+          私自身子供がいて、一人サロンのため、当日やむを得ず、こちらからのキャンセルをさせていただく場合がございます。ご了承いただけました方は、確認欄をタップください。
+        </RequiredConfirmation>
+        {menu.needsExtraMoney ? (
+          <RequiredConfirmation
+            checked={confirmedLongHairCharge}
+            title="ロング料金について"
+            onChange={onLongHairChargeChange}
+          >
+            髪の長さに応じて、パーマ剤・薬剤・その他トリートメントの使用量が変動します。ロング料金（550~円)にご了承いただけました方は、確認欄をタップください
+          </RequiredConfirmation>
+        ) : null}
+      </div>
+      <div className="booking-policy-note"><VishuIcon name="leaf" /><p>すべての必須項目をご確認のうえ、予約を確定してください。</p></div>
     </>
+  );
+}
+
+function RequiredConfirmation({
+  checked,
+  children,
+  onChange,
+  title,
+}: {
+  checked: boolean;
+  children: React.ReactNode;
+  onChange: (value: boolean) => void;
+  title: string;
+}) {
+  return (
+    <label className="booking-required-confirmation">
+      <input
+        checked={checked}
+        type="checkbox"
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      <span>
+        <strong><em>必須</em>{title}</strong>
+        <small>{children}</small>
+        <b>確認しました。</b>
+      </span>
+    </label>
   );
 }
 
@@ -729,6 +884,7 @@ function BookingSummary({
   menu,
   slot,
   canContinue,
+  canConfirm,
   onContinue,
   onConfirm,
 }: {
@@ -737,6 +893,7 @@ function BookingSummary({
   menu: BookingMenu | null;
   slot: Date | null;
   canContinue: boolean;
+  canConfirm: boolean;
   onContinue: () => void;
   onConfirm: () => Promise<void>;
 }) {
@@ -774,7 +931,7 @@ function BookingSummary({
         <button
           className="button button-primary"
           type="button"
-          disabled={reservationSubmission.status === "submitting" || reservationSubmission.status === "success"}
+          disabled={!canConfirm || reservationSubmission.status === "submitting" || reservationSubmission.status === "success"}
           onClick={() => void onConfirm()}
         >
           {reservationSubmission.status === "submitting"

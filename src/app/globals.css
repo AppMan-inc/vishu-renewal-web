@@ -4165,7 +4165,7 @@ button.booking-menu-card.is-selected .round-arrow {
 
 .booking-schedule-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 684px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -4467,6 +4467,78 @@ button.booking-menu-card.is-selected .round-arrow {
   border-radius: var(--radius-medium);
   background: var(--surface-warm);
   color: var(--text-secondary);
+}
+
+.booking-confirmation-notices {
+  display: grid;
+  gap: 0;
+  margin-top: 14px;
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  background: var(--surface);
+  box-shadow: var(--shadow-subtle);
+}
+
+.booking-confirmation-notices h3 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.booking-required-confirmation {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--divider);
+  cursor: pointer;
+}
+
+.booking-required-confirmation:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.booking-required-confirmation input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--primary-dark);
+}
+
+.booking-required-confirmation > span {
+  display: grid;
+  gap: 7px;
+}
+
+.booking-required-confirmation strong {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.booking-required-confirmation em {
+  display: inline-block;
+  margin-right: 7px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(154, 64, 57, .1);
+  color: #9a4039;
+  font-size: 8px;
+  font-style: normal;
+}
+
+.booking-required-confirmation small,
+.booking-required-confirmation b {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.75;
+}
+
+.booking-required-confirmation b {
+  color: var(--text);
+  font-weight: 700;
 }
 
 .booking-policy-note svg {
@@ -4913,7 +4985,33 @@ button.booking-menu-card.is-selected .round-arrow {
 }
 
 .customer-signup-page .admin-login-form-panel {
-  padding-block: 36px;
+  min-height: 100svh;
+  padding-block: 48px;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(242, 232, 216, .55), transparent 30%),
+    var(--background);
+}
+
+.customer-signup-page {
+  grid-template-columns: 1fr;
+}
+
+.customer-signup-shell {
+  width: min(520px, 100%);
+}
+
+.customer-signup-shell > .vishu-brand {
+  width: fit-content;
+  margin-bottom: 28px;
+}
+
+.customer-signup-shell .admin-login-card {
+  width: 100%;
+  padding: 42px 40px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-subtle);
 }
 
 .auth-divider {
@@ -5473,7 +5571,7 @@ button.booking-menu-card.is-selected .round-arrow {
   }
 
   .booking-schedule-table {
-    min-width: 700px;
+    min-width: 636px;
   }
 
   .booking-schedule-table .schedule-time-cell {
@@ -6130,7 +6228,7 @@ button.booking-menu-card.is-selected .round-arrow {
   }
 
   .booking-schedule-table {
-    min-width: 620px;
+    min-width: 564px;
   }
 
   .booking-schedule-table .schedule-time-cell {
@@ -6213,6 +6311,19 @@ button.booking-menu-card.is-selected .round-arrow {
   .admin-login-form-panel {
     min-height: auto;
     padding: 34px 20px 44px;
+  }
+
+  .customer-signup-page .admin-login-form-panel {
+    padding: 24px 14px 32px;
+  }
+
+  .customer-signup-shell > .vishu-brand {
+    margin: 0 6px 22px;
+  }
+
+  .customer-signup-shell .admin-login-card {
+    padding: 28px 20px;
+    border-radius: 18px;
   }
 
   .login-icon {

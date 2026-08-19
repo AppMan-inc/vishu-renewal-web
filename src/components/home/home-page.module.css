@@ -30,7 +30,7 @@
 .hero {
   display: grid;
   min-height: calc(100svh - 82px);
-  grid-template-columns: minmax(0, .9fr) minmax(520px, 1.1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(520px, 1fr);
   background: var(--ivory);
 }
 
@@ -873,7 +873,7 @@
 
 @media (max-width: 1020px) {
   .hero {
-    grid-template-columns: minmax(0, .95fr) minmax(430px, 1.05fr);
+    grid-template-columns: minmax(0, 1fr) minmax(430px, 1fr);
   }
 
   .heroCopy {
