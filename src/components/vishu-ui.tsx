@@ -101,11 +101,11 @@ export function Brand({ owner = false }: { owner?: boolean }) {
     <Link
       className="vishu-brand"
       href={owner ? "/admin" : "/"}
-      aria-label={owner ? "Vishu 管理画面トップへ" : "Salon Vishu トップへ"}
+      aria-label={owner ? "Salon Vishu 管理画面トップへ" : "Salon Vishu トップへ"}
     >
       <span className="brand-monogram" aria-hidden="true">V</span>
       <span className="brand-copy">
-        <strong>{owner ? "VISHU OWNER" : "VISHU"}</strong>
+        <strong>{owner ? "Salon Vishu OWNER" : "Salon Vishu"}</strong>
         <small>{owner ? "SALON MANAGEMENT" : "PRIVATE HAIR SALON"}</small>
       </span>
     </Link>
@@ -154,7 +154,7 @@ export function PageFooter() {
         <Link href="/terms">利用規約</Link>
         <Link href="/privacy">プライバシーポリシー</Link>
       </div>
-      <p className="copyright">© SALON VISHU</p>
+      <p className="copyright">© Salon Vishu</p>
     </footer>
   );
 }

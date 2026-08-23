@@ -169,7 +169,7 @@ function StraighteningSection() {
             <span>整えながら、毛先まで</span>
             <span>なめらかに。</span>
           </p>
-          <p className={styles.straighteningSubCopy}>VISHUでは髪の状態を丁寧に見極めながら、髪本来の美しさを活かした、自然なストレートに仕上げます。</p>
+          <p className={styles.straighteningSubCopy}>Salon Vishuでは髪の状態を丁寧に見極めながら、髪本来の美しさを活かした、自然なストレートに仕上げます。</p>
         </div>
         <div className={styles.straighteningPairs}>
           {straighteningPairs.map((pair, index) => (
@@ -327,7 +327,7 @@ function FinalReservation() {
     <section className={styles.finalCta} aria-labelledby="final-cta-title">
       <p className={styles.finalMark} aria-hidden="true">V</p>
       <div>
-        <SectionLabel>SEE YOU AT VISHU</SectionLabel>
+        <SectionLabel>SEE YOU AT Salon Vishu</SectionLabel>
         <h2 id="final-cta-title">あなたらしい美しさを、<br />Salon Vishuで。</h2>
       </div>
       <ArrowLink href="/booking" light>空き時間を見て予約</ArrowLink>
