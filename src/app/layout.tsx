@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP, Noto_Serif_JP } from "next/font/google";
 import { CustomerSessionProvider } from "@/features/auth/components/customer-session-provider";
+import {
+  defaultDescription,
+  metadataBase,
+} from "@/lib/site-metadata";
 import "./globals.css";
 
 const sans = Noto_Sans_JP({
@@ -16,12 +20,12 @@ const serif = Noto_Serif_JP({
 });
 
 export const metadata: Metadata = {
+  metadataBase,
   title: {
     default: "Salon Vishu | 大阪・河内長野のプライベートヘアサロン",
     template: "%s | Salon Vishu",
   },
-  description:
-    "大阪府河内長野市荘園町の完全予約制プライベートヘアサロン、Salon Vishu。ハーブカラー、酸性縮毛矯正、ヘッドスパなどをご提供します。",
+  description: defaultDescription,
 };
 
 export default function RootLayout({

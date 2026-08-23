@@ -33,7 +33,6 @@ export const adminApi = onRequest(
     memory: "512MiB",
     region: "asia-northeast2",
     timeoutSeconds: 60,
-    secrets: ["RESEND_API_KEY"],
   },
   async (request, response) => {
     const requestId = requestIdFor(request);

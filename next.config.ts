@@ -4,6 +4,7 @@ import { networkInterfaces } from "node:os";
 const environment = process.env.VISHU_ENV;
 const nextMode = process.env.VISHU_NEXT_MODE;
 const isGitHubPagesBuild = process.env.PAGES_BASE_PATH !== undefined;
+const isOpenNextBuild = process.env.NEXT_PRIVATE_STANDALONE === "true";
 const siteBasePath = isGitHubPagesBuild ? process.env.PAGES_BASE_PATH ?? "" : "";
 const allowedDevOrigins = Object.values(networkInterfaces())
   .flatMap((addresses) => addresses ?? [])
@@ -41,6 +42,8 @@ const nextConfig: NextConfig = {
   },
   images: {
     unoptimized: isGitHubPagesBuild,
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 86400,
     remotePatterns: [
       {
         protocol: "https",
@@ -58,6 +61,8 @@ const nextConfig: NextConfig = {
   // isolated. This also allows a build while a dev server is running.
   distDir: isGitHubPagesBuild
     ? "out"
+    : isOpenNextBuild
+      ? ".next"
     : environment && nextMode
       ? `.next/${environment}/${nextMode}`
       : ".next",

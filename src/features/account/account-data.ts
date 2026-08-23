@@ -12,7 +12,7 @@ import {
   Timestamp,
   where,
 } from "firebase/firestore";
-import { firestore } from "@/lib/firebase/client";
+import { firestore } from "@/lib/firebase/firestore";
 import { customerProfileValidationMessage } from "@/features/form-validation";
 
 export type CustomerProfile = {

@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PageFooter, SiteHeader } from "@/components/vishu-ui";
-import { BookingFlow } from "@/features/booking/components/booking-flow";
+import { BookingFlowClient } from "@/features/booking/components/booking-flow-client";
+import { createPageMetadata } from "@/lib/site-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Web予約",
   description: "メニューと日時を選んでSalon Vishuを予約します。",
-};
+  path: "/booking",
+});
 
 export default function BookingPage() {
   return (
     <main className="app-page booking-page">
       <SiteHeader />
       <Suspense fallback={<BookingPageFallback />}>
-        <BookingFlow />
+        <BookingFlowClient />
       </Suspense>
       <PageFooter />
     </main>

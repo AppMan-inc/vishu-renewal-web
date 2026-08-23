@@ -10,12 +10,14 @@ const { processEnv } = nextEnvironment;
 
 const environments = {
   dev: {
+    siteUrl: "https://vishu-renewal-web.salon-vishu.workers.dev/",
     projectId: "salon-vishu2-dev-30830",
     authDomain: "salon-vishu2-dev-30830.firebaseapp.com",
     storageBucket: "salon-vishu2-dev-30830.firebasestorage.app",
     messagingSenderId: "229439602432",
   },
   prod: {
+    siteUrl: "https://vishu-renewal-web.salon-vishu.workers.dev/",
     projectId: "salon-vishu",
     authDomain: "salon-vishu.firebaseapp.com",
     storageBucket: "salon-vishu.appspot.com",
@@ -25,11 +27,11 @@ const environments = {
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(scriptDirectory, "..");
-const [environmentName, nextCommand, ...nextArguments] = process.argv.slice(2);
+const [environmentName, commandName, ...commandArguments] = process.argv.slice(2);
 
 if (
   !Object.hasOwn(environments, environmentName) ||
-  !["dev", "build", "start"].includes(nextCommand)
+  !["dev", "build", "start", "cloudflare-build"].includes(commandName)
 ) {
   printUsage();
   process.exit(64);
@@ -56,9 +58,10 @@ if (envFiles.length > 0) {
 }
 
 setAndValidate("VISHU_ENV", environmentName);
+setAndValidate("SITE_URL", environment.siteUrl);
 setAndValidate(
   "VISHU_NEXT_MODE",
-  nextCommand === "dev" ? "development" : "production",
+  commandName === "dev" ? "development" : "production",
 );
 setAndValidate("NEXT_PUBLIC_VISHU_ENV", environmentName);
 setAndValidate("NEXT_PUBLIC_FIREBASE_PROJECT_ID", environment.projectId);
@@ -106,10 +109,24 @@ if (
   process.exit(66);
 }
 
-const nextBinary = join(projectRoot, "node_modules", "next", "dist", "bin", "next");
+const isCloudflareBuild = commandName === "cloudflare-build";
+const commandBinary = isCloudflareBuild
+  ? join(
+      projectRoot,
+      "node_modules",
+      "@opennextjs",
+      "cloudflare",
+      "dist",
+      "cli",
+      "index.js",
+    )
+  : join(projectRoot, "node_modules", "next", "dist", "bin", "next");
+const executableArguments = isCloudflareBuild
+  ? ["build", ...commandArguments]
+  : [commandName, ...commandArguments];
 const result = spawnSync(
   process.execPath,
-  [nextBinary, nextCommand, ...nextArguments],
+  [commandBinary, ...executableArguments],
   {
     cwd: projectRoot,
     env: process.env,
@@ -140,6 +157,6 @@ function setAndValidate(name, expectedValue) {
 function printUsage() {
   const scriptPath = relative(projectRoot, fileURLToPath(import.meta.url));
   console.error(
-    `Usage: node ${scriptPath} <dev|prod> <dev|build|start> [Next.js arguments]`,
+    `Usage: node ${scriptPath} <dev|prod> <dev|build|start|cloudflare-build> [arguments]`,
   );
 }

@@ -1060,25 +1060,30 @@
   }
 
   .straighteningPair {
-    grid-template-columns: 1fr;
-    gap: 36px;
-    justify-items: center;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+    justify-items: stretch;
   }
 
   .straighteningArrow {
-    top: 50%;
-    width: 30px;
-    height: 30px;
-    transform: translate(-50%, -50%) rotate(90deg);
+    top: calc(50% + 8px);
+    width: 24px;
+    height: 24px;
+    transform: translate(-50%, -50%);
   }
 
   .straighteningArrow svg {
-    width: 28px;
-    height: 18px;
+    width: 22px;
+    height: 16px;
   }
 
   .straighteningPair figure {
-    width: min(100%, 300px);
+    width: 100%;
+  }
+
+  .straighteningPair figcaption {
+    gap: 8px;
+    font-size: 11px;
   }
 
   .straighteningImage {
@@ -1282,8 +1287,9 @@
   }
 
   .heroVisual {
-    height: clamp(310px, 88vw, 380px);
+    height: auto;
     min-height: 0;
+    aspect-ratio: 1179 / 1563;
     grid-column: 1;
     grid-row: 1;
   }
@@ -1343,7 +1349,7 @@
   }
 
   .heroImage {
-    object-position: center 38%;
+    object-position: center;
   }
 
   .heroImageShade {

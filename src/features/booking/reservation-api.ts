@@ -2,7 +2,7 @@ import "client-only";
 
 import { FirebaseError } from "firebase/app";
 import { httpsCallable } from "firebase/functions";
-import { firebaseFunctions } from "@/lib/firebase/client";
+import { firebaseFunctions } from "@/lib/firebase/functions";
 import { bookingCustomerValidationMessage } from "@/features/form-validation";
 
 export type CreateBookingReservationInput = {

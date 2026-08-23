@@ -43,12 +43,12 @@ const services = [
 
 const straighteningPairs = [
   {
-    before: "/images/salon-vishu-straightening-before-01.jpg",
-    after: "/images/salon-vishu-straightening-after-01.jpg",
+    before: "/images/salon-vishu-straightening-before-01.webp",
+    after: "/images/salon-vishu-straightening-after-01.webp",
   },
   {
-    before: "/images/salon-vishu-straightening-before-02.jpg",
-    after: "/images/salon-vishu-straightening-after-02.jpg",
+    before: "/images/salon-vishu-straightening-before-02.webp",
+    after: "/images/salon-vishu-straightening-after-02.webp",
   },
 ] as const;
 
@@ -113,7 +113,7 @@ function HeroSection() {
           fill
           preload
           sizes="(max-width: 760px) 100vw, 54vw"
-          src={siteAssetPath("/images/salon-vishu-exterior.png")}
+          src={siteAssetPath("/images/salon-vishu-exterior.webp")}
         />
         <div className={styles.heroImageShade} />
         <p className={styles.heroImageNote}>HAIR &amp; RELAXATION</p>
@@ -134,10 +134,10 @@ function PhilosophySection() {
         <Image
           alt="一人のお客様の髪に丁寧に触れるスタイリスト"
           className={styles.philosophyImage}
-          height={1024}
+          height={2556}
           sizes="(max-width: 760px) 100vw, 56vw"
-          src={siteAssetPath("/images/salon-vishu-interior.png")}
-          width={1536}
+          src={siteAssetPath("/images/salon-vishu-interior.webp")}
+          width={1179}
         />
       </div>
       <div className={styles.philosophyCopy}>
@@ -183,10 +183,10 @@ function StraighteningSection() {
                 <Image
                   alt={`縮毛調整${index + 1}組目の施術前`}
                   className={styles.straighteningImage}
-                  height={4032}
-                  sizes="(max-width: 680px) 300px, 33vw"
+                  height={2134}
+                  sizes="(max-width: 680px) calc((100vw - 64px) / 2), 33vw"
                   src={siteAssetPath(pair.before)}
-                  width={3024}
+                  width={1600}
                 />
               </figure>
               <figure>
@@ -194,10 +194,10 @@ function StraighteningSection() {
                 <Image
                   alt={`縮毛調整${index + 1}組目の施術後`}
                   className={styles.straighteningImage}
-                  height={4032}
-                  sizes="(max-width: 680px) 300px, 33vw"
+                  height={2134}
+                  sizes="(max-width: 680px) calc((100vw - 64px) / 2), 33vw"
                   src={siteAssetPath(pair.after)}
-                  width={3024}
+                  width={1600}
                 />
               </figure>
               <span className={styles.straighteningArrow} aria-hidden="true">

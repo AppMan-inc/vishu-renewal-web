@@ -61,6 +61,8 @@ Flutterアプリの `vishu-renewal-app` と同じdev/prod区分を使用しま�
 | dev | `.env.dev.local` | `salon-vishu2-dev-30830` | `.next/dev/production` |
 | prod | `.env.prod.local` | `salon-vishu` | `.next/prod/production` |
 
+公開サイトの正規URLは `SITE_URL` で管理します。dev/prodともに、検索エンジンや共有リンクが参照する正規URLとして `https://vishu-renewal-web.salon-vishu.workers.dev/` を使用します。
+
 ```bash
 # dev Firebaseで開発サーバーを起動
 npm run dev:dev

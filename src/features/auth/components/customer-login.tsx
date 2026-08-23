@@ -293,7 +293,7 @@ export function CustomerLogin() {
       <section
         className="admin-login-brand-panel"
         style={{
-          backgroundImage: `linear-gradient(180deg, rgba(41, 38, 33, .12), rgba(41, 38, 33, .72)), url("${siteAssetPath("/images/salon-vishu-exterior.png")}")`,
+          backgroundImage: `linear-gradient(180deg, rgba(41, 38, 33, .12), rgba(41, 38, 33, .72)), url("${siteAssetPath("/images/salon-vishu-exterior.webp")}")`,
           backgroundPosition: "42% center",
         }}
       >

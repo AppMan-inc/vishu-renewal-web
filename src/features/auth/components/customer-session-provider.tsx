@@ -1,6 +1,5 @@
 "use client";
 
-import { onAuthStateChanged, signOut } from "firebase/auth";
 import type { User } from "firebase/auth";
 import {
   createContext,
@@ -11,7 +10,6 @@ import {
   useState,
 } from "react";
 import { createCustomerLogoutCoordinator } from "@/features/auth/customer-logout";
-import { firebaseAuth } from "@/lib/firebase/client";
 
 type CustomerSessionContextValue = {
   isAuthenticated: boolean;
@@ -36,7 +34,14 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const isMountedRef = useRef(true);
   const logoutCoordinator = useMemo(
-    () => createCustomerLogoutCoordinator(() => signOut(firebaseAuth())),
+    () =>
+      createCustomerLogoutCoordinator(async () => {
+        const [{ signOut }, { firebaseAuth }] = await Promise.all([
+          import("firebase/auth"),
+          import("@/lib/firebase/client"),
+        ]);
+        await signOut(firebaseAuth());
+      }),
     [],
   );
 
@@ -44,15 +49,21 @@ export function CustomerSessionProvider({ children }: { children: React.ReactNod
     isMountedRef.current = true;
     let unsubscribe: () => void = () => {};
 
-    try {
-      unsubscribe = onAuthStateChanged(
-        firebaseAuth(),
-        setUser,
-        () => setUser(null),
-      );
-    } catch {
-      // The initial unauthenticated state already hides all session controls.
-    }
+    void Promise.all([
+      import("firebase/auth"),
+      import("@/lib/firebase/client"),
+    ])
+      .then(([{ onAuthStateChanged }, { firebaseAuth }]) => {
+        if (!isMountedRef.current) return;
+        unsubscribe = onAuthStateChanged(
+          firebaseAuth(),
+          setUser,
+          () => setUser(null),
+        );
+      })
+      .catch(() => {
+        // The initial unauthenticated state already hides all session controls.
+      });
 
     return () => {
       isMountedRef.current = false;

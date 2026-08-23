@@ -2,9 +2,6 @@ import "client-only";
 
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getFunctions } from "firebase/functions";
-import { getStorage } from "firebase/storage";
 import { z } from "zod";
 
 const clientConfigSchema = z.object({
@@ -53,7 +50,3 @@ export function getFirebaseApp() {
 }
 
 export const firebaseAuth = () => getAuth(getFirebaseApp());
-export const firestore = () => getFirestore(getFirebaseApp());
-export const firebaseFunctions = () =>
-  getFunctions(getFirebaseApp(), "asia-northeast2");
-export const firebaseStorage = () => getStorage(getFirebaseApp());

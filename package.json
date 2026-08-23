@@ -9,6 +9,9 @@
     "build": "node scripts/with-environment.mjs",
     "build:dev": "node scripts/with-environment.mjs dev build",
     "build:prod": "node scripts/with-environment.mjs prod build",
+    "build:cloudflare": "node scripts/with-environment.mjs prod cloudflare-build",
+    "preview:cloudflare": "npm run build:cloudflare && wrangler dev",
+    "deploy:cloudflare": "npm run build:cloudflare && opennextjs-cloudflare deploy",
     "start": "node scripts/with-environment.mjs",
     "start:dev": "node scripts/with-environment.mjs dev start",
     "start:prod": "node scripts/with-environment.mjs prod start",
@@ -20,13 +23,14 @@
     "client-only": "^0.0.1",
     "firebase": "^12.16.0",
     "firebase-admin": "^13.10.0",
-    "next": "16.2.10",
+    "next": "^16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "server-only": "^0.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -34,6 +38,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.86.0"
   }
 }

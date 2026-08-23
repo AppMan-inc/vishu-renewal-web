@@ -9,7 +9,8 @@ import {
   query,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import { firebaseFunctions, firestore } from "@/lib/firebase/client";
+import { firestore } from "@/lib/firebase/firestore";
+import { firebaseFunctions } from "@/lib/firebase/functions";
 import { sanitizePhoneNumber } from "@/features/form-validation";
 import {
   type BookingAvailability,

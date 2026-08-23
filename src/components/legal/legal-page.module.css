@@ -1,0 +1,159 @@
+.page {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--text);
+}
+
+.headerWrap {
+  border-bottom: 1px solid var(--border);
+  background: rgba(253, 251, 248, 0.94);
+}
+
+.main {
+  width: min(920px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 34px 0 110px;
+}
+
+.breadcrumbs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.breadcrumbs a:hover {
+  color: var(--primary-dark);
+}
+
+.heading {
+  padding: 76px 0 64px;
+  border-bottom: 1px solid var(--border);
+}
+
+.heading > p {
+  margin: 0 0 12px;
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.heading h1 {
+  margin: 0;
+  font-family: var(--font-serif), "Yu Mincho", serif;
+  font-size: clamp(38px, 6vw, 58px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.heading > span {
+  display: block;
+  max-width: 640px;
+  margin-top: 22px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 2;
+}
+
+.heading small {
+  display: block;
+  margin-top: 25px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.document {
+  padding-top: 18px;
+}
+
+.document section {
+  padding: 48px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.document h2 {
+  display: flex;
+  gap: 18px;
+  align-items: baseline;
+  margin: 0 0 22px;
+  font-family: var(--font-serif), "Yu Mincho", serif;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.document h2 span {
+  color: var(--primary);
+  font-family: var(--font-sans), sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.document p,
+.document li {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 2.05;
+}
+
+.document p {
+  margin: 0;
+}
+
+.document p + p {
+  margin-top: 14px;
+}
+
+.document ol {
+  margin: 16px 0 0;
+  padding-left: 1.5em;
+}
+
+.document li + li {
+  margin-top: 8px;
+}
+
+.backLink {
+  margin-top: 54px;
+  text-align: center;
+}
+
+.backLink a {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 26px;
+  border: 1px solid var(--primary-dark);
+  border-radius: 999px;
+  color: var(--primary-dark);
+  font-size: 11px;
+  font-weight: 700;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.backLink a:hover {
+  background: var(--primary-dark);
+  color: white;
+}
+
+@media (max-width: 680px) {
+  .main {
+    width: min(100% - 32px, 920px);
+    padding-top: 24px;
+  }
+
+  .heading {
+    padding: 54px 0 44px;
+  }
+
+  .document section {
+    padding: 38px 0;
+  }
+
+  .document h2 {
+    gap: 12px;
+    font-size: 19px;
+  }
+}

@@ -167,10 +167,10 @@
 
 ## P1: 公開サイト・法務・SEO
 
-- [ ] 利用規約、プライバシーポリシー、キャンセルポリシーを正式公開する
-- [ ] アプリから参照する正規URLを固定する
+- [x] 利用規約、プライバシーポリシーを正式公開する（キャンセルポリシーは未対応）
+- [x] アプリから参照する正規URLを固定する
 - [ ] 店舗情報、電話番号、住所、営業時間、SNSリンクを最終確認する
-- [ ] title、description、OG画像、canonical、sitemap、robotsを設定する
+- [x] title、description、OG画像、canonical、sitemap、robotsを設定する
 - [ ] HairSalon構造化データを本番情報と一致させる
 - [ ] Cookie、Analytics、問い合わせ情報の扱いをプライバシーポリシーへ反映する
 - [ ] Lighthouseと実機でPerformance、Accessibility、SEOを確認する
