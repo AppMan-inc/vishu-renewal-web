@@ -3955,9 +3955,12 @@ button.booking-menu-card.is-selected .round-arrow {
 .booking-menu-price {
   margin-top: 9px;
   color: var(--primary-deep);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-sans), "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  font-feature-settings: "palt" 0, "tnum" 1;
+  font-variant-numeric: lining-nums tabular-nums;
   font-size: 17px;
   font-weight: 700;
+  letter-spacing: 0;
 }
 
 .booking-menu-meta {
