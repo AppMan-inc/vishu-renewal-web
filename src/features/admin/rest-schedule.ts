@@ -3,12 +3,14 @@ import type {
   AdminReservation,
   AdminRestBlock,
 } from "./types.ts";
+import { isClosureBlock } from "./closure-registration.ts";
 
 export type RestSlotState =
   | "available"
   | "unavailable"
   | "reservation"
   | "rest"
+  | "closure"
   | "selected";
 
 export type RestSlot = {
@@ -131,14 +133,15 @@ export function restSlotState(args: {
       new Date(reservation.finishTime),
     ))) return "reservation";
 
-  const overlapsRest = restBlocks.some((block) => rangesOverlap(
+  const overlappingRest = restBlocks.find((block) => rangesOverlap(
     slot,
     end,
     new Date(block.startTime),
     new Date(block.endTime),
   ));
   const key = slotKey(slot);
-  if (overlapsRest && !args.pendingDeletionKeys.has(key)) return "rest";
+  if (overlappingRest && isClosureBlock(overlappingRest)) return "closure";
+  if (overlappingRest && !args.pendingDeletionKeys.has(key)) return "rest";
 
   const minutes = slot.getHours() * 60 + slot.getMinutes();
   const weekday = slot.getDay() === 0 ? 7 : slot.getDay();

@@ -31,11 +31,14 @@ import {
   type RestSlotState,
 } from "@/features/admin/rest-schedule";
 import { japaneseHolidayName } from "@/features/admin/japanese-holidays";
+import { AdminClosures } from "@/features/admin/components/admin-closures";
+import { isClosureBlock } from "@/features/admin/closure-registration";
 
 const navigation: Array<{ section: AdminSection; href: string; label: string; icon: "bell" | "calendar" | "clock" | "person" | "spa" | "sparkle" }> = [
   { section: "dashboard", href: "/admin", label: "ホーム", icon: "sparkle" },
   { section: "reservations", href: "/admin/reservations", label: "予約", icon: "calendar" },
   { section: "rests", href: "/admin/rests", label: "休憩", icon: "clock" },
+  { section: "closures", href: "/admin/closures", label: "休業", icon: "calendar" },
   { section: "customers", href: "/admin/customers", label: "顧客・カルテ", icon: "person" },
   { section: "menus", href: "/admin/menus", label: "メニュー", icon: "spa" },
   { section: "sales", href: "/admin/sales", label: "売上", icon: "sparkle" },
@@ -171,6 +174,7 @@ export function AdminConsole({ section, menuId }: { section: AdminSection; menuI
               section={section}
               menuId={menuId}
               snapshot={snapshot}
+              refresh={refresh}
             />
           )}
         </div>
@@ -185,11 +189,13 @@ function AdminSectionContent(props: {
   snapshot: AdminSnapshot;
   mutating: boolean;
   runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean>;
+  refresh: () => Promise<void>;
 }) {
   switch (props.section) {
     case "dashboard": return <Dashboard snapshot={props.snapshot} />;
     case "reservations": return <Reservations snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
     case "rests": return <Rests snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
+    case "closures": return <AdminClosures snapshot={props.snapshot} refresh={props.refresh} />;
     case "customers": return <Customers snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
     case "menus": return <Menus menuId={props.menuId} snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
     case "sales": return <Sales snapshot={props.snapshot} />;
@@ -209,6 +215,7 @@ function Dashboard({ snapshot }: { snapshot: AdminSnapshot }) {
       dashboard: "サロン全体の状況を確認",
       reservations: "週・月カレンダーで予約を確認",
       rests: "予約と重ならない休憩枠を登録",
+      closures: "終日・午前・午後の休業を登録",
       customers: "顧客情報と施術カルテを管理",
       menus: "料金・所要時間・公開条件を編集",
       sales: "予約件数と売上見込を集計",
@@ -261,27 +268,30 @@ function Reservations(props: {
 
   return (
     <>
-      <PageTitle eyebrow="RESERVATIONS" title="予約カレンダー" description="予約と休憩を同じカレンダーで確認できます。" />
+      <PageTitle eyebrow="RESERVATIONS" title="予約カレンダー" description="予約・休憩・休業を同じカレンダーで確認できます。" />
       <div className="admin-toolbar">
         <div className="admin-segmented"><button className={view === "week" ? "is-active" : ""} onClick={() => setView("week")}>週</button><button className={view === "month" ? "is-active" : ""} onClick={() => setView("month")}>月</button></div>
         <div className="admin-period-controls"><button onClick={() => move(-1)}>‹</button><button onClick={() => setAnchor(startOfDay(new Date()))}>今日</button><button onClick={() => move(1)}>›</button><strong>{view === "week" ? weekLabel(anchor) : monthLabel(anchor)}</strong></div>
         <select aria-label="ステータス" onChange={(event) => setStatus(event.target.value as typeof status)} value={status}><option value="active">キャンセル以外</option><option value="all">すべて</option><option value="confirmed">予約済み</option><option value="visited">来店済み</option><option value="canceled">キャンセル</option></select>
         <Link className="admin-rest-register-link" href="/admin/rests"><VishuIcon name="clock" />休憩登録</Link>
+        <Link className="admin-rest-register-link is-closure" href="/admin/closures"><VishuIcon name="calendar" />休業登録</Link>
       </div>
       {view === "week" ? (
         <div className="admin-week-grid">
           {days.map((day) => {
             const reservations = visible.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day));
             const rests = props.snapshot.restBlocks.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day));
-            return <section className={dayKey(day) === dayKey(new Date()) ? "is-today" : ""} key={day.toISOString()}><header><span>{weekday(day)}</span><strong>{day.getDate()}</strong></header><div>{[...reservations.map((item) => ({ type: "reservation" as const, start: item.startTime, item })), ...rests.map((item) => ({ type: "rest" as const, start: item.startTime, item }))].sort((a, b) => a.start.localeCompare(b.start)).map((event) => event.type === "reservation" ? <button className={`admin-calendar-event status-${event.item.status}`} key={event.item.sourcePath} onClick={() => setSelected(event.item)}><time>{formatTime(event.item.startTime)}</time><strong>{event.item.customerName}</strong><span>{event.item.treatmentDetail}</span><small className="admin-calendar-previous">{previousVisitText(event.item)}</small></button> : <div className="admin-calendar-event is-rest" key={event.item.id}><time>{formatTime(event.item.startTime)}–{formatTime(event.item.endTime)}</time><strong>休憩</strong></div>)}{reservations.length === 0 && rests.length === 0 ? <p className="admin-calendar-empty">予定なし</p> : null}</div></section>;
+            return <section className={dayKey(day) === dayKey(new Date()) ? "is-today" : ""} key={day.toISOString()}><header><span>{weekday(day)}</span><strong>{day.getDate()}</strong></header><div>{[...reservations.map((item) => ({ type: "reservation" as const, start: item.startTime, item })), ...rests.map((item) => ({ type: "rest" as const, start: item.startTime, item }))].sort((a, b) => a.start.localeCompare(b.start)).map((event) => event.type === "reservation" ? <button className={`admin-calendar-event status-${event.item.status}`} key={event.item.sourcePath} onClick={() => setSelected(event.item)}><time>{formatTime(event.item.startTime)}</time><strong>{event.item.customerName}</strong><span>{event.item.treatmentDetail}</span><small className="admin-calendar-previous">{previousVisitText(event.item)}</small></button> : <div className={`admin-calendar-event ${isClosureBlock(event.item) ? "is-closure" : "is-rest"}`} key={event.item.id}><time>{formatTime(event.item.startTime)}–{formatTime(event.item.endTime)}</time><strong>{isClosureBlock(event.item) ? "休業" : "休憩"}</strong></div>)}{reservations.length === 0 && rests.length === 0 ? <p className="admin-calendar-empty">予定なし</p> : null}</div></section>;
           })}
         </div>
       ) : (
         <div className="admin-month-grid">
           {days.map((day) => {
             const dayReservations = visible.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day));
-            const restCount = props.snapshot.restBlocks.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day)).length;
-            return <section className={`${day.getMonth() !== anchor.getMonth() ? "is-outside" : ""} ${dayKey(day) === dayKey(new Date()) ? "is-today" : ""}`} key={day.toISOString()}><header>{day.getDate()}</header>{dayReservations.slice(0, 3).map((item) => <button key={item.sourcePath} onClick={() => setSelected(item)}><span><time>{formatTime(item.startTime)}</time> {item.customerName}</span><small>{previousVisitText(item)}</small></button>)}{dayReservations.length > 3 ? <small>ほか{dayReservations.length - 3}件</small> : null}{restCount ? <small>休憩 {restCount}件</small> : null}</section>;
+            const dayBlocks = props.snapshot.restBlocks.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day));
+            const restCount = dayBlocks.filter((item) => !isClosureBlock(item)).length;
+            const closureCount = dayBlocks.filter(isClosureBlock).length;
+            return <section className={`${day.getMonth() !== anchor.getMonth() ? "is-outside" : ""} ${dayKey(day) === dayKey(new Date()) ? "is-today" : ""}`} key={day.toISOString()}><header>{day.getDate()}</header>{dayReservations.slice(0, 3).map((item) => <button key={item.sourcePath} onClick={() => setSelected(item)}><span><time>{formatTime(item.startTime)}</time> {item.customerName}</span><small>{previousVisitText(item)}</small></button>)}{dayReservations.length > 3 ? <small>ほか{dayReservations.length - 3}件</small> : null}{restCount ? <small>休憩 {restCount}件</small> : null}{closureCount ? <small>休業 {closureCount}件</small> : null}</section>;
           })}
         </div>
       )}
@@ -331,7 +341,7 @@ function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation:
   }
 
   function toggleSlot(start: Date, state: RestSlotState) {
-    if (props.mutating || state === "reservation" || state === "unavailable") return;
+    if (props.mutating || state === "reservation" || state === "closure" || state === "unavailable") return;
     const key = slotKey(start);
     const end = addMinutes(start, settings.slotIntervalMinutes);
     const isRegistered = props.snapshot.restBlocks.some((block) => rangesOverlap(
@@ -392,7 +402,7 @@ function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation:
 
   const visibleRests = props.snapshot.restBlocks.filter((block) => {
     const start = new Date(block.startTime);
-    return start >= weekStart && start < addDays(weekStart, 7);
+    return !isClosureBlock(block) && start >= weekStart && start < addDays(weekStart, 7);
   });
   const rangeEnd = addDays(weekStart, 6);
   const today = startOfDay(new Date());
@@ -466,15 +476,16 @@ function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation:
             {days.map((day) => {
               const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(minutes / 60), minutes % 60);
               const state = restSlotState({ slot: start, now: new Date(), settings, reservations: props.snapshot.reservations, restBlocks: props.snapshot.restBlocks, selectedKeys, pendingDeletionKeys });
-              const label = state === "reservation" ? "予" : state === "unavailable" ? "－" : state === "available" ? "○" : "×";
-              const semantic = state === "reservation" ? "予約済み" : state === "rest" ? "休憩登録済み" : state === "selected" ? "選択中" : state === "available" ? "休憩登録可能" : "選択不可";
-              return <button aria-label={`${start.getMonth() + 1}月${start.getDate()}日 ${minutesLabel(minutes)} ${semantic}`} aria-pressed={state === "selected"} className={`is-${state}`} disabled={props.mutating || state === "reservation" || state === "unavailable"} key={day.toISOString()} onClick={() => toggleSlot(start, state)} type="button">{label}</button>;
+              const label = state === "reservation" ? "予" : state === "closure" ? "休" : state === "unavailable" ? "－" : state === "available" ? "○" : "×";
+              const semantic = state === "reservation" ? "予約済み" : state === "closure" ? "休業登録済み" : state === "rest" ? "休憩登録済み" : state === "selected" ? "選択中" : state === "available" ? "休憩登録可能" : "選択不可";
+              return <button aria-label={`${start.getMonth() + 1}月${start.getDate()}日 ${minutesLabel(minutes)} ${semantic}`} aria-pressed={state === "selected"} className={`is-${state}`} disabled={props.mutating || state === "reservation" || state === "closure" || state === "unavailable"} key={day.toISOString()} onClick={() => toggleSlot(start, state)} type="button">{label}</button>;
             })}
           </div>)}
         </div>
         <div className="admin-rest-legend" aria-label="時間枠の記号">
           <span><b>○</b> 登録可能</span>
           <span><b>×</b> 休憩</span>
+          <span><b>休</b> 休業</span>
           <span><b>予</b> 予約あり</span>
           <span><b>－</b> 選択不可</span>
         </div>

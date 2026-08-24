@@ -48,6 +48,9 @@ test("removes one registered slot and preserves the rest of its block", () => {
     startTime: "2026-08-07T01:00:00.000Z",
     endTime: "2026-08-07T02:00:00.000Z",
     createdAt: "2026-08-05T00:00:00.000Z",
+    closurePeriod: "custom",
+    closureGroupId: null,
+    businessDate: null,
   }];
 
   assert.deepEqual(buildRestChanges(
@@ -84,8 +87,23 @@ test("uses the same reservation, rest, selected, and unavailable priority as the
       startTime: slot.toISOString(),
       endTime: new Date(slot.getTime() + 30 * 60_000).toISOString(),
       createdAt: slot.toISOString(),
+      closurePeriod: "custom",
+      closureGroupId: null,
+      businessDate: null,
     }],
   }), "rest");
+  assert.equal(restSlotState({
+    ...base,
+    restBlocks: [{
+      id: "closure-1",
+      startTime: slot.toISOString(),
+      endTime: new Date(slot.getTime() + 30 * 60_000).toISOString(),
+      createdAt: slot.toISOString(),
+      closurePeriod: "fullDay",
+      closureGroupId: "closure-group-1",
+      businessDate: "2026-08-07",
+    }],
+  }), "closure");
   assert.equal(restSlotState({
     ...base,
     reservations: [{

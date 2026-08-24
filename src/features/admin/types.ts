@@ -1,5 +1,6 @@
 export type AdminRole = "owner" | "manager" | "staff";
 export type ReservationStatus = "confirmed" | "visited" | "canceled";
+export type ClosurePeriod = "fullDay" | "morning" | "afternoon" | "custom";
 
 export type AdminSession = {
   uid: string;
@@ -46,6 +47,9 @@ export type AdminRestBlock = {
   startTime: string;
   endTime: string;
   createdAt: string;
+  closurePeriod: ClosurePeriod;
+  closureGroupId: string | null;
+  businessDate: string | null;
 };
 
 export type AdminBookingSettings = {
@@ -117,6 +121,7 @@ export type AdminSection =
   | "dashboard"
   | "reservations"
   | "rests"
+  | "closures"
   | "customers"
   | "menus"
   | "sales"

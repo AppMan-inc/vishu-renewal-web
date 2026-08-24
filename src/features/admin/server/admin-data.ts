@@ -677,11 +677,19 @@ function restFromDocument(id: string, data: Record<string, unknown>): AdminRestB
   const start = dateValue(data.startTime);
   const end = dateValue(data.endTime);
   if (!start || !end) return null;
+  const rawPeriod = stringValue(data.closurePeriod);
+  const closurePeriod = ["fullDay", "morning", "afternoon"].includes(rawPeriod)
+    ? rawPeriod as AdminRestBlock["closurePeriod"]
+    : "custom";
+  const businessDate = stringValue(data.businessDate);
   return {
     id: stringValue(data.restId, id),
     startTime: start.toISOString(),
     endTime: end.toISOString(),
     createdAt: (dateValue(data.createdAt) ?? start).toISOString(),
+    closurePeriod,
+    closureGroupId: stringValue(data.closureGroupId) || null,
+    businessDate: /^\d{4}-\d{2}-\d{2}$/.test(businessDate) ? businessDate : null,
   };
 }
 
