@@ -5,8 +5,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  orderBy,
-  query,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { firestore } from "@/lib/firebase/firestore";
@@ -17,6 +15,7 @@ import {
   bookingAvailabilityFromData,
   unavailableBookingAvailability,
 } from "@/features/booking/booking-availability";
+import { sortMenusByPrice } from "@/features/booking/booking-menu-sort";
 
 const cloudStorageImageHosts = new Set([
   "firebasestorage.googleapis.com",
@@ -94,14 +93,14 @@ export async function loadBookingCatalog(args: {
   until: Date;
 }): Promise<BookingCatalog> {
   const database = firestore();
-  let menus = sampleMenus;
+  let menus = sortMenusByPrice(sampleMenus);
   let usesSampleMenus = true;
 
   const menuResult = await settled(async () => {
-    const snapshot = await getDocs(
-      query(collection(database, "menu"), orderBy("priority")),
+    const snapshot = await getDocs(collection(database, "menu"));
+    return sortMenusByPrice(
+      snapshot.docs.map((document) => menuFromDocument(document.id, document.data())),
     );
-    return snapshot.docs.map((document) => menuFromDocument(document.id, document.data()));
   });
 
   if (menuResult && menuResult.length > 0) {

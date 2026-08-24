@@ -158,7 +158,12 @@ export async function loadAdminSnapshot(
   return {
     session,
     menus: menus.docs.map((document) => menuFromDocument(document.id, document.data()))
-      .sort((a, b) => a.priority - b.priority || a.afterPrice - b.afterPrice),
+      .sort((a, b) => {
+        const aPrice = a.afterPrice > 0 ? a.afterPrice : Number.POSITIVE_INFINITY;
+        const bPrice = b.afterPrice > 0 ? b.afterPrice : Number.POSITIVE_INFINITY;
+        if (aPrice === bPrice) return 0;
+        return aPrice - bPrice;
+      }),
     reservations: [...reservationsById.values()].sort((a, b) =>
       a.startTime.localeCompare(b.startTime),
     ),
