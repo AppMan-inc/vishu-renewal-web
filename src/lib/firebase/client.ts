@@ -1,12 +1,7 @@
 import "client-only";
 
 import { getApp, getApps, initializeApp } from "firebase/app";
-import {
-  browserLocalPersistence,
-  getAuth,
-  initializeAuth,
-  type Auth,
-} from "firebase/auth";
+import { getAuth } from "firebase/auth";
 import { z } from "zod";
 
 const clientConfigSchema = z.object({
@@ -54,30 +49,4 @@ export function getFirebaseApp() {
   return getApps().length > 0 ? getApp() : initializeApp(getClientConfig());
 }
 
-let authInstance: Auth | undefined;
-
-export function firebaseAuth() {
-  if (authInstance) return authInstance;
-
-  const app = getFirebaseApp();
-
-  try {
-    authInstance = initializeAuth(app, {
-      persistence: browserLocalPersistence,
-    });
-  } catch (error) {
-    if (!isAuthAlreadyInitializedError(error)) throw error;
-    authInstance = getAuth(app);
-  }
-
-  return authInstance;
-}
-
-function isAuthAlreadyInitializedError(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "auth/already-initialized"
-  );
-}
+export const firebaseAuth = () => getAuth(getFirebaseApp());
