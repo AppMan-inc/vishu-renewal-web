@@ -159,6 +159,8 @@ export async function loadAdminSnapshot(
     session,
     menus: menus.docs.map((document) => menuFromDocument(document.id, document.data()))
       .sort((a, b) => {
+        const priorityComparison = a.priority - b.priority;
+        if (priorityComparison !== 0) return priorityComparison;
         const aPrice = a.afterPrice > 0 ? a.afterPrice : Number.POSITIVE_INFINITY;
         const bPrice = b.afterPrice > 0 ? b.afterPrice : Number.POSITIVE_INFINITY;
         if (aPrice === bPrice) return 0;

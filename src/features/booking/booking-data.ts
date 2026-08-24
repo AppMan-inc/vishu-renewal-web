@@ -15,7 +15,7 @@ import {
   bookingAvailabilityFromData,
   unavailableBookingAvailability,
 } from "@/features/booking/booking-availability";
-import { sortMenusByPrice } from "@/features/booking/booking-menu-sort";
+import { sortMenusByPriorityAndPrice } from "@/features/booking/booking-menu-sort";
 
 const cloudStorageImageHosts = new Set([
   "firebasestorage.googleapis.com",
@@ -93,12 +93,12 @@ export async function loadBookingCatalog(args: {
   until: Date;
 }): Promise<BookingCatalog> {
   const database = firestore();
-  let menus = sortMenusByPrice(sampleMenus);
+  let menus = sortMenusByPriorityAndPrice(sampleMenus);
   let usesSampleMenus = true;
 
   const menuResult = await settled(async () => {
     const snapshot = await getDocs(collection(database, "menu"));
-    return sortMenusByPrice(
+    return sortMenusByPriorityAndPrice(
       snapshot.docs.map((document) => menuFromDocument(document.id, document.data())),
     );
   });
