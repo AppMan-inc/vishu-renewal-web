@@ -29,7 +29,6 @@ import {
 
 const steps = ["メニュー", "日時", "お客様情報", "確認"];
 const categories = [
-  { id: "all", label: "すべて", terms: [] },
   { id: "cut", label: "カット", terms: ["カット", "cut"] },
   { id: "color", label: "カラー", terms: ["カラー", "color"] },
   { id: "treatment", label: "トリートメント", terms: ["トリートメント", "treatment"] },
@@ -57,7 +56,7 @@ export function BookingFlow() {
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentStep, setCurrentStep] = useState<Step>(0);
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState(categories[0].id);
   const [selectedMenu, setSelectedMenu] = useState<BookingMenu | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const dates = useMemo(() => nextDates(7, weekOffset * 7), [weekOffset]);
@@ -129,10 +128,10 @@ export function BookingFlow() {
   const visibleMenus = useMemo(() => {
     const menus = catalog?.menus ?? [];
     const category = categories.find((item) => item.id === selectedCategory);
-    if (!category || category.id === "all") return menus;
+    if (!category) return menus;
     if (category.id === "other") {
       const mainCategories = categories.filter(
-        (item) => item.id !== "all" && item.id !== "other",
+        (item) => item.id !== "other",
       );
       return menus.filter(
         (menu) => !mainCategories.some((item) => menuMatches(menu, item.terms)),

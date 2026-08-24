@@ -102,6 +102,7 @@ test("uses the same reservation, rest, selected, and unavailable priority as the
       finishTime: new Date(slot.getTime() + 30 * 60_000).toISOString(),
       customerHope: "",
       status: "confirmed",
+      previousVisitAt: null,
       createdAt: slot.toISOString(),
     }],
   }), "reservation");

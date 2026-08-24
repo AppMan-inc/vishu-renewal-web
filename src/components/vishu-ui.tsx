@@ -125,11 +125,13 @@ export function SiteHeader({ owner = false }: { owner?: boolean }) {
           <Link href="/#concept">コンセプト</Link>
           <Link href="/#style-menu">メニュー・料金</Link>
           <Link href="/#access">アクセス</Link>
-          <Link className="header-booking-link" href="/booking">
-            Web予約
-            <VishuIcon name="arrow" />
-          </Link>
-          <CustomerSessionAction />
+          <span className="header-actions">
+            <CustomerSessionAction />
+            <Link className="header-booking-link" href="/booking">
+              Web予約
+              <VishuIcon name="arrow" />
+            </Link>
+          </span>
         </nav>
       )}
     </header>

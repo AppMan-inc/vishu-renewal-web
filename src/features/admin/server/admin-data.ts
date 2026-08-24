@@ -4,6 +4,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { z } from "zod";
 import { adminFirestore } from "@/lib/firebase/admin";
 import { adminLog } from "@/features/admin/server/admin-log";
+import { attachPreviousVisits } from "@/features/admin/reservation-history";
 import type {
   AdminCustomer,
   AdminBookingSettings,
@@ -154,6 +155,11 @@ export async function loadAdminSnapshot(
     );
     if (reservation) reservationsById.set(reservation.id, reservation);
   }
+  const reservations = attachPreviousVisits(
+    [...reservationsById.values()].sort((a, b) =>
+      a.startTime.localeCompare(b.startTime)
+    ),
+  );
 
   return {
     session,
@@ -166,9 +172,7 @@ export async function loadAdminSnapshot(
         if (aPrice === bPrice) return 0;
         return aPrice - bPrice;
       }),
-    reservations: [...reservationsById.values()].sort((a, b) =>
-      a.startTime.localeCompare(b.startTime),
-    ),
+    reservations,
     restBlocks: rests.docs
       .map((document) => restFromDocument(document.id, document.data()))
       .filter((item): item is AdminRestBlock => item !== null)
@@ -664,6 +668,7 @@ function reservationFromDocument(
     finishTime: end.toISOString(),
     customerHope: stringValue(data.request ?? data.customerHope),
     status: normalizeStatus(data.status),
+    previousVisitAt: null,
     createdAt: (dateValue(data.createdAt) ?? start).toISOString(),
   };
 }

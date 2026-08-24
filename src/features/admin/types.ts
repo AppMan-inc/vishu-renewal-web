@@ -37,6 +37,7 @@ export type AdminReservation = {
   finishTime: string;
   customerHope: string;
   status: ReservationStatus;
+  previousVisitAt: string | null;
   createdAt: string;
 };
 

@@ -206,6 +206,10 @@ export function CustomerSessionOnly({ children }: { children: React.ReactNode })
   return useCustomerSession().isAuthenticated ? children : null;
 }
 
+export function CustomerGuestOnly({ children }: { children: React.ReactNode }) {
+  return useCustomerSession().isAuthenticated ? null : children;
+}
+
 function useCustomerSession() {
   const value = useContext(CustomerSessionContext);
   if (!value) {

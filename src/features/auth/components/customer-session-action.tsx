@@ -2,19 +2,27 @@
 
 import Link from "next/link";
 import {
+  CustomerGuestOnly,
   CustomerLogoutButton,
   CustomerSessionOnly,
 } from "@/features/auth/components/customer-session-provider";
 
 export function CustomerSessionAction() {
   return (
-    <CustomerSessionOnly>
-      <span className="header-session-action">
-        <Link className="header-account-link" href="/mypage">
-          マイページ
+    <>
+      <CustomerGuestOnly>
+        <Link className="header-login-link" href="/login">
+          ログイン
         </Link>
-        <CustomerLogoutButton variant="header" />
-      </span>
-    </CustomerSessionOnly>
+      </CustomerGuestOnly>
+      <CustomerSessionOnly>
+        <span className="header-session-action">
+          <Link className="header-account-link" href="/mypage">
+            マイページ
+          </Link>
+          <CustomerLogoutButton variant="header" />
+        </span>
+      </CustomerSessionOnly>
+    </>
   );
 }

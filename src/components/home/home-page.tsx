@@ -14,6 +14,15 @@ const googleMapsEmbedUrl =
   encodeURIComponent("Salon Vishu 大阪府河内長野市荘園町18-14") +
   "&output=embed";
 
+const drivingDirections = {
+  route170:
+    "170号線を河内長野警察方面へ曲がり直進赤峰交差点小山田小学校前直進荘園橋を渡り酒屋を越えて一つ目の筋を右へ道なりに十字路３つ越えてY字路左にカーブした角すぐの白と黒の建物です。",
+  route310:
+    "310号線からの場合千代田駅をスーパー西友方面へ曲がり寺ヶ池方面へ赤峰交差点右に小山田小学前を通り荘園橋を渡り酒屋を越えて一つ目の筋を右へ道なりに十字路３つ越えてY字路左にカーブした角すぐの白と黒の建物です。",
+  warning:
+    "ナビゲーションが案内する農道は危険なので通らないで下さい。赤峰交差点、小山田小学校前を通ってお越し下さい。お願い致します。",
+} as const;
+
 const services = [
   {
     index: "01",
@@ -56,7 +65,7 @@ const salonDetails = [
   ["OPEN", "9:00 — 18:00"],
   ["CLOSED", "不定休"],
   ["ADDRESS", "大阪府河内長野市荘園町18-14"],
-  ["PARKING", "店舗前に専用駐車場あり"],
+  ["PARKING", "店前砂利駐車場"],
 ] as const;
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -87,13 +96,11 @@ function HeroSection() {
         <SectionLabel>FIND YOUR BEAUTY</SectionLabel>
         <p className={styles.heroBrand}>Salon Vishu</p>
         <h1 id="home-hero-title">
-          <span className={styles.headlineLine}>上質なヘアデザインを、</span>
-          <em className={styles.headlineLine}>もっと心地よく。</em>
+          <span className={styles.headlineLine}>プライベートサロンで</span>
+          <em className={styles.headlineLine}>他のお客様を気にしなくて良い空間♪</em>
         </h1>
         <p className={styles.heroDescription}>
-          大阪・河内長野の、一席だけのプライベートサロン。
-          <br />
-          髪と心に寄り添う時間を、最初から仕上げまで丁寧に。
+          ハーブカラーでダメージを抑えて♪パーマは髪に優しいコスメパーマ★縮毛矯正♪髪質改善＋トリートメントしながらツヤ髪に♪全メニュートリートメント配合のセットメニューがお得です
         </p>
         <div className={styles.heroActions}>
           <ArrowLink href="/booking">空き時間を見て予約</ArrowLink>
@@ -108,12 +115,12 @@ function HeroSection() {
 
       <div className={styles.heroVisual}>
         <Image
-          alt="自然光の中で、艶のあるヘアスタイルを見せる女性"
+          alt="Salon Vishuの明るく落ち着いた店内"
           className={styles.heroImage}
           fill
           preload
           sizes="(max-width: 760px) 100vw, 54vw"
-          src={siteAssetPath("/images/salon-vishu-exterior.webp")}
+          src={siteAssetPath("/images/salon-vishu-interior.webp")}
         />
         <div className={styles.heroImageShade} />
         <p className={styles.heroImageNote}>HAIR &amp; RELAXATION</p>
@@ -127,33 +134,23 @@ function HeroSection() {
   );
 }
 
-function PhilosophySection() {
+function ShampooSection() {
   return (
-    <section className={styles.philosophy} id="concept" aria-labelledby="philosophy-title">
-      <div className={styles.philosophyImageWrap}>
+    <section className={styles.shampoo} aria-labelledby="shampoo-title">
+      <div className={styles.shampooImageWrap}>
         <Image
-          alt="一人のお客様の髪に丁寧に触れるスタイリスト"
-          className={styles.philosophyImage}
-          height={2556}
-          sizes="(max-width: 760px) 100vw, 56vw"
-          src={siteAssetPath("/images/salon-vishu-interior.webp")}
-          width={1179}
+          alt="首をやさしく支えるクッションを備えたSalon Vishuのシャンプー台"
+          className={styles.shampooImage}
+          height={941}
+          sizes="(max-width: 760px) calc(100vw - 36px), 56vw"
+          src={siteAssetPath("/images/salon-vishu-shampoo-station.webp")}
+          width={1672}
         />
       </div>
-      <div className={styles.philosophyCopy}>
-        <SectionLabel>OUR PHILOSOPHY</SectionLabel>
-        <h2 id="philosophy-title">日常に、やわらかな<br />余白をつくる。</h2>
-        <p className={styles.lead}>あなただけに向き合える、一席だけの美容室。</p>
-        <p>
-          髪質や骨格だけでなく、毎日の過ごし方まで丁寧に伺います。
-          周りを気にせず相談できること、担当が途中で変わらないこと、
-          肩の力を抜いて過ごせること。そのすべてを、心地よい仕上がりのために。
-        </p>
-        <ul className={styles.valueList}>
-          <li><VishuIcon name="person" /><span><strong>似合わせ提案</strong>一対一のカウンセリング</span></li>
-          <li><VishuIcon name="spa" /><span><strong>静かな空間</strong>一席だけの貸切サロン</span></li>
-          <li><VishuIcon name="sparkle" /><span><strong>丁寧な施術</strong>髪への負担にも配慮</span></li>
-        </ul>
+      <div className={styles.shampooCopy}>
+        <SectionLabel>RELAXING SHAMPOO</SectionLabel>
+        <h2 id="shampoo-title">首にやさしい、<br />くつろぎのシャンプー台。</h2>
+        <p>☆シャンプー台は首に負担がかからないのでヘッドスパが人気です☆是非体験を★</p>
       </div>
     </section>
   );
@@ -161,15 +158,13 @@ function PhilosophySection() {
 
 function StraighteningSection() {
   return (
-    <section className={styles.straightening} id="straightening" aria-label="縮毛調整の施術例">
+    <section className={styles.straightening} id="straightening" aria-labelledby="straightening-title">
       <div className={styles.straighteningInner}>
         <div className={styles.straighteningCopy}>
-          <p className={styles.straighteningMainCopy}>
-            <span>ボリュームを自然に</span>
-            <span>整えながら、毛先まで</span>
-            <span>なめらかに。</span>
-          </p>
-          <p className={styles.straighteningSubCopy}>Salon Vishuでは髪の状態を丁寧に見極めながら、髪本来の美しさを活かした、自然なストレートに仕上げます。</p>
+          <h2 className={styles.straighteningTitle} id="straightening-title">
+            髪質改善・縮毛矯正<br />自然に、美しく。
+          </h2>
+          <p className={styles.straighteningSubCopy}>Salon Vishuが力を入れている髪質改善・縮毛矯正では、髪の状態を丁寧に見極めながら、髪本来の美しさを活かした自然なストレートに仕上げます。</p>
         </div>
         <div className={styles.straighteningPairs}>
           {straighteningPairs.map((pair, index) => (
@@ -181,7 +176,7 @@ function StraighteningSection() {
               <figure>
                 <figcaption>Before</figcaption>
                 <Image
-                  alt={`縮毛調整${index + 1}組目の施術前`}
+                  alt={`髪質改善・縮毛矯正${index + 1}組目の施術前`}
                   className={styles.straighteningImage}
                   height={2134}
                   sizes="(max-width: 680px) calc((100vw - 64px) / 2), 33vw"
@@ -192,7 +187,7 @@ function StraighteningSection() {
               <figure>
                 <figcaption>After</figcaption>
                 <Image
-                  alt={`縮毛調整${index + 1}組目の施術後`}
+                  alt={`髪質改善・縮毛矯正${index + 1}組目の施術後`}
                   className={styles.straighteningImage}
                   height={2134}
                   sizes="(max-width: 680px) calc((100vw - 64px) / 2), 33vw"
@@ -298,15 +293,26 @@ function SalonInfoSection() {
           <span><VishuIcon name="phone" /> ご予約・お問い合わせ</span>
           <a href="tel:0721218824">0721-21-8824</a>
         </div>
-        <div className={styles.mapBlock}>
-          <div className={styles.mapHeading}>
-            <div>
-              <span>ACCESS MAP</span>
-              <p>大阪府河内長野市荘園町18-14</p>
-            </div>
-            <a href={googleMapsUrl} target="_blank" rel="noreferrer">
-              Google マップで見る <VishuIcon name="arrow" />
-            </a>
+      </div>
+      <div className={styles.mapBlock}>
+        <div className={styles.mapHeading}>
+          <div>
+            <span>ACCESS MAP</span>
+            <p>大阪府河内長野市荘園町18-14</p>
+          </div>
+          <a href={googleMapsUrl} target="_blank" rel="noreferrer">
+            Google マップで見る <VishuIcon name="arrow" />
+          </a>
+        </div>
+        <div className={styles.mapMedia}>
+          <div className={styles.mapImageWrap}>
+            <Image
+              alt="Salon Vishuの木製の玄関ドア"
+              className={styles.mapImage}
+              fill
+              sizes="(max-width: 820px) calc(100vw - 36px), 38vw"
+              src={siteAssetPath("/images/salon-vishu-exterior.webp")}
+            />
           </div>
           <iframe
             className={styles.mapFrame}
@@ -316,6 +322,20 @@ function SalonInfoSection() {
             referrerPolicy="no-referrer-when-downgrade"
             allowFullScreen
           />
+        </div>
+        <div className={styles.drivingGuide}>
+          <div className={styles.drivingGuideHeading}>
+            <span>DRIVING DIRECTIONS</span>
+            <h3>お車でお越しの方へ</h3>
+          </div>
+          <div className={styles.drivingRoutes}>
+            <p><strong>170号線から</strong>{drivingDirections.route170}</p>
+            <p><strong>310号線から</strong>{drivingDirections.route310}</p>
+          </div>
+          <aside className={styles.drivingWarning}>
+            <strong>農道は危険です</strong>
+            <p>{drivingDirections.warning}</p>
+          </aside>
         </div>
       </div>
     </section>
@@ -340,8 +360,8 @@ export function HomePage() {
     <main className={styles.page}>
       <div className={styles.headerWrap}><SiteHeader /></div>
       <HeroSection />
-      <PhilosophySection />
       <StraighteningSection />
+      <ShampooSection />
       <ServicesSection />
       <BookingGuideSection />
       <SalonInfoSection />

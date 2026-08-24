@@ -2523,6 +2523,12 @@ svg {
   gap: 18px;
 }
 
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .header-account-link {
   color: var(--text-secondary);
   font-size: 11px;
@@ -2716,6 +2722,25 @@ svg {
   border-radius: var(--radius-small);
   background: var(--primary-dark);
   color: white;
+}
+
+.header-login-link {
+  display: inline-flex;
+  min-width: 88px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border: 1px solid var(--primary-dark);
+  border-radius: var(--radius-small);
+  color: var(--primary-dark);
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.header-login-link:hover {
+  border-color: var(--primary-deep);
+  background: var(--surface-selected);
+  color: var(--primary-deep);
 }
 
 .header-booking-link svg,
@@ -5336,6 +5361,10 @@ button.booking-menu-card.is-selected .round-arrow {
     gap: 12px;
   }
 
+  .header-actions .header-login-link {
+    display: none;
+  }
+
   .header-session-button {
     font-size: 10px;
   }
@@ -6906,6 +6935,17 @@ button.admin-calendar-event {
   white-space: nowrap;
 }
 
+.admin-calendar-event .admin-calendar-previous {
+  overflow: hidden;
+  padding-top: 4px;
+  border-top: 1px solid currentColor;
+  margin-top: 2px;
+  font-size: 8px;
+  opacity: .72;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .admin-calendar-event.status-visited {
   border-color: #c9d6dd;
   background: #edf2f5;
@@ -6969,7 +7009,8 @@ button.admin-calendar-event {
 }
 
 .admin-month-grid section button {
-  display: block;
+  display: grid;
+  gap: 2px;
   overflow: hidden;
   width: 100%;
   margin: 3px 0;
@@ -6981,8 +7022,20 @@ button.admin-calendar-event {
   font-size: 8px;
   text-align: left;
   text-overflow: ellipsis;
-  white-space: nowrap;
   cursor: pointer;
+}
+
+.admin-month-grid section button > span,
+.admin-month-grid section button > small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-month-grid section button > small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 7px;
 }
 
 .admin-month-grid section small {
