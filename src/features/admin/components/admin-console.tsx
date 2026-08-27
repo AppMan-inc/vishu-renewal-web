@@ -41,7 +41,6 @@ const navigation: Array<{ section: AdminSection; href: string; label: string; ic
   { section: "closures", href: "/admin/closures", label: "休業", icon: "calendar" },
   { section: "customers", href: "/admin/customers", label: "顧客・カルテ", icon: "person" },
   { section: "menus", href: "/admin/menus", label: "メニュー", icon: "spa" },
-  { section: "sales", href: "/admin/sales", label: "売上", icon: "sparkle" },
   { section: "notifications", href: "/admin/notifications", label: "お知らせ配信", icon: "bell" },
 ];
 
@@ -198,7 +197,6 @@ function AdminSectionContent(props: {
     case "closures": return <AdminClosures snapshot={props.snapshot} refresh={props.refresh} />;
     case "customers": return <Customers snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
     case "menus": return <Menus menuId={props.menuId} snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
-    case "sales": return <Sales snapshot={props.snapshot} />;
     case "notifications": return <Notifications snapshot={props.snapshot} runMutation={props.runMutation} mutating={props.mutating} />;
   }
 }
@@ -218,7 +216,6 @@ function Dashboard({ snapshot }: { snapshot: AdminSnapshot }) {
       closures: "終日・午前・午後の休業を登録",
       customers: "顧客情報と施術カルテを管理",
       menus: "料金・所要時間・公開条件を編集",
-      sales: "予約件数と売上見込を集計",
       notifications: "全ユーザーまたは個人へお知らせを配信",
     }[item.section],
   }));
@@ -701,14 +698,6 @@ function MenuEditor({ menu, mutating, runMutation }: { menu: AdminMenu; mutating
       </form>
     </div>
   );
-}
-
-function Sales({ snapshot }: { snapshot: AdminSnapshot }) {
-  const now = new Date();
-  const today = snapshot.reservations.filter((item) => dayKey(new Date(item.startTime)) === dayKey(now) && item.status !== "canceled");
-  const month = snapshot.reservations.filter((item) => monthKey(new Date(item.startTime)) === monthKey(now) && item.status !== "canceled");
-  const ranking = [...month.reduce((map, item) => map.set(item.treatmentDetail, (map.get(item.treatmentDetail) ?? 0) + 1), new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]);
-  return <><PageTitle eyebrow="SALES SUMMARY" title="売上サマリー" description="予約データから件数と売上見込を自動集計します。" /><div className="admin-console-stats is-four"><Metric icon="calendar" label="本日の予約" value={`${today.length}件`} /><Metric icon="sparkle" label="本日の売上見込" value={yen(today.reduce((sum, item) => sum + item.price, 0))} compact /><Metric icon="calendar" label="今月の予約" value={`${month.length}件`} /><Metric icon="sparkle" label="今月の売上見込" value={yen(month.reduce((sum, item) => sum + item.price, 0))} compact /></div><div className="admin-sales-grid"><section className="admin-panel"><SectionHeading eyebrow="RANKING" title="今月の人気メニュー" />{ranking.slice(0, 8).map(([name, count], index) => <article key={name}><strong>{index + 1}</strong><span>{name}</span><b>{count}件</b></article>)}{ranking.length === 0 ? <p>集計できる予約はありません。</p> : null}</section><section className="admin-panel"><SectionHeading eyebrow="RECENT" title="直近の予約" />{[...snapshot.reservations].filter((item) => item.status !== "canceled").sort((a, b) => b.startTime.localeCompare(a.startTime)).slice(0, 8).map((item) => <article key={item.sourcePath}><time>{formatDate(item.startTime)}</time><span><strong>{item.customerName}</strong><small>{item.treatmentDetail}</small></span><b>{yen(item.price)}</b></article>)}</section></div></>;
 }
 
 function Notifications({ snapshot, mutating, runMutation }: {

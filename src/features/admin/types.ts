@@ -124,5 +124,4 @@ export type AdminSection =
   | "closures"
   | "customers"
   | "menus"
-  | "sales"
   | "notifications";

@@ -6667,10 +6667,6 @@ button.booking-menu-card.is-selected .round-arrow {
   margin-bottom: 46px;
 }
 
-.admin-console-stats.is-four {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
 .admin-console-stats article {
   display: flex;
   align-items: center;
@@ -7171,8 +7167,7 @@ button.is-danger {
 
 .admin-rest-layout,
 .admin-closure-layout,
-.admin-customer-layout,
-.admin-sales-grid {
+.admin-customer-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(290px, .75fr);
   align-items: start;
@@ -7504,8 +7499,7 @@ button.is-danger {
 }
 
 .admin-rest-list article,
-.admin-history-list article,
-.admin-sales-grid article {
+.admin-history-list article {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -8348,41 +8342,6 @@ button.is-danger {
   width: auto;
 }
 
-.admin-sales-grid {
-  grid-template-columns: 1fr 1fr;
-}
-
-.admin-sales-grid .admin-section-heading {
-  margin-bottom: 13px;
-}
-
-.admin-sales-grid article > strong {
-  display: grid;
-  width: 25px;
-  height: 25px;
-  place-items: center;
-  border-radius: 50%;
-  background: #edf2e9;
-  color: var(--green-deep);
-  font-size: 9px;
-}
-
-.admin-sales-grid article > span {
-  display: grid;
-  flex: 1;
-  gap: 3px;
-  font-size: 11px;
-}
-
-.admin-sales-grid article small {
-  color: var(--muted);
-  font-size: 8px;
-}
-
-.admin-sales-grid article b {
-  font-size: 10px;
-}
-
 .admin-notification-layout {
   display: grid;
   grid-template-columns: minmax(420px, 1.2fr) minmax(300px, .8fr);
@@ -8672,8 +8631,7 @@ button:disabled {
     display: none;
   }
 
-  .admin-console-module-grid,
-  .admin-console-stats.is-four {
+  .admin-console-module-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -8754,9 +8712,7 @@ button:disabled {
   }
 
   .admin-console-stats,
-  .admin-console-stats.is-four,
-  .admin-console-module-grid,
-  .admin-sales-grid {
+  .admin-console-module-grid {
     grid-template-columns: 1fr;
   }
 
