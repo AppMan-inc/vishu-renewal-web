@@ -2,8 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  FormEvent,
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { Brand, VishuIcon } from "@/components/vishu-ui";
 import {
@@ -45,17 +54,28 @@ const navigation: Array<{ section: AdminSection; href: string; label: string; ic
   { section: "notifications", href: "/admin/notifications", label: "お知らせ配信", icon: "bell" },
 ];
 
-export function AdminMenusConsole() {
-  const searchParams = useSearchParams();
-  return <AdminConsole menuId={searchParams.get("menuId") ?? undefined} section="menus" />;
-}
+type AdminConsoleContextValue = {
+  snapshot: AdminSnapshot | null;
+  loading: boolean;
+  error: string;
+  notice: string;
+  mutating: boolean;
+  refresh: () => Promise<void>;
+  runMutation: (body: Record<string, unknown>, successMessage: string) => Promise<boolean>;
+  signOutAdmin: () => Promise<void>;
+};
 
-export function AdminConsole({ section, menuId }: { section: AdminSection; menuId?: string }) {
+const AdminConsoleContext = createContext<AdminConsoleContextValue | null>(null);
+
+export function AdminConsoleProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const router = useRouter();
   const [snapshot, setSnapshot] = useState<AdminSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [errorPath, setErrorPath] = useState("");
   const [notice, setNotice] = useState("");
+  const [noticePath, setNoticePath] = useState("");
   const [mutating, setMutating] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -85,6 +105,7 @@ export function AdminConsole({ section, menuId }: { section: AdminSection; menuI
         ? `（Request ID: ${caught.requestId}）`
         : "";
       setError(`${message}${requestReference}`);
+      setErrorPath(location.pathname);
     } finally {
       setLoading(false);
     }
@@ -95,6 +116,7 @@ export function AdminConsole({ section, menuId }: { section: AdminSection; menuI
       firebaseAuth(),
       (user) => {
         if (!user) {
+          setSnapshot(null);
           console.warn("[admin-console] session_missing", {
             path: location.pathname,
           });
@@ -107,19 +129,20 @@ export function AdminConsole({ section, menuId }: { section: AdminSection; menuI
         });
         void refresh();
       },
-      (error) => {
+      (authError) => {
         console.error("[admin-console] session_check_failed", {
-          code: (error as { code?: unknown }).code ?? "unknown",
-          errorName: error.name,
+          code: (authError as { code?: unknown }).code ?? "unknown",
+          errorName: authError.name,
           path: location.pathname,
         });
         setError("ログイン状態を確認できませんでした。ページを再読み込みしてください。");
+        setErrorPath(location.pathname);
         setLoading(false);
       },
     );
   }, [refresh, router]);
 
-  async function runMutation(body: Record<string, unknown>, successMessage: string) {
+  const runMutation = useCallback(async (body: Record<string, unknown>, successMessage: string) => {
     setMutating(true);
     setError("");
     setNotice("");
@@ -127,19 +150,73 @@ export function AdminConsole({ section, menuId }: { section: AdminSection; menuI
       await mutateAdmin(body);
       await refresh();
       setNotice(successMessage);
+      setNoticePath(location.pathname);
       return true;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "更新に失敗しました。");
+      setErrorPath(location.pathname);
       return false;
     } finally {
       setMutating(false);
     }
-  }
+  }, [refresh]);
 
-  async function handleSignOut() {
+  const signOutAdmin = useCallback(async () => {
+    setSnapshot(null);
     await signOut(firebaseAuth());
     router.replace("/login");
+  }, [router]);
+
+  const value = useMemo<AdminConsoleContextValue>(() => ({
+    snapshot,
+    loading,
+    error: errorPath === pathname ? error : "",
+    notice: noticePath === pathname ? notice : "",
+    mutating,
+    refresh,
+    runMutation,
+    signOutAdmin,
+  }), [
+    error,
+    errorPath,
+    loading,
+    mutating,
+    notice,
+    noticePath,
+    pathname,
+    refresh,
+    runMutation,
+    signOutAdmin,
+    snapshot,
+  ]);
+
+  return <AdminConsoleContext.Provider value={value}>{children}</AdminConsoleContext.Provider>;
+}
+
+function useAdminConsole() {
+  const context = useContext(AdminConsoleContext);
+  if (!context) {
+    throw new Error("AdminConsole must be rendered inside AdminConsoleProvider.");
   }
+  return context;
+}
+
+export function AdminMenusConsole() {
+  const searchParams = useSearchParams();
+  return <AdminConsole menuId={searchParams.get("menuId") ?? undefined} section="menus" />;
+}
+
+export function AdminConsole({ section, menuId }: { section: AdminSection; menuId?: string }) {
+  const {
+    snapshot,
+    loading,
+    error,
+    notice,
+    mutating,
+    refresh,
+    runMutation,
+    signOutAdmin,
+  } = useAdminConsole();
 
   if (loading) return <AdminLoading />;
 
@@ -150,7 +227,7 @@ export function AdminConsole({ section, menuId }: { section: AdminSection; menuI
         <div>
           {snapshot ? <span>{snapshot.session.email || "Salon owner"}</span> : null}
           <button onClick={() => void refresh()} type="button">再読込</button>
-          <button onClick={() => void handleSignOut()} type="button">ログアウト</button>
+          <button onClick={() => void signOutAdmin()} type="button">ログアウト</button>
         </div>
       </header>
       <div className="admin-console-layout">
@@ -168,14 +245,16 @@ export function AdminConsole({ section, menuId }: { section: AdminSection; menuI
           {!snapshot ? (
             <EmptyState title="管理画面を表示できません" text="Firebase Admin設定と管理者権限を確認してください。" />
           ) : (
-            <AdminSectionContent
-              mutating={mutating}
-              runMutation={runMutation}
-              section={section}
-              menuId={menuId}
-              snapshot={snapshot}
-              refresh={refresh}
-            />
+            <div className="admin-console-view" key={section}>
+              <AdminSectionContent
+                mutating={mutating}
+                runMutation={runMutation}
+                section={section}
+                menuId={menuId}
+                snapshot={snapshot}
+                refresh={refresh}
+              />
+            </div>
           )}
         </div>
       </div>

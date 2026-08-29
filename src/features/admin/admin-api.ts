@@ -3,6 +3,9 @@
 import { firebaseAuth } from "@/lib/firebase/client";
 import type { User } from "firebase/auth";
 import { adminApiUrl } from "@/features/admin/admin-api-url";
+import { normalizeAdminBookingSettings } from "@/features/admin/admin-booking-settings";
+import { normalizeAdminRestBlocks } from "@/features/admin/admin-rest-blocks";
+import { legacyRestMutations } from "@/features/admin/admin-rest-mutation";
 import type { AdminSnapshot } from "@/features/admin/types";
 
 type AdminAccessResult = {
@@ -85,11 +88,35 @@ export async function checkAdminAccess(user: User): Promise<AdminAccessResult> {
 }
 
 export async function fetchAdminSnapshot(): Promise<AdminSnapshot> {
-  return adminRequest<AdminSnapshot>("GET");
+  const snapshot = await adminRequest<AdminSnapshot & {
+    bookingSettings?: unknown;
+    restBlocks?: unknown;
+  }>("GET");
+  return {
+    ...snapshot,
+    bookingSettings: normalizeAdminBookingSettings(snapshot.bookingSettings),
+    restBlocks: normalizeAdminRestBlocks(snapshot.restBlocks),
+  };
 }
 
 export async function mutateAdmin(body: Record<string, unknown>) {
-  await adminRequest<{ ok: true }>("POST", body);
+  try {
+    await adminRequest<{ ok: true }>("POST", body);
+  } catch (caught) {
+    const fallback = caught instanceof AdminApiError &&
+        caught.status === 400 &&
+        caught.message === "入力内容を確認してください。"
+      ? legacyRestMutations(body)
+      : null;
+    if (!fallback) throw caught;
+
+    console.info("[admin-api] using_legacy_rest_mutations", {
+      mutationCount: fallback.length,
+    });
+    for (const mutation of fallback) {
+      await adminRequest<{ ok: true }>("POST", mutation);
+    }
+  }
 }
 
 export async function uploadAdminMenuImage(file: File) {
