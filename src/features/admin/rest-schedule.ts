@@ -110,6 +110,35 @@ export function toggleRestSlotSelection(args: {
   return { selectedKeys, pendingDeletionKeys };
 }
 
+export function availableRestSlotKeysForDay(args: {
+  day: Date;
+  now: Date;
+  settings: AdminBookingSettings;
+  reservations: AdminReservation[];
+  restBlocks: AdminRestBlock[];
+  selectedKeys: ReadonlySet<string>;
+  pendingDeletionKeys: ReadonlySet<string>;
+}) {
+  const keys: string[] = [];
+  for (
+    let minutes = args.settings.openingMinutes;
+    minutes < args.settings.closingMinutes;
+    minutes += args.settings.slotIntervalMinutes
+  ) {
+    const slot = new Date(
+      args.day.getFullYear(),
+      args.day.getMonth(),
+      args.day.getDate(),
+      Math.floor(minutes / 60),
+      minutes % 60,
+    );
+    if (restSlotState({ ...args, slot }) === "available") {
+      keys.push(slotKey(slot));
+    }
+  }
+  return keys;
+}
+
 function mergeRanges(ranges: RestSlot[]) {
   const sorted = [...ranges].sort((a, b) =>
     new Date(a.startTime).getTime() - new Date(b.startTime).getTime());

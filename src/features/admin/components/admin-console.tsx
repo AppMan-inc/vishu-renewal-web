@@ -32,6 +32,7 @@ import type {
 import { firebaseAuth } from "@/lib/firebase/client";
 import {
   addMinutes,
+  availableRestSlotKeysForDay,
   buildRestChanges,
   MAX_REST_ADVANCE_DAYS,
   rangesOverlap,
@@ -455,6 +456,43 @@ function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation:
     if (ok) clearSelection();
   }
 
+  async function registerFullDay(day: Date) {
+    if (props.mutating) return;
+    const availableKeys = availableRestSlotKeysForDay({
+      day,
+      now: new Date(),
+      settings,
+      reservations: props.snapshot.reservations,
+      restBlocks: props.snapshot.restBlocks,
+      selectedKeys,
+      pendingDeletionKeys,
+    });
+    if (availableKeys.length === 0) {
+      alert(`${day.getMonth() + 1}月${day.getDate()}日に登録可能な休憩時間はありません。`);
+      return;
+    }
+    const otherChanges = hasChanges
+      ? "\n選択中のほかの変更も同時に反映されます。"
+      : "";
+    if (!confirm(
+      `${day.getMonth() + 1}月${day.getDate()}日を1日休憩として登録しますか？\n` +
+      `予約・休業などを除く、登録可能な全時間枠（${availableKeys.length}枠）を登録します。${otherChanges}`,
+    )) return;
+
+    const nextSelectedKeys = new Set([...selectedKeys, ...availableKeys]);
+    const changes = buildRestChanges(
+      nextSelectedKeys,
+      pendingDeletionKeys,
+      props.snapshot.restBlocks,
+      settings.slotIntervalMinutes,
+    );
+    const ok = await props.runMutation(
+      { action: "rest.apply", ...changes },
+      `${day.getMonth() + 1}月${day.getDate()}日の休憩を登録しました（登録 ${availableKeys.length}枠）。`,
+    );
+    if (ok) clearSelection();
+  }
+
   async function deleteRest(item: AdminSnapshot["restBlocks"][number]) {
     if (!confirm("休憩を削除しますか？")) return;
     const ok = await props.runMutation(
@@ -542,7 +580,7 @@ function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation:
               isSundayOrHoliday ? "is-holiday" : day.getDay() === 6 ? "is-saturday" : "",
             ].filter(Boolean).join(" ");
             const label = dayKey(day) === dayKey(new Date()) ? "今日" : weekday(day);
-            return <header aria-label={`${day.getMonth() + 1}月${day.getDate()}日 ${label}${holidayName ? ` ${holidayName}` : ""}`} className={className} key={day.toISOString()} title={holidayName ?? undefined}><strong>{day.getMonth() + 1}/{day.getDate()}</strong><span>{label}</span></header>;
+            return <header className={className} key={day.toISOString()} title={holidayName ?? undefined}><button aria-label={`${day.getMonth() + 1}月${day.getDate()}日 ${label}${holidayName ? ` ${holidayName}` : ""}を1日休憩として登録`} disabled={props.mutating} onClick={() => void registerFullDay(day)} type="button"><strong>{day.getMonth() + 1}/{day.getDate()}</strong><span>{label}</span></button></header>;
           })}
           {slots.map((minutes) => <div className="admin-slot-row" key={minutes}>
             <time>{minutesLabel(minutes)}</time>

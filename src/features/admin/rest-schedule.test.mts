@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildRestChanges,
+  availableRestSlotKeysForDay,
   mergeRestSlots,
   restSlotState,
   toggleRestSlotSelection,
@@ -194,4 +195,49 @@ test("does not allow rest registration more than 90 days ahead", () => {
     ...base,
     slot: new Date("2026-11-03T00:00:00.001Z"),
   }), "unavailable");
+});
+
+test("selects every available slot for a tapped day", () => {
+  const day = new Date(2026, 7, 7);
+  const reservationStart = new Date(2026, 7, 7, 10);
+  const restStart = new Date(2026, 7, 7, 11);
+  const keys = availableRestSlotKeysForDay({
+    day,
+    now: new Date(2026, 7, 6, 9),
+    settings,
+    reservations: [{
+      id: "reservation-1",
+      sourcePath: "reservation/reservation-1",
+      customerId: "customer-1",
+      customerName: "お客様",
+      telephoneNumber: "",
+      menuId: "menu-1",
+      treatmentDetail: "カット",
+      treatmentTimeMinutes: 30,
+      price: 0,
+      startTime: reservationStart.toISOString(),
+      finishTime: new Date(2026, 7, 7, 10, 30).toISOString(),
+      customerHope: "",
+      status: "confirmed",
+      previousVisitAt: null,
+      createdAt: reservationStart.toISOString(),
+    }],
+    restBlocks: [{
+      id: "rest-1",
+      startTime: restStart.toISOString(),
+      endTime: new Date(2026, 7, 7, 11, 30).toISOString(),
+      createdAt: restStart.toISOString(),
+      closurePeriod: "custom",
+      closureGroupId: null,
+      businessDate: null,
+    }],
+    selectedKeys: new Set(),
+    pendingDeletionKeys: new Set(),
+  });
+
+  assert.equal(keys.length, 16);
+  assert(!keys.includes(reservationStart.toISOString()));
+  assert(!keys.includes(restStart.toISOString()));
+  assert(keys.includes(new Date(2026, 7, 7, 9).toISOString()));
+  assert(keys.includes(new Date(2026, 7, 7, 17, 30).toISOString()));
 });
