@@ -28,6 +28,7 @@ import {
   rangesOverlap,
   restSlotState,
   slotKey,
+  toggleRestSlotSelection,
   type RestSlotState,
 } from "@/features/admin/rest-schedule";
 import { japaneseHolidayName } from "@/features/admin/japanese-holidays";
@@ -341,25 +342,21 @@ function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation:
     if (props.mutating || state === "reservation" || state === "closure" || state === "unavailable") return;
     const key = slotKey(start);
     const end = addMinutes(start, settings.slotIntervalMinutes);
-    const isRegistered = props.snapshot.restBlocks.some((block) => rangesOverlap(
-      start,
-      end,
-      new Date(block.startTime),
-      new Date(block.endTime),
-    ));
-    if (isRegistered) {
-      setPendingDeletionKeys((current) => {
-        const next = new Set(current);
-        if (!next.delete(key)) next.add(key);
-        return next;
-      });
-      return;
-    }
-    setSelectedKeys((current) => {
-      const next = new Set(current);
-      if (!next.delete(key)) next.add(key);
-      return next;
+    const isRegistered = props.snapshot.restBlocks.some((block) =>
+      !isClosureBlock(block) && rangesOverlap(
+        start,
+        end,
+        new Date(block.startTime),
+        new Date(block.endTime),
+      ));
+    const next = toggleRestSlotSelection({
+      key,
+      isRegistered,
+      selectedKeys,
+      pendingDeletionKeys,
     });
+    setSelectedKeys(next.selectedKeys);
+    setPendingDeletionKeys(next.pendingDeletionKeys);
   }
 
   async function applyChanges() {

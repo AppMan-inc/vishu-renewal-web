@@ -5,6 +5,7 @@ import {
   buildRestChanges,
   mergeRestSlots,
   restSlotState,
+  toggleRestSlotSelection,
 } from "./rest-schedule.ts";
 import type {
   AdminBookingSettings,
@@ -65,6 +66,49 @@ test("removes one registered slot and preserves the rest of its block", () => {
     }],
     deleteIds: ["rest-1"],
   });
+});
+
+test("toggles a registered rest back to available and restores it on a second tap", () => {
+  const key = "2026-08-07T01:00:00.000Z";
+  const removed = toggleRestSlotSelection({
+    key,
+    isRegistered: true,
+    selectedKeys: new Set(),
+    pendingDeletionKeys: new Set(),
+  });
+  assert.deepEqual([...removed.selectedKeys], []);
+  assert.deepEqual([...removed.pendingDeletionKeys], [key]);
+
+  const restored = toggleRestSlotSelection({
+    key,
+    isRegistered: true,
+    selectedKeys: removed.selectedKeys,
+    pendingDeletionKeys: removed.pendingDeletionKeys,
+  });
+  assert.deepEqual([...restored.selectedKeys], []);
+  assert.deepEqual([...restored.pendingDeletionKeys], []);
+});
+
+test("shows a registered rest as available while its deletion is pending", () => {
+  const slot = new Date(2026, 7, 7, 10);
+  const key = slot.toISOString();
+  assert.equal(restSlotState({
+    slot,
+    now: new Date(2026, 7, 5, 9),
+    settings,
+    reservations: [],
+    restBlocks: [{
+      id: "rest-1",
+      startTime: key,
+      endTime: new Date(slot.getTime() + 30 * 60_000).toISOString(),
+      createdAt: key,
+      closurePeriod: "custom",
+      closureGroupId: null,
+      businessDate: null,
+    }],
+    selectedKeys: new Set(),
+    pendingDeletionKeys: new Set([key]),
+  }), "available");
 });
 
 test("uses the same reservation, rest, selected, and unavailable priority as the app", () => {

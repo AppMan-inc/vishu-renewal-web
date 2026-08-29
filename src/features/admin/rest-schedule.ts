@@ -56,7 +56,7 @@ export function buildRestChanges(
     end: addMinutes(new Date(value), durationMinutes),
   }));
   const affectedBlocks = restBlocks.filter((block) =>
-    deletedSlots.some((slot) => rangesOverlap(
+    !isClosureBlock(block) && deletedSlots.some((slot) => rangesOverlap(
       slot.start,
       slot.end,
       new Date(block.startTime),
@@ -90,6 +90,24 @@ export function buildRestChanges(
     ]),
     deleteIds: affectedBlocks.map((block) => block.id),
   };
+}
+
+export function toggleRestSlotSelection(args: {
+  key: string;
+  isRegistered: boolean;
+  selectedKeys: ReadonlySet<string>;
+  pendingDeletionKeys: ReadonlySet<string>;
+}) {
+  const selectedKeys = new Set(args.selectedKeys);
+  const pendingDeletionKeys = new Set(args.pendingDeletionKeys);
+  if (args.isRegistered) {
+    if (!pendingDeletionKeys.delete(args.key)) {
+      pendingDeletionKeys.add(args.key);
+    }
+  } else if (!selectedKeys.delete(args.key)) {
+    selectedKeys.add(args.key);
+  }
+  return { selectedKeys, pendingDeletionKeys };
 }
 
 function mergeRanges(ranges: RestSlot[]) {
@@ -133,14 +151,22 @@ export function restSlotState(args: {
       new Date(reservation.finishTime),
     ))) return "reservation";
 
-  const overlappingRest = restBlocks.find((block) => rangesOverlap(
-    slot,
-    end,
-    new Date(block.startTime),
-    new Date(block.endTime),
-  ));
+  const overlappingClosure = restBlocks.some((block) =>
+    isClosureBlock(block) && rangesOverlap(
+      slot,
+      end,
+      new Date(block.startTime),
+      new Date(block.endTime),
+    ));
+  const overlappingRest = restBlocks.some((block) =>
+    !isClosureBlock(block) && rangesOverlap(
+      slot,
+      end,
+      new Date(block.startTime),
+      new Date(block.endTime),
+    ));
   const key = slotKey(slot);
-  if (overlappingRest && isClosureBlock(overlappingRest)) return "closure";
+  if (overlappingClosure) return "closure";
   if (overlappingRest && !args.pendingDeletionKeys.has(key)) return "rest";
 
   const minutes = slot.getHours() * 60 + slot.getMinutes();
