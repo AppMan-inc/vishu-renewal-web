@@ -43,6 +43,11 @@ import {
 } from "@/features/admin/rest-schedule";
 import { japaneseHolidayName } from "@/features/admin/japanese-holidays";
 import { AdminClosures } from "@/features/admin/components/admin-closures";
+import {
+  canonicalCategoryIds,
+  menuCategories,
+  toggleCategory,
+} from "@/features/booking/booking-menu-catalog";
 import { isClosureBlock } from "@/features/admin/closure-registration";
 
 const navigation: Array<{ section: AdminSection; href: string; label: string; icon: "bell" | "calendar" | "clock" | "person" | "spa" | "sparkle" }> = [
@@ -726,17 +731,20 @@ function Menus(props: {
 }
 
 function MenuThumbnail({ menu }: { menu: AdminMenu }) {
-  return <div className={`admin-menu-thumbnail${menu.menuImageUrl ? " has-image" : ""}`}>{menu.menuImageUrl ? <Image alt="" fill sizes="72px" src={menu.menuImageUrl} /> : <VishuIcon name="spa" />}</div>;
+  return <div className={`admin-menu-thumbnail${menu.menuImageUrl ? " has-image" : ""}`}>{menu.menuImageUrl ? <Image alt="" fill sizes="(max-width: 760px) 88px, 72px" src={menu.menuImageUrl} /> : <VishuIcon name="spa" />}</div>;
 }
 
 function MenuEditor({ menu, mutating, runMutation }: { menu: AdminMenu; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
   const router = useRouter();
   const [draft, setDraft] = useState(menu);
-  const [details, setDetails] = useState(menu.treatmentDetailList.join("\n"));
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState(
+    canonicalCategoryIds(menu.treatmentDetailList),
+  );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState(menu.menuImageUrl);
   const [formError, setFormError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [isCoupon, setIsCoupon] = useState(menu.beforePrice !== null);
   const update = <K extends keyof AdminMenu>(key: K, value: AdminMenu[K]) => setDraft((current) => ({ ...current, [key]: value }));
 
   useEffect(() => () => {
@@ -765,7 +773,7 @@ function MenuEditor({ menu, mutating, runMutation }: { menu: AdminMenu; mutating
     setFormError("");
     let menuToSave = {
       ...draft,
-      treatmentDetailList: details.split("\n").map((item) => item.trim()).filter(Boolean),
+      treatmentDetailList: selectedCategoryIds,
     };
     try {
       if (imageFile) {
@@ -790,7 +798,7 @@ function MenuEditor({ menu, mutating, runMutation }: { menu: AdminMenu; mutating
         {formError ? <div className="admin-alert is-error" role="alert">{formError}</div> : null}
         <section className="admin-panel admin-menu-image-editor">
           <div className={`admin-menu-image-preview${previewUrl ? " has-image" : ""}`}>
-            {previewUrl ? <Image alt="メニュー画像のプレビュー" fill sizes="(max-width: 760px) 100vw, 360px" src={previewUrl} unoptimized={previewUrl.startsWith("blob:")} /> : <><VishuIcon name="spa" /><span>画像未設定</span></>}
+            {previewUrl ? <Image alt="メニュー画像のプレビュー" fill sizes="(max-width: 760px) calc(100vw - 30px), 340px" src={previewUrl} unoptimized={previewUrl.startsWith("blob:")} /> : <><VishuIcon name="spa" /><span>画像未設定</span></>}
           </div>
           <div>
             <h2>メニュー画像</h2>
@@ -802,8 +810,23 @@ function MenuEditor({ menu, mutating, runMutation }: { menu: AdminMenu; mutating
         <section className="admin-panel admin-menu-fields">
           <label>メニュー名<input required value={draft.treatmentDetail} onChange={(event) => update("treatmentDetail", event.target.value)} /></label>
           <label>紹介文<textarea rows={3} value={draft.menuIntroduction} onChange={(event) => update("menuIntroduction", event.target.value)} /></label>
-          <label>施術内容（1行1項目）<textarea rows={4} value={details} onChange={(event) => setDetails(event.target.value)} /></label>
-          <div><label>通常価格<input min="0" type="number" value={draft.beforePrice} onChange={(event) => update("beforePrice", Number(event.target.value))} /></label><label>販売価格<input min="0" required type="number" value={draft.afterPrice} onChange={(event) => update("afterPrice", Number(event.target.value))} /></label></div>
+          <fieldset className="admin-menu-categories">
+            <legend>施術カテゴリ（複数選択可）</legend>
+            <div>
+              {menuCategories.filter((category) => !category.isOther).map((category) => (
+                <label key={category.id}>
+                  <input
+                    checked={selectedCategoryIds.includes(category.id)}
+                    type="checkbox"
+                    onChange={() => setSelectedCategoryIds((current) => toggleCategory(current, category.id))}
+                  />
+                  {category.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <label className="admin-checkbox"><input checked={isCoupon} type="checkbox" onChange={(event) => { const checked = event.target.checked; setIsCoupon(checked); update("beforePrice", checked ? draft.beforePrice ?? draft.afterPrice : null); }} />クーポンとして表示</label>
+          <div>{isCoupon ? <label>値引き前の通常価格<input min="1" required type="number" value={draft.beforePrice ?? ""} onChange={(event) => update("beforePrice", Number(event.target.value))} /></label> : null}<label>{isCoupon ? "クーポン価格" : "通常価格"}<input min="1" required type="number" value={draft.afterPrice} onChange={(event) => update("afterPrice", Number(event.target.value))} /></label></div>
           <div><label>所要時間（分）<input min="1" required type="number" value={draft.treatmentTimeMinutes} onChange={(event) => update("treatmentTimeMinutes", Number(event.target.value))} /></label><label>表示順<input min="0" required type="number" value={draft.priority} onChange={(event) => update("priority", Number(event.target.value))} /></label></div>
           <label className="admin-checkbox"><input checked={draft.isCallable} type="checkbox" onChange={(event) => update("isCallable", event.target.checked)} />電話予約のみ</label>
           <label className="admin-checkbox"><input checked={draft.isNeedExtraMoney} type="checkbox" onChange={(event) => update("isNeedExtraMoney", event.target.checked)} />追加料金あり（価格に「〜」を表示）</label>
@@ -944,7 +967,7 @@ function PageTitle({ eyebrow, title, description }: { eyebrow: string; title: st
 function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) { return <div className="admin-section-heading"><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>; }
 function Metric({ icon, label, value, compact = false }: { icon: "calendar" | "clock" | "sparkle"; label: string; value: string; compact?: boolean }) { return <article><span><VishuIcon name={icon} /></span><div><small>{label}</small><strong className={compact ? "is-compact" : ""}>{value}</strong></div></article>; }
 function EmptyState({ title, text }: { title: string; text: string }) { return <div className="admin-empty-state"><VishuIcon name="leaf" /><h2>{title}</h2><p>{text}</p></div>; }
-function emptyMenu(): AdminMenu { return { id: "", treatmentDetail: "", menuIntroduction: "", treatmentDetailList: [], menuImageUrl: "", menuImagePath: "", treatmentTimeMinutes: 60, beforePrice: 0, afterPrice: 0, isCallable: false, isNeedExtraMoney: false, priority: 999, updatedAt: null }; }
+function emptyMenu(): AdminMenu { return { id: "", treatmentDetail: "", menuIntroduction: "", treatmentDetailList: [], menuImageUrl: "", menuImagePath: "", treatmentTimeMinutes: 60, beforePrice: null, afterPrice: 0, isCallable: false, isNeedExtraMoney: false, priority: 999, updatedAt: null }; }
 function customerSummary(customer: AdminCustomer, reservations: AdminReservation[], entries: AdminSnapshot["karteEntries"]) { const customerReservations = reservations.filter((item) => item.customerId === customer.id); const visits = customerReservations.filter((item) => item.status === "visited"); const lastVisit = visits.sort((a, b) => b.startTime.localeCompare(a.startTime))[0]?.startTime; const entryIds = new Set(entries.filter((item) => item.customerId === customer.id).map((item) => item.reservationId)); return { visits: visits.length, lastVisit, missingKarte: visits.some((item) => !entryIds.has(item.id)) }; }
 function startOfDay(date: Date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
 function addDays(date: Date, days: number) { const result = new Date(date); result.setDate(result.getDate() + days); return result; }

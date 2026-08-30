@@ -16,7 +16,7 @@ export type AdminMenu = {
   menuImageUrl: string;
   menuImagePath: string;
   treatmentTimeMinutes: number;
-  beforePrice: number;
+  beforePrice: number | null;
   afterPrice: number;
   isCallable: boolean;
   isNeedExtraMoney: boolean;

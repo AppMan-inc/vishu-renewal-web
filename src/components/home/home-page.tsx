@@ -119,7 +119,7 @@ function HeroSection() {
           className={styles.heroImage}
           fill
           preload
-          sizes="(max-width: 760px) 100vw, 54vw"
+          sizes="(max-width: 767px) 100vw, (max-width: 1099px) 760px, 50vw"
           src={siteAssetPath("/images/salon-vishu-interior.webp")}
         />
         <div className={styles.heroImageShade} />
@@ -142,7 +142,7 @@ function ShampooSection() {
           alt="首をやさしく支えるクッションを備えたSalon Vishuのシャンプー台"
           className={styles.shampooImage}
           height={941}
-          sizes="(max-width: 760px) calc(100vw - 36px), 56vw"
+          sizes="(max-width: 680px) calc(100vw - 36px), (max-width: 820px) calc(100vw - 64px), 56vw"
           src={siteAssetPath("/images/salon-vishu-shampoo-station.webp")}
           width={1672}
         />
@@ -179,7 +179,7 @@ function StraighteningSection() {
                   alt={`髪質改善・縮毛矯正${index + 1}組目の施術前`}
                   className={styles.straighteningImage}
                   height={2134}
-                  sizes="(max-width: 680px) calc((100vw - 64px) / 2), 33vw"
+                  sizes="(max-width: 680px) 43vw, (max-width: 1120px) 344px, 300px"
                   src={siteAssetPath(pair.before)}
                   width={1600}
                 />
@@ -190,7 +190,7 @@ function StraighteningSection() {
                   alt={`髪質改善・縮毛矯正${index + 1}組目の施術後`}
                   className={styles.straighteningImage}
                   height={2134}
-                  sizes="(max-width: 680px) calc((100vw - 64px) / 2), 33vw"
+                  sizes="(max-width: 680px) 43vw, (max-width: 1120px) 344px, 300px"
                   src={siteAssetPath(pair.after)}
                   width={1600}
                 />
@@ -310,7 +310,7 @@ function SalonInfoSection() {
               alt="Salon Vishuの木製の玄関ドア"
               className={styles.mapImage}
               fill
-              sizes="(max-width: 820px) calc(100vw - 36px), 38vw"
+              sizes="(max-width: 680px) calc(100vw - 36px), (max-width: 820px) calc(100vw - 64px), 38vw"
               src={siteAssetPath("/images/salon-vishu-exterior.webp")}
             />
           </div>

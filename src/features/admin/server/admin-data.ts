@@ -57,8 +57,8 @@ export const adminMutationSchema = z.discriminatedUnion("action", [
       ),
       menuImagePath: z.string().trim().max(512),
       treatmentTimeMinutes: z.number().int().min(1).max(720),
-      beforePrice: z.number().int().min(0).max(10_000_000),
-      afterPrice: z.number().int().min(0).max(10_000_000),
+      beforePrice: z.number().int().min(1).max(10_000_000).nullable(),
+      afterPrice: z.number().int().min(1).max(10_000_000),
       isCallable: z.boolean(),
       isNeedExtraMoney: z.boolean(),
       priority: z.number().int().min(0).max(9999),
@@ -267,7 +267,7 @@ export async function applyAdminMutation(
           menuIntroduction: mutation.menu.menuIntroduction,
           menuImageUrl: mutation.menu.menuImageUrl || null,
           menuImagePath: mutation.menu.menuImagePath || null,
-          beforePrice: mutation.menu.beforePrice || null,
+          beforePrice: mutation.menu.beforePrice,
           afterPrice: mutation.menu.afterPrice,
           treatmentTime: mutation.menu.treatmentTimeMinutes,
           isCallable: mutation.menu.isCallable,
@@ -615,7 +615,7 @@ function menuFromDocument(id: string, data: Record<string, unknown>): AdminMenu 
     menuImageUrl: imageUrlValue(data.menuImageUrl),
     menuImagePath: stringValue(data.menuImagePath),
     treatmentTimeMinutes: numberValue(data.treatmentTime, 60),
-    beforePrice: numberValue(data.beforePrice),
+    beforePrice: nullablePositiveNumberValue(data.beforePrice),
     afterPrice: numberValue(data.afterPrice),
     isCallable: data.isCallable === true,
     isNeedExtraMoney: data.isNeedExtraMoney === true,
@@ -805,6 +805,11 @@ function numberValue(value: unknown, fallback = 0) {
     if (Number.isFinite(parsed)) return Math.round(parsed);
   }
   return fallback;
+}
+
+function nullablePositiveNumberValue(value: unknown) {
+  const number = numberValue(value, -1);
+  return number > 0 ? number : null;
 }
 
 function normalizeStatus(value: unknown): ReservationStatus {

@@ -14,6 +14,13 @@ import {
   loadBookingCustomerProfile,
 } from "@/features/booking/booking-data";
 import { bookingSlotsForDate } from "@/features/booking/booking-availability";
+import {
+  groupVisibleMenus,
+  isCoupon,
+  menuCategories,
+  toggleCategory,
+  type MenuGroups,
+} from "@/features/booking/booking-menu-catalog";
 import { bookingLoginHref } from "@/features/booking/booking-navigation";
 import {
   bookingReservationErrorMessage,
@@ -28,17 +35,6 @@ import {
 } from "@/features/form-validation";
 
 const steps = ["メニュー", "日時", "お客様情報", "確認"];
-const categories = [
-  { id: "cut", label: "カット", terms: ["カット", "cut"] },
-  { id: "color", label: "カラー", terms: ["カラー", "color"] },
-  { id: "treatment", label: "トリートメント", terms: ["トリートメント", "treatment"] },
-  { id: "perm", label: "パーマ", terms: ["パーマ", "perm"] },
-  { id: "straight", label: "縮毛矯正", terms: ["縮毛矯正", "ストレート"] },
-  { id: "hair-set", label: "ヘアセット", terms: ["ヘアセット", "hair set"] },
-  { id: "kimono", label: "着付け", terms: ["着付け", "着付"] },
-  { id: "other", label: "その他", terms: [] },
-];
-
 type Step = 0 | 1 | 2 | 3;
 type ReservationSubmission =
   | { status: "idle" }
@@ -56,7 +52,8 @@ export function BookingFlow() {
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentStep, setCurrentStep] = useState<Step>(0);
-  const [selectedCategory, setSelectedCategory] = useState(categories[0].id);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [draftCategoryIds, setDraftCategoryIds] = useState<string[]>([]);
   const [selectedMenu, setSelectedMenu] = useState<BookingMenu | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const dates = useMemo(() => nextDates(7, weekOffset * 7), [weekOffset]);
@@ -125,20 +122,10 @@ export function BookingFlow() {
     };
   }, [currentUser]);
 
-  const visibleMenus = useMemo(() => {
-    const menus = catalog?.menus ?? [];
-    const category = categories.find((item) => item.id === selectedCategory);
-    if (!category) return menus;
-    if (category.id === "other") {
-      const mainCategories = categories.filter(
-        (item) => item.id !== "other",
-      );
-      return menus.filter(
-        (menu) => !mainCategories.some((item) => menuMatches(menu, item.terms)),
-      );
-    }
-    return menus.filter((menu) => menuMatches(menu, category.terms));
-  }, [catalog, selectedCategory]);
+  const visibleMenuGroups = useMemo(
+    () => groupVisibleMenus(catalog?.menus ?? [], selectedCategoryIds),
+    [catalog, selectedCategoryIds],
+  );
 
   useEffect(() => {
     if (
@@ -303,10 +290,13 @@ export function BookingFlow() {
             <MenuStep
               catalog={catalog}
               hasError={loadError}
-              menus={visibleMenus}
-              selectedCategory={selectedCategory}
+              menuGroups={visibleMenuGroups}
+              draftCategoryIds={draftCategoryIds}
               selectedMenu={selectedMenu}
-              onCategoryChange={setSelectedCategory}
+              onCategoryToggle={(categoryId) => setDraftCategoryIds(
+                (current) => toggleCategory(current, categoryId),
+              )}
+              onCategoriesApply={() => setSelectedCategoryIds(draftCategoryIds)}
               onMenuSelect={chooseMenu}
               onRetry={() => setReloadKey((key) => key + 1)}
             />
@@ -484,10 +474,11 @@ function MobileBookingAction({
 type MenuStepProps = {
   catalog: BookingCatalog | null;
   hasError: boolean;
-  menus: BookingMenu[];
-  selectedCategory: string;
+  menuGroups: MenuGroups<BookingMenu>;
+  draftCategoryIds: string[];
   selectedMenu: BookingMenu | null;
-  onCategoryChange: (category: string) => void;
+  onCategoryToggle: (category: string) => void;
+  onCategoriesApply: () => void;
   onMenuSelect: (menu: BookingMenu) => void;
   onRetry: () => void;
 };
@@ -507,17 +498,22 @@ function MenuStep(props: MenuStepProps) {
         </div>
       ) : null}
 
-      <div className="booking-category-list" aria-label="メニューカテゴリ">
-        {categories.map((category) => (
-          <button
-            className={category.id === props.selectedCategory ? "is-selected" : ""}
-            key={category.id}
-            type="button"
-            onClick={() => props.onCategoryChange(category.id)}
-          >
-            {category.label}
-          </button>
-        ))}
+      <div className="booking-filter-panel">
+        <div className="booking-filter-options" role="group" aria-label="メニューカテゴリ（複数選択可）">
+          {menuCategories.map((category) => (
+            <label key={category.id}>
+              <input
+                checked={props.draftCategoryIds.includes(category.id)}
+                type="checkbox"
+                onChange={() => props.onCategoryToggle(category.id)}
+              />
+              <span>{category.label}</span>
+            </label>
+          ))}
+        </div>
+        <div className="booking-filter-action">
+          <button type="button" onClick={props.onCategoriesApply}>絞り込む</button>
+        </div>
       </div>
 
       {!props.catalog && !props.hasError ? <BookingLoading /> : null}
@@ -528,25 +524,65 @@ function MenuStep(props: MenuStepProps) {
           <button className="button button-quiet" type="button" onClick={props.onRetry}>もう一度試す</button>
         </div>
       ) : null}
-      {props.catalog && props.menus.length === 0 ? (
+      {props.catalog && props.menuGroups.coupons.length === 0 && props.menuGroups.regularMenus.length === 0 ? (
         <div className="booking-state-card"><p>該当するメニューがありません。</p></div>
       ) : null}
 
+      {props.catalog ? (
+        <>
+          <MenuSection
+            emptyMessage="該当するクーポンはありません。"
+            menus={props.menuGroups.coupons}
+            selectedMenu={props.selectedMenu}
+            title="クーポン"
+            onMenuSelect={props.onMenuSelect}
+          />
+          <MenuSection
+            emptyMessage="該当する通常メニューはありません。"
+            menus={props.menuGroups.regularMenus}
+            selectedMenu={props.selectedMenu}
+            title="通常メニュー"
+            onMenuSelect={props.onMenuSelect}
+          />
+        </>
+      ) : null}
+    </>
+  );
+}
+
+function MenuSection({
+  emptyMessage,
+  menus,
+  selectedMenu,
+  title,
+  onMenuSelect,
+}: {
+  emptyMessage: string;
+  menus: BookingMenu[];
+  selectedMenu: BookingMenu | null;
+  title: string;
+  onMenuSelect: (menu: BookingMenu) => void;
+}) {
+  const headingId = `booking-${title === "クーポン" ? "coupon" : "regular"}-heading`;
+  return (
+    <section className="booking-menu-section" aria-labelledby={headingId}>
+      <h3 id={headingId}>{title}<span>{menus.length}件</span></h3>
+      {menus.length === 0 ? <p className="booking-menu-empty">{emptyMessage}</p> : null}
       <div className="booking-menu-list">
-        {props.menus.map((menu) => (
+        {menus.map((menu) => (
           <button
-            aria-pressed={props.selectedMenu?.id === menu.id}
-            className={`booking-menu-card${props.selectedMenu?.id === menu.id ? " is-selected" : ""}`}
+            aria-pressed={selectedMenu?.id === menu.id}
+            className={`booking-menu-card${selectedMenu?.id === menu.id ? " is-selected" : ""}`}
             key={menu.id}
             type="button"
-            onClick={() => props.onMenuSelect(menu)}
+            onClick={() => onMenuSelect(menu)}
           >
             <MenuImage menu={menu} />
             <div className="booking-menu-copy">
-              <span>{categoryLabel(menu)}</span>
+              <span>{isCoupon(menu) ? `クーポン · ${categoryLabel(menu)}` : categoryLabel(menu)}</span>
               <h3>{menu.title}</h3>
               <p>{menu.description}</p>
-              <div className="booking-menu-price">{priceLabel(menu)}</div>
+              <MenuPrice menu={menu} />
             </div>
             <div className="booking-menu-meta">
               <span><VishuIcon name="clock" />{menu.durationMinutes}分</span>
@@ -556,7 +592,18 @@ function MenuStep(props: MenuStepProps) {
           </button>
         ))}
       </div>
-    </>
+    </section>
+  );
+}
+
+function MenuPrice({ menu }: { menu: BookingMenu }) {
+  return (
+    <div className="booking-menu-price">
+      {isCoupon(menu) && menu.beforePrice !== null ? (
+        <del>¥{menu.beforePrice.toLocaleString("ja-JP")}</del>
+      ) : null}
+      <strong>{priceLabel(menu)}</strong>
+    </div>
   );
 }
 
@@ -582,7 +629,7 @@ function MenuImage({
       <Image
         alt=""
         fill
-        sizes={compact ? "58px" : "(max-width: 600px) 52px, 76px"}
+        sizes={compact ? "(max-width: 680px) 46px, 58px" : "(max-width: 680px) 52px, (max-width: 767px) 58px, 76px"}
         src={menu.imageUrl}
         unoptimized
         onError={() => setFailedImageUrl(menu.imageUrl)}
@@ -959,11 +1006,6 @@ function nextDates(count: number, offsetDays = 0) {
     date.setDate(today.getDate() + index);
     return date;
   });
-}
-
-function menuMatches(menu: BookingMenu, terms: string[]) {
-  const values = [menu.title, ...menu.categories].map((value) => value.toLowerCase());
-  return terms.some((term) => values.some((value) => value.includes(term.toLowerCase())));
 }
 
 function menuIcon(menu: BookingMenu): "cut" | "sparkle" | "spa" {

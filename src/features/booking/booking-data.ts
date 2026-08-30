@@ -170,7 +170,7 @@ function menuFromDocument(id: string, data: Record<string, unknown>): BookingMen
     categories: Array.isArray(data.treatmentDetailList)
       ? data.treatmentDetailList.map(stringValue).filter(Boolean)
       : [],
-    beforePrice: positiveInteger(data.beforePrice),
+    beforePrice: strictlyPositiveInteger(data.beforePrice),
     price: positiveInteger(data.afterPrice) ?? positiveInteger(data.beforePrice) ?? 0,
     durationMinutes: positiveInteger(data.treatmentTime) ?? 60,
     isCallable: booleanValue(data.isCallable),
@@ -216,6 +216,11 @@ function numberValue(value: unknown) {
 function positiveInteger(value: unknown) {
   const number = numberValue(value);
   return number !== null && number >= 0 ? number : null;
+}
+
+function strictlyPositiveInteger(value: unknown) {
+  const number = numberValue(value);
+  return number !== null && number > 0 ? number : null;
 }
 
 function booleanValue(value: unknown) {
