@@ -3818,13 +3818,6 @@ button.booking-menu-card:focus-visible .booking-menu-icon.has-image img {
   width: 31px;
 }
 
-.booking-menu-copy > span {
-  color: var(--primary);
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: .18em;
-}
-
 .booking-menu-copy h3 {
   margin: 5px 0 4px;
   font-size: 17px;
@@ -3834,6 +3827,23 @@ button.booking-menu-card:focus-visible .booking-menu-icon.has-image img {
   margin: 0;
   color: var(--text-secondary);
   font-size: 11px;
+}
+
+.booking-menu-treatments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 7px;
+}
+
+.booking-menu-treatments span {
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: var(--clay);
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .booking-menu-meta {
@@ -5651,7 +5661,7 @@ button.booking-menu-card.is-selected .round-arrow {
     display: none;
   }
 
-  .booking-menu-copy p {
+  .booking-menu-description {
     display: none;
   }
 

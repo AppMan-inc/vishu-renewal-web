@@ -15,6 +15,7 @@ import {
 } from "@/features/booking/booking-data";
 import { bookingSlotsForDate } from "@/features/booking/booking-availability";
 import {
+  categoryDisplayLabel,
   groupVisibleMenus,
   isCoupon,
   menuCategories,
@@ -579,9 +580,15 @@ function MenuSection({
           >
             <MenuImage menu={menu} />
             <div className="booking-menu-copy">
-              <span>{isCoupon(menu) ? `クーポン · ${categoryLabel(menu)}` : categoryLabel(menu)}</span>
+              {menu.categories.length > 0 ? (
+                <div className="booking-menu-treatments">
+                  {menu.categories.map((category, index) => (
+                    <span key={`${category}-${index}`}>{categoryDisplayLabel(category)}</span>
+                  ))}
+                </div>
+              ) : null}
               <h3>{menu.title}</h3>
-              <p>{menu.description}</p>
+              <p className="booking-menu-description">{menu.description}</p>
               <MenuPrice menu={menu} />
             </div>
             <div className="booking-menu-meta">
@@ -1016,7 +1023,7 @@ function menuIcon(menu: BookingMenu): "cut" | "sparkle" | "spa" {
 }
 
 function categoryLabel(menu: BookingMenu) {
-  return menu.categories[0] || "SALON MENU";
+  return menu.categories.map(categoryDisplayLabel).join(" ・ ") || "SALON MENU";
 }
 
 function priceLabel(menu: BookingMenu) {

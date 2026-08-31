@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  categoryDisplayLabel,
   canonicalCategoryIds,
   groupVisibleMenus,
   isCoupon,
@@ -85,4 +86,10 @@ test("normalizes legacy Japanese categories to canonical IDs", () => {
     canonicalCategoryIds(["カット", "ヘッドスパ", "縮毛矯正"]),
     ["cut", "straightening", "headSpa"],
   );
+});
+
+test("uses readable labels without dropping unknown treatment details", () => {
+  assert.equal(categoryDisplayLabel("cut"), "カット");
+  assert.equal(categoryDisplayLabel("ヘッドスパ"), "ヘッドスパ");
+  assert.equal(categoryDisplayLabel("オリジナル施術"), "オリジナル施術");
 });

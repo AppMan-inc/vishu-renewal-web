@@ -72,6 +72,16 @@ export function canonicalCategoryIds(values: string[]) {
     .map((category) => category.id);
 }
 
+export function categoryDisplayLabel(value: string) {
+  const normalizedValue = normalize(value);
+  const category = menuCategories.find((item) =>
+    [item.id, item.label, ...item.terms]
+      .map(normalize)
+      .includes(normalizedValue)
+  );
+  return category?.label ?? value.trim();
+}
+
 function menuMatchesCategory(menu: CatalogMenu, categoryId: string) {
   const category = menuCategories.find((item) => item.id === categoryId);
   if (!category) return false;
