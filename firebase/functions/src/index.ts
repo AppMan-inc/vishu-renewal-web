@@ -4,6 +4,7 @@ import type { DocumentData, Firestore } from "firebase-admin/firestore";
 import { FieldValue } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { logger } from "firebase-functions";
+import { defineSecret, defineString } from "firebase-functions/params";
 import { onRequest, type Request } from "firebase-functions/v2/https";
 import {
   adminMutationSchema,
@@ -19,6 +20,13 @@ import type {
 import { adminAuth, adminFirestore, getFirebaseAdminApp } from "./firebase-admin-adapter";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const resendApiKey = defineSecret("RESEND_API_KEY");
+const notificationEmailFrom = defineString("NOTIFICATION_EMAIL_FROM", {
+  default: "Salon Vishu <notifications@notify.app-man.jp>",
+});
+const notificationEmailReplyTo = defineString("NOTIFICATION_EMAIL_REPLY_TO", {
+  default: "y.itsukage@app-man.jp",
+});
 const imageTypes = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -32,6 +40,7 @@ export const adminApi = onRequest(
     maxInstances: 5,
     memory: "512MiB",
     region: "asia-northeast2",
+    secrets: [resendApiKey],
     timeoutSeconds: 60,
   },
   async (request, response) => {
@@ -168,9 +177,10 @@ async function sendEmailNotification(
     );
   }
 
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.NOTIFICATION_EMAIL_FROM?.trim();
-  if (!apiKey || !from) {
+  const apiKey = resendApiKey.value().trim();
+  const from = notificationEmailFrom.value().trim();
+  const replyTo = notificationEmailReplyTo.value().trim();
+  if (!apiKey || !from || !replyTo) {
     throw new Error("Email delivery is not configured.");
   }
   const person = mutation.target === "all" ? null : customers[0]?.name || "お客様";
@@ -192,6 +202,7 @@ async function sendEmailNotification(
     for (let index = 0; index < recipients.length; index += 100) {
       const batch = recipients.slice(index, index + 100).map((recipient) => ({
         from,
+        reply_to: replyTo,
         to: [recipient.email],
         subject: mutation.title,
         text: mutation.content,

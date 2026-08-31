@@ -34,10 +34,17 @@ firebase deploy --only functions:adminApi --project salon-vishu2-dev-30830
 firebase functions:secrets:set RESEND_API_KEY --project salon-vishu2-dev-30830
 ```
 
-`firebase/functions/.env.<project-id>` には、認証済みドメインの送信元を設定します。
+送信元とReply-ToはFunctions Paramsとして設定します。未設定時は次の既定値を使用します。
 
-```dotenv
-NOTIFICATION_EMAIL_FROM=Salon Vishu <notifications@example.com>
+```text
+NOTIFICATION_EMAIL_FROM=Salon Vishu <notifications@notify.app-man.jp>
+NOTIFICATION_EMAIL_REPLY_TO=y.itsukage@app-man.jp
 ```
 
 本番環境では `--project salon-vishu` に置き換え、同様に設定します。全体配信も宛先ごとの個別メールとして送信されるため、受信者同士にメールアドレスは公開されません。
+
+本番ではリポジトリルートから、`adminApi` だけを限定デプロイします。
+
+```bash
+npm run deploy:firebase-admin-api:prod
+```

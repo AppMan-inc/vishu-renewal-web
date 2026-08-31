@@ -12,6 +12,7 @@
     "build:cloudflare": "node scripts/with-environment.mjs prod cloudflare-build",
     "preview:cloudflare": "npm run build:cloudflare && wrangler dev",
     "deploy:cloudflare": "npm run build:cloudflare && opennextjs-cloudflare deploy",
+    "deploy:firebase-admin-api:prod": "firebase deploy --config firebase/firebase.json --project salon-vishu --only functions:adminApi",
     "start": "node scripts/with-environment.mjs",
     "start:dev": "node scripts/with-environment.mjs dev start",
     "start:prod": "node scripts/with-environment.mjs prod start",
