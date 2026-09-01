@@ -26,7 +26,7 @@ const drivingDirections = {
 const services = [
   {
     index: "01",
-    name: "似合わせカット",
+    name: "カット",
     english: "CUT & STYLING",
     description: "骨格や髪の流れを見ながら、毎朝扱いやすいシルエットへ。",
     price: "¥3,800",
@@ -42,7 +42,7 @@ const services = [
   },
   {
     index: "03",
-    name: "酸性縮毛矯正",
+    name: "髪質改善★酸性縮毛矯正",
     english: "HAIR STRAIGHTENING",
     description: "自然に動く、するんとした髪へ。カット・ケア込みの髪質改善。",
     price: "¥19,000〜",
@@ -212,7 +212,7 @@ function ServicesSection() {
       <div className={styles.sectionHeading}>
         <div>
           <SectionLabel>SELECTED MENU</SectionLabel>
-          <h2 id="services-title">髪の今に合わせて選ぶ。</h2>
+          <h2 id="services-title">メニュー</h2>
         </div>
         <p>料金と所要時間を確認して、空いている日時からスムーズにご予約いただけます。</p>
       </div>
@@ -255,7 +255,7 @@ function BookingGuideSection() {
     <section className={styles.guide} aria-labelledby="guide-title">
       <div className={styles.guideCopy}>
         <SectionLabel>EASY BOOKING</SectionLabel>
-        <h2 id="guide-title">思い立ったとき、<br />3分で予約。</h2>
+        <h2 id="guide-title">予約をはじめる</h2>
         <p>電話をかける時間がなくても、空いている日時からそのままご予約いただけます。</p>
         <ArrowLink href="/booking" light>予約をはじめる</ArrowLink>
       </div>

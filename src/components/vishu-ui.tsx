@@ -143,7 +143,6 @@ export function PageFooter() {
     <footer className="site-footer">
       <div className="footer-main">
         <Brand />
-        <p>今日より少し、好きな髪でいよう。</p>
       </div>
       <div className="footer-info">
         <span>大阪府河内長野市荘園町18-14</span>
