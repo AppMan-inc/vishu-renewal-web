@@ -60,6 +60,14 @@
   letter-spacing: .22em;
 }
 
+.heroBrand span {
+  display: inline-block;
+  margin-left: .9em;
+  font-family: var(--font-sans), "Yu Gothic", sans-serif;
+  font-size: .62em;
+  letter-spacing: .14em;
+}
+
 .hero h1,
 .sectionHeading h2,
 .guide h2,

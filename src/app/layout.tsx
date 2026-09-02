@@ -22,7 +22,7 @@ const serif = Noto_Serif_JP({
 export const metadata: Metadata = {
   metadataBase,
   title: {
-    default: "Salon Vishu | 大阪・河内長野のプライベートヘアサロン",
+    default: "河内長野市荘園町の美容室・プライベートサロン | Salon Vishu",
     template: "%s | Salon Vishu",
   },
   description: defaultDescription,

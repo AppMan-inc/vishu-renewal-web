@@ -94,13 +94,16 @@ function HeroSection() {
     <section className={styles.hero} aria-labelledby="home-hero-title">
       <div className={styles.heroCopy}>
         <SectionLabel>FIND YOUR BEAUTY</SectionLabel>
-        <p className={styles.heroBrand}>Salon Vishu</p>
+        <p className={styles.heroBrand}>
+          Salon Vishu
+          <span>サロン ヴィッシュ</span>
+        </p>
         <h1 id="home-hero-title">
-          <span className={styles.headlineLine}>プライベートサロンで</span>
-          <em className={styles.headlineLine}>他のお客様を気にしなくて良い空間♪</em>
+          <span className={styles.headlineLine}>河内長野市荘園町の</span>
+          <em className={styles.headlineLine}>完全予約制プライベートサロン</em>
         </h1>
         <p className={styles.heroDescription}>
-          ハーブカラーでダメージを抑えて♪パーマは髪に優しいコスメパーマ★縮毛矯正♪髪質改善＋トリートメントしながらツヤ髪に♪全メニュートリートメント配合のセットメニューがお得です
+          Salon Vishuは、大阪府河内長野市荘園町にある一席だけの美容室です。ほかのお客様を気にせず過ごせる、完全予約制のプライベートサロンとして営業しています。ハーブカラー、縮毛矯正、髪質改善、ヘッドスパなどをご提供しています。
         </p>
         <div className={styles.heroActions}>
           <ArrowLink href="/booking">空き時間を見て予約</ArrowLink>

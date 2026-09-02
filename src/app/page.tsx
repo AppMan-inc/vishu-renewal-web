@@ -6,7 +6,7 @@ import { absoluteSiteUrl } from "@/lib/site-url";
 const hotPepperUrl = "https://beauty.hotpepper.jp/slnH000583006/";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Salon Vishu | 大阪・河内長野のプライベートヘアサロン",
+  title: "河内長野市荘園町の美容室・プライベートサロン | Salon Vishu",
   description: defaultDescription,
   path: "/",
 });
@@ -14,10 +14,12 @@ export const metadata: Metadata = createPageMetadata({
 const salonJsonLd = {
   "@context": "https://schema.org",
   "@type": "HairSalon",
+  "@id": `${absoluteSiteUrl()}#hair-salon`,
   name: "Salon Vishu",
-  alternateName: "サロンヴィッシュ",
-  description: "大阪府河内長野市荘園町の、1席・スタイリスト1名の完全予約制プライベートヘアサロン。",
+  alternateName: ["サロン ヴィッシュ", "サロンヴィッシュ"],
+  description: "大阪府河内長野市荘園町にある、一席・スタイリスト一名の完全予約制プライベートサロンです。",
   url: absoluteSiteUrl(),
+  image: absoluteSiteUrl("/images/salon-vishu-interior.webp"),
   telephone: "+81-721-21-8824",
   address: {
     "@type": "PostalAddress",
@@ -26,6 +28,7 @@ const salonJsonLd = {
     streetAddress: "荘園町18-14",
     addressCountry: "JP",
   },
+  areaServed: ["河内長野市", "荘園町"],
   priceRange: "¥¥",
   sameAs: [hotPepperUrl],
 };
