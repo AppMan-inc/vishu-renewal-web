@@ -1,6 +1,7 @@
 "use client";
 
 import { updateProfile } from "firebase/auth";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -86,6 +87,7 @@ export function CustomerAccountOverview() {
           <h2>{nextReservation ? "次回のご予約" : "新しいご予約"}</h2>
           {nextReservation ? (
             <>
+              <AccountMenuImage reservation={nextReservation} />
               <strong className="account-next-date">{formatReservationDate(nextReservation.startAt)}</strong>
               <p>{nextReservation.menuName}</p>
               <div className="account-card-actions">
@@ -151,6 +153,29 @@ export function CustomerAccountOverview() {
       <div className="account-logout-section">
         <CustomerLogoutButton variant="menu" />
       </div>
+    </div>
+  );
+}
+
+function AccountMenuImage({ reservation }: { reservation: CustomerReservation }) {
+  const [failedImageUrl, setFailedImageUrl] = useState("");
+  const hasImage =
+    reservation.menuImageUrl && failedImageUrl !== reservation.menuImageUrl;
+
+  return (
+    <div className={`account-next-menu-image${hasImage ? " has-image" : ""}`}>
+      {hasImage ? (
+        <Image
+          alt=""
+          fill
+          sizes="(max-width: 760px) calc(100vw - 80px), 560px"
+          src={reservation.menuImageUrl}
+          unoptimized
+          onError={() => setFailedImageUrl(reservation.menuImageUrl)}
+        />
+      ) : (
+        <VishuIcon name="spa" />
+      )}
     </div>
   );
 }

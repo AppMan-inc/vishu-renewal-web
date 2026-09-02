@@ -168,6 +168,29 @@
   font-weight: 600;
 }
 
+.account-next-menu-image {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 100%;
+  height: clamp(132px, 22vw, 190px);
+  margin-top: 20px;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-selected);
+  color: var(--primary-dark);
+}
+
+.account-next-menu-image > svg {
+  width: 36px;
+}
+
+.account-next-menu-image img {
+  object-fit: cover;
+}
+
 .account-hero-card > p:not(.module-label) {
   position: relative;
   z-index: 1;
@@ -8254,6 +8277,34 @@ button.is-danger {
   border: 1px solid rgba(65, 81, 58, .1);
   border-radius: 15px;
   background: rgba(255, 255, 255, .83);
+}
+
+.admin-menu-groups {
+  display: grid;
+  gap: 28px;
+}
+
+.admin-menu-group {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-menu-group > h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin: 0;
+  color: var(--green-deep);
+  font-family: var(--font-serif), serif;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.admin-menu-group > h2 span {
+  color: var(--muted);
+  font-family: var(--font-sans), sans-serif;
+  font-size: 9px;
+  font-weight: 500;
 }
 
 .admin-table-head,

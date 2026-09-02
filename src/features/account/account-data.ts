@@ -13,6 +13,7 @@ import {
   where,
 } from "firebase/firestore";
 import { firestore } from "@/lib/firebase/firestore";
+import { cloudStorageImageUrl } from "@/features/booking/booking-data";
 import { customerProfileValidationMessage } from "@/features/form-validation";
 
 export type CustomerProfile = {
@@ -28,6 +29,7 @@ export type CustomerProfile = {
 export type CustomerReservation = {
   id: string;
   menuName: string;
+  menuImageUrl: string;
   startAt: Date;
   endAt: Date | null;
   durationMinutes: number;
@@ -180,6 +182,10 @@ function reservationFromData(
     id: stringValue(data.reservationId) || fallbackId,
     menuName:
       stringValue(data.menuName ?? data.treatmentDetail) || "サロンメニュー",
+    menuImageUrl: cloudStorageImageUrl(
+      data.menuImageUrl ??
+        (isRecord(data.menuSnapshot) ? data.menuSnapshot.imageUrl : undefined),
+    ),
     startAt,
     endAt,
     durationMinutes,
@@ -229,4 +235,8 @@ function numberValue(value: unknown) {
   if (typeof value !== "string") return null;
   const parsed = Number(value.replace(/[^0-9-]/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

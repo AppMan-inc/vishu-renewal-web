@@ -179,7 +179,7 @@ function menuFromDocument(id: string, data: Record<string, unknown>): BookingMen
   };
 }
 
-function cloudStorageImageUrl(value: unknown) {
+export function cloudStorageImageUrl(value: unknown) {
   const imageUrl = stringValue(value);
   if (!imageUrl) return "";
 

@@ -45,6 +45,7 @@ import { japaneseHolidayName } from "@/features/admin/japanese-holidays";
 import { AdminClosures } from "@/features/admin/components/admin-closures";
 import {
   canonicalCategoryIds,
+  isCoupon,
   menuCategories,
   toggleCategory,
 } from "@/features/booking/booking-menu-catalog";
@@ -702,6 +703,9 @@ function Menus(props: {
     return <MenuEditor menu={menu} mutating={props.mutating} runMutation={props.runMutation} />;
   }
 
+  const coupons = props.snapshot.menus.filter(isCoupon);
+  const regularMenus = props.snapshot.menus.filter((menu) => !isCoupon(menu));
+
   return (
     <>
       <PageTitle eyebrow="MENU MANAGEMENT" title="メニュー管理" description="メニューを選択して、内容や画像を編集できます。" />
@@ -709,9 +713,45 @@ function Menus(props: {
         <span>{props.snapshot.menus.length}件のメニュー</span>
         <Link href="/admin/menus?menuId=new">+ 新規メニュー</Link>
       </div>
+      <div className="admin-menu-groups">
+        <AdminMenuSection
+          emptyMessage="登録済みのクーポンはありません。"
+          menus={coupons}
+          mutating={props.mutating}
+          title="クーポン"
+          runMutation={props.runMutation}
+        />
+        <AdminMenuSection
+          emptyMessage="登録済みの通常メニューはありません。"
+          menus={regularMenus}
+          mutating={props.mutating}
+          title="通常メニュー"
+          runMutation={props.runMutation}
+        />
+      </div>
+    </>
+  );
+}
+
+function AdminMenuSection({
+  emptyMessage,
+  menus,
+  mutating,
+  title,
+  runMutation,
+}: {
+  emptyMessage: string;
+  menus: AdminMenu[];
+  mutating: boolean;
+  title: string;
+  runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean>;
+}) {
+  return (
+    <section className="admin-menu-group" aria-labelledby={`admin-menu-${title === "クーポン" ? "coupon" : "regular"}-heading`}>
+      <h2 id={`admin-menu-${title === "クーポン" ? "coupon" : "regular"}-heading`}>{title}<span>{menus.length}件</span></h2>
       <div className="admin-menu-table">
         <div className="admin-table-head"><span>画像</span><span>メニュー</span><span>所要時間</span><span>料金</span><span>予約</span><span /></div>
-        {props.snapshot.menus.map((menu) => (
+        {menus.map((menu) => (
           <article key={menu.id}>
             <Link aria-label={`${menu.treatmentDetail}を編集`} className="admin-menu-row-link" href={`/admin/menus?menuId=${encodeURIComponent(menu.id)}`}>
               <MenuThumbnail menu={menu} />
@@ -721,12 +761,12 @@ function Menus(props: {
               <span>{menu.isCallable ? "電話予約" : "Web予約可"}</span>
               <b aria-hidden="true">›</b>
             </Link>
-            <button className="is-danger" disabled={props.mutating} onClick={() => { if (confirm(`${menu.treatmentDetail}を削除しますか？`)) void props.runMutation({ action: "menu.delete", id: menu.id }, "メニューを削除しました。"); }}>削除</button>
+            <button className="is-danger" disabled={mutating} onClick={() => { if (confirm(`${menu.treatmentDetail}を削除しますか？`)) void runMutation({ action: "menu.delete", id: menu.id }, "メニューを削除しました。"); }}>削除</button>
           </article>
         ))}
-        {props.snapshot.menus.length === 0 ? <p className="admin-menu-empty">登録済みのメニューはありません。</p> : null}
+        {menus.length === 0 ? <p className="admin-menu-empty">{emptyMessage}</p> : null}
       </div>
-    </>
+    </section>
   );
 }
 
