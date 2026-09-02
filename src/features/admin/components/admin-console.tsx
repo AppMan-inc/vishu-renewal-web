@@ -878,6 +878,20 @@ function Notifications({ snapshot, mutating, runMutation }: {
       <PageTitle eyebrow="CUSTOMER MESSAGING" title="お知らせ配信" description="送信方法を選び、全ユーザーまたは特定のユーザーへお知らせを配信します。" />
       <div className="admin-notification-layout">
         <form className="admin-panel admin-notification-form" onSubmit={submit}>
+          <header className="admin-notification-compose-header">
+            <div className="admin-notification-compose-title">
+              <span><VishuIcon name={channel === "push" ? "bell" : "mail"} /></span>
+              <div>
+                <small>{channelLabel}を作成中</small>
+                <strong>{target === "all" ? "全ユーザー" : selectedCustomer?.displayName || "送信先を選択"}</strong>
+                <p>送信先 {recipientCount}{recipientUnit}</p>
+              </div>
+            </div>
+            <button className="admin-notification-primary-submit" disabled={mutating || recipientCount === 0} type="submit">
+              <VishuIcon name={channel === "push" ? "bell" : "mail"} />
+              <span>{mutating ? "送信処理中…" : `${channelLabel}を送信`}</span>
+            </button>
+          </header>
           <fieldset>
             <legend>送信方法</legend>
             <div className="admin-notification-targets">
@@ -938,7 +952,8 @@ function Notifications({ snapshot, mutating, runMutation }: {
             </div>
           </div>
           <button className="admin-notification-submit" disabled={mutating || recipientCount === 0} type="submit">
-            {mutating ? "送信処理中…" : "確認して送信"}
+            <VishuIcon name={channel === "push" ? "bell" : "mail"} />
+            <span>{mutating ? "送信処理中…" : `${channelLabel}を確認して送信`}</span>
           </button>
           <p className="admin-notification-help">{channel === "push" ? "通知を許可している端末に配信されます。端末の通信状況などにより、到着まで時間がかかる場合があります。" : "Firebase Authenticationに登録されたメールアドレスへ、ユーザーごとに個別送信されます。"}</p>
         </form>

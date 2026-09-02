@@ -6626,6 +6626,9 @@ button.booking-menu-card.is-selected .round-arrow {
 }
 
 .admin-console-page {
+  --green-deep: #30482d;
+  --ink: var(--text);
+  --muted: var(--text-muted);
   min-height: 100vh;
   color: var(--ink);
   background:
@@ -6728,7 +6731,7 @@ button.booking-menu-card.is-selected .round-arrow {
 .admin-console-main {
   width: min(100%, 1460px);
   padding: clamp(34px, 5vw, 70px);
-  overflow: hidden;
+  overflow: clip;
 }
 
 .admin-console-view {
@@ -8545,6 +8548,104 @@ button.is-danger {
   gap: 22px;
 }
 
+.admin-notification-compose-header {
+  position: sticky;
+  z-index: 20;
+  top: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: -8px -8px 2px;
+  padding: 14px;
+  border: 1px solid rgba(65, 98, 56, .18);
+  border-radius: 14px;
+  background: rgba(247, 249, 244, .96);
+  box-shadow: 0 12px 28px rgba(42, 53, 37, .1);
+  backdrop-filter: blur(14px);
+}
+
+.admin-notification-compose-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 11px;
+}
+
+.admin-notification-compose-title > span {
+  display: grid;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e3ebdf;
+  color: var(--green-deep);
+}
+
+.admin-notification-compose-title svg {
+  width: 20px;
+}
+
+.admin-notification-compose-title > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.admin-notification-compose-title small,
+.admin-notification-compose-title p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.admin-notification-compose-title strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-notification-primary-submit,
+.admin-notification-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: var(--green-deep);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-notification-primary-submit {
+  flex: 0 0 auto;
+  min-width: 168px;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 11px;
+  box-shadow: 0 8px 18px rgba(47, 72, 44, .2);
+  font-size: 11px;
+}
+
+.admin-notification-primary-submit svg,
+.admin-notification-submit svg {
+  width: 17px;
+}
+
+.admin-notification-primary-submit:disabled,
+.admin-notification-submit:disabled {
+  border: 1px solid #c7cec3;
+  background: #e7ebe4;
+  box-shadow: none;
+  color: #667060;
+  opacity: 1;
+}
+
 .admin-notification-form fieldset {
   margin: 0;
   padding: 0;
@@ -8695,13 +8796,8 @@ button.is-danger {
 
 .admin-notification-submit {
   min-height: 48px;
-  border: 0;
   border-radius: 10px;
-  background: var(--green-deep);
-  color: #fff;
-  font: inherit;
   font-size: 11px;
-  cursor: pointer;
 }
 
 .admin-notification-help {
@@ -9072,5 +9168,27 @@ button:disabled {
 
   .admin-notification-targets {
     grid-template-columns: 1fr;
+  }
+
+  .admin-notification-compose-header {
+    top: 72px;
+    gap: 10px;
+    margin: -5px -5px 2px;
+    padding: 10px;
+  }
+
+  .admin-notification-compose-title > span {
+    width: 36px;
+    height: 36px;
+  }
+
+  .admin-notification-compose-title svg {
+    width: 17px;
+  }
+
+  .admin-notification-primary-submit {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 14px;
   }
 }
