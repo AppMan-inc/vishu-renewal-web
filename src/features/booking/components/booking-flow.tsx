@@ -10,8 +10,9 @@ import { firebaseAuth } from "@/lib/firebase/client";
 import {
   BookingCatalog,
   BookingMenu,
-  loadBookingCatalog,
+  loadBookingAvailability,
   loadBookingCustomerProfile,
+  loadBookingMenus,
 } from "@/features/booking/booking-data";
 import { bookingSlotsForDate } from "@/features/booking/booking-availability";
 import {
@@ -51,6 +52,7 @@ export function BookingFlow() {
   const [currentUser, setCurrentUser] = useState<User | null>(initialCurrentUser);
   const [catalog, setCatalog] = useState<BookingCatalog | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentStep, setCurrentStep] = useState<Step>(0);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
@@ -87,10 +89,7 @@ export function BookingFlow() {
 
   useEffect(() => {
     let isActive = true;
-    const from = dates[0];
-    const until = new Date(from);
-    until.setDate(until.getDate() + dates.length);
-    loadBookingCatalog({ from, until })
+    loadBookingMenus()
       .then((loadedCatalog) => {
         if (!isActive) return;
         setCatalog(loadedCatalog);
@@ -103,7 +102,28 @@ export function BookingFlow() {
     return () => {
       isActive = false;
     };
-  }, [currentUser?.uid, dates, reloadKey]);
+  }, [reloadKey]);
+
+  useEffect(() => {
+    if (currentStep !== 1) return;
+
+    let isActive = true;
+    const from = dates[0];
+    const until = new Date(from);
+    until.setDate(until.getDate() + dates.length);
+    loadBookingAvailability({ from, until })
+      .then((availability) => {
+        if (!isActive) return;
+        setCatalog((current) => current ? { ...current, ...availability } : current);
+      })
+      .finally(() => {
+        if (isActive) setIsAvailabilityLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentStep, dates]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -153,7 +173,10 @@ export function BookingFlow() {
       setConfirmedSalonNotice(false);
       setConfirmedLongHairCharge(false);
       setReservationSubmission({ status: "idle" });
-      if (!requestedMenu.isCallable) setCurrentStep(1);
+      if (!requestedMenu.isCallable) {
+        setIsAvailabilityLoading(true);
+        setCurrentStep(1);
+      }
       router.replace("/booking", { scroll: false });
     });
 
@@ -181,6 +204,7 @@ export function BookingFlow() {
 
   function goForward() {
     if (currentStep === 0 && selectedMenu && !selectedMenu.isCallable) {
+      setIsAvailabilityLoading(true);
       setCurrentStep(1);
       return;
     }
@@ -306,10 +330,12 @@ export function BookingFlow() {
             <DateTimeStep
               catalog={catalog}
               dates={dates}
+              isAvailabilityLoading={isAvailabilityLoading}
               menu={selectedMenu}
               selectedSlot={selectedSlot}
               weekOffset={weekOffset}
               onWeekChange={(offset) => {
+                setIsAvailabilityLoading(true);
                 setCatalog((current) =>
                   current
                     ? {
@@ -648,6 +674,7 @@ function MenuImage({
 function DateTimeStep({
   catalog,
   dates,
+  isAvailabilityLoading,
   menu,
   selectedSlot,
   weekOffset,
@@ -656,6 +683,7 @@ function DateTimeStep({
 }: {
   catalog: BookingCatalog;
   dates: Date[];
+  isAvailabilityLoading: boolean;
   menu: BookingMenu;
   selectedSlot: Date | null;
   weekOffset: number;
@@ -686,13 +714,19 @@ function DateTimeStep({
         <MenuImage compact menu={menu} />
         <div><small>選択中のメニュー</small><strong>{menu.title}</strong><span>{menu.durationMinutes}分 · {priceLabel(menu)}</span></div>
       </div>
-      {!catalog.availabilityIsLive ? (
+      {isAvailabilityLoading ? (
+        <div className="booking-state-card is-loading">
+          <span className="booking-spinner" />
+          <p>空き状況を読み込んでいます…</p>
+        </div>
+      ) : null}
+      {!isAvailabilityLoading && !catalog.availabilityIsLive ? (
         <div className="booking-info-banner is-warning">
           <VishuIcon name="clock" />
           <p><strong>空き状況を確認できません</strong>安全のため日時選択を停止しています。時間をおいて再度お試しください。</p>
         </div>
       ) : null}
-      <div className="booking-schedule-card">
+      {!isAvailabilityLoading ? <div className="booking-schedule-card">
         <div className="booking-schedule-toolbar">
           <button
             type="button"
@@ -760,7 +794,7 @@ function DateTimeStep({
           <span><i>×</i>予約不可</span>
           <small>○を選択してください</small>
         </div>
-      </div>
+      </div> : null}
     </>
   );
 }

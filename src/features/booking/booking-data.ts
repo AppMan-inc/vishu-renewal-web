@@ -88,10 +88,7 @@ const sampleMenus: BookingMenu[] = [
   },
 ];
 
-export async function loadBookingCatalog(args: {
-  from: Date;
-  until: Date;
-}): Promise<BookingCatalog> {
+export async function loadBookingMenus(): Promise<BookingCatalog> {
   const database = firestore();
   let menus = sortMenusByPriorityAndPrice(sampleMenus);
   let usesSampleMenus = true;
@@ -108,7 +105,18 @@ export async function loadBookingCatalog(args: {
     usesSampleMenus = false;
   }
 
-  const availability =
+  return {
+    menus,
+    ...unavailableBookingAvailability(),
+    usesSampleMenus,
+  };
+}
+
+export async function loadBookingAvailability(args: {
+  from: Date;
+  until: Date;
+}): Promise<BookingAvailability> {
+  return (
     (await settled(async () => {
       const getAvailability = httpsCallable<
         { from: string; until: string },
@@ -119,13 +127,8 @@ export async function loadBookingCatalog(args: {
         until: args.until.toISOString(),
       });
       return bookingAvailabilityFromData(result.data);
-    })) ?? unavailableBookingAvailability();
-
-  return {
-    menus,
-    ...availability,
-    usesSampleMenus,
-  };
+    })) ?? unavailableBookingAvailability()
+  );
 }
 
 export async function loadBookingCustomerProfile(
