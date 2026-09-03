@@ -345,19 +345,6 @@ function SalonInfoSection() {
   );
 }
 
-function FinalReservation() {
-  return (
-    <section className={styles.finalCta} aria-labelledby="final-cta-title">
-      <p className={styles.finalMark} aria-hidden="true">V</p>
-      <div>
-        <SectionLabel>SEE YOU AT Salon Vishu</SectionLabel>
-        <h2 id="final-cta-title">あなたらしい美しさを、<br />Salon Vishuで。</h2>
-      </div>
-      <ArrowLink href="/booking" light>空き時間を見て予約</ArrowLink>
-    </section>
-  );
-}
-
 export function HomePage() {
   return (
     <main className={styles.page}>
@@ -368,7 +355,6 @@ export function HomePage() {
       <ServicesSection />
       <BookingGuideSection />
       <SalonInfoSection />
-      <FinalReservation />
       <PageFooter />
       <div className={styles.customerMobileLogoutSlot}>
         <CustomerLogoutButton variant="mobile" />

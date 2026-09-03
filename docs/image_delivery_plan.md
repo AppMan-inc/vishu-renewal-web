@@ -25,7 +25,7 @@
 | トップ・店内 | `salon-vishu-interior.webp` | 1179 × 2556 | 約130KB | 使用可能 |
 | 髪質改善・縮毛矯正 | `salon-vishu-straightening-*.webp` 4点 | 1000〜1200 × 1333〜1600 | 約95〜263KB | 最適化済み |
 | シャンプー台 | `salon-vishu-shampoo-station.webp` | 1672 × 941 | 約58KB | 使用可能 |
-| Google Maps左・玄関 | `salon-vishu-exterior.webp` | 1179 × 1563 | 約168KB | 使用可能 |
+| Google Maps左・玄関 | `salon-vishu-exterior.webp` | 1050 × 1400 | 約192KB | 使用可能 |
 
 ## 画像作成基準
 

@@ -98,7 +98,7 @@ Google Mapsのiframe内部、OSやブラウザ固有の入力UI、アップロ�
 | 店内ヒーロー | Desktopはヒーロー高に追従、Mobile／Tabletは `3 / 4` | `cover` | 全区分 `center 42%`。シェードと見出しの可読性も同じ基準にする |
 | Before／After | 全区分 `3 / 4` | `cover` | `center`。BeforeとAfterは同じ寸法・位置にする |
 | シャンプー台 | 全区分 `16 / 9` | `cover` | `center`。既存仕様を維持する |
-| 玄関 | 全区分 `4 / 3` | `cover` | `center 42%`。入口が欠ける場合だけ焦点値を素材単位で調整する |
+| 玄関 | 全区分 `3 / 4` | `cover` | `center`。玄関全体が収まる縦位置を維持する |
 | ログイン背景 | パネル全面 | `background-size: cover` | ログインは `42% center`、再設定は `center 42%` を素材固有値として固定する |
 | 予約メニュー | 全区分 `1 / 1` | `cover` | 画像枠は幅だけ変更し、高さは `aspect-ratio` から算出する |
 | 管理一覧 | 全区分 `4 / 3` | `cover` | 一覧の幅だけレスポンシブにする |
