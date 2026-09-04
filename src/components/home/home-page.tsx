@@ -23,6 +23,47 @@ const drivingDirections = {
     "ナビゲーションが案内する農道は危険なので通らないで下さい。赤峰交差点、小山田小学校前を通ってお越し下さい。お願い致します。",
 } as const;
 
+const privateSalonFeatures = [
+  {
+    title: "一席だけのプライベート空間",
+    description:
+      "ほかのお客様と同じ時間に重ならない、完全予約制の美容室です。周りを気にせず、髪のお悩みをご相談いただけます。",
+  },
+  {
+    title: "最初から最後までマンツーマン",
+    description:
+      "スタイリスト一名がカウンセリングから仕上げまで担当します。ご希望や普段のお手入れに合わせて、丁寧にご提案します。",
+  },
+  {
+    title: "髪の状態に合わせた施術",
+    description:
+      "カット、ハーブカラー、髪質改善・酸性縮毛矯正、ヘッドスパなどから、今の髪に合うメニューを一緒に考えます。",
+  },
+] as const;
+
+const frequentlyAskedQuestions = [
+  {
+    question: "Salon Vishuは河内長野市のどこにありますか？",
+    answer:
+      "大阪府河内長野市荘園町18-14にあります。白と黒の建物が目印で、店前の砂利スペースに駐車していただけます。",
+  },
+  {
+    question: "千代田駅・河内長野駅方面から車で行けますか？",
+    answer:
+      "はい。千代田駅方面は国道310号線から、河内長野駅方面は国道170号線から荘園町へお越しいただけます。安全な経路はページ内の案内とGoogleマップをご確認ください。",
+  },
+  {
+    question: "ほかのお客様と一緒になることはありますか？",
+    answer:
+      "一席だけの完全予約制プライベートサロンのため、施術中は基本的にお一人でゆっくりお過ごしいただけます。",
+  },
+  {
+    question: "髪型やメニューが決まっていなくても予約できますか？",
+    answer:
+      "はい。今のお悩みや普段のお手入れについて伺いながら、髪の状態に合うスタイルやメニューを一緒に考えます。",
+  },
+] as const;
+
 const services = [
   {
     index: "01",
@@ -99,11 +140,11 @@ function HeroSection() {
           <span>サロン ヴィッシュ</span>
         </p>
         <h1 id="home-hero-title">
-          <span className={styles.headlineLine}>河内長野市荘園町の</span>
-          <em className={styles.headlineLine}>完全予約制プライベートサロン</em>
+          <span className={styles.headlineLine}>河内長野市の</span>
+          <em className={styles.headlineLine}>一席だけのプライベート美容室</em>
         </h1>
         <p className={styles.heroDescription}>
-          Salon Vishuは、大阪府河内長野市荘園町にある一席だけの美容室です。ほかのお客様を気にせず過ごせる、完全予約制のプライベートサロンとして営業しています。ハーブカラー、縮毛矯正、髪質改善、ヘッドスパなどをご提供しています。
+          Salon Vishuは、大阪府河内長野市荘園町にある完全予約制の美容室です。スタイリスト一名・一席だけのプライベートサロンで、ほかのお客様を気にせずゆっくりお過ごしいただけます。ハーブカラー、酸性縮毛矯正、髪質改善、ヘッドスパなどをご提供しています。
         </p>
         <div className={styles.heroActions}>
           <ArrowLink href="/booking">空き時間を見て予約</ArrowLink>
@@ -112,7 +153,7 @@ function HeroSection() {
         <dl className={styles.heroFacts}>
           <div><dt>STYLE</dt><dd>マンツーマン</dd></div>
           <div><dt>SPACE</dt><dd>完全プライベート</dd></div>
-          <div><dt>AREA</dt><dd>大阪・河内長野</dd></div>
+          <div><dt>AREA</dt><dd>河内長野市・荘園町</dd></div>
         </dl>
       </div>
 
@@ -132,6 +173,29 @@ function HeroSection() {
           <strong>24時間、いつでもご予約</strong>
           <Link href="/booking">空き状況を見る <VishuIcon name="arrow" /></Link>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function PrivateSalonSection() {
+  return (
+    <section className={styles.concept} id="concept" aria-labelledby="concept-title">
+      <div className={styles.conceptHeading}>
+        <SectionLabel>PRIVATE HAIR SALON</SectionLabel>
+        <h2 id="concept-title">河内長野で、<br />周りを気にせず過ごせる美容室。</h2>
+        <p>
+          河内長野市荘園町で、一人ひとりの時間を大切にするプライベートサロンです。河内長野で美容院をお探しの方、大型店が苦手な方や、同じ美容師に最初から最後まで担当してほしい方にも、落ち着いて通っていただけます。
+        </p>
+      </div>
+      <div className={styles.conceptList}>
+        {privateSalonFeatures.map((feature, index) => (
+          <article className={styles.conceptCard} key={feature.title}>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <h3>{feature.title}</h3>
+            <p>{feature.description}</p>
+          </article>
+        ))}
       </div>
     </section>
   );
@@ -165,7 +229,7 @@ function StraighteningSection() {
       <div className={styles.straighteningInner}>
         <div className={styles.straighteningCopy}>
           <h2 className={styles.straighteningTitle} id="straightening-title">
-            髪質改善・縮毛矯正<br />自然に、美しく。
+            河内長野で、髪質改善・酸性縮毛矯正。<br />自然に、美しく。
           </h2>
           <p className={styles.straighteningSubCopy}>Salon Vishuが力を入れている髪質改善・縮毛矯正では、髪の状態を丁寧に見極めながら、髪本来の美しさを活かした自然なストレートに仕上げます。</p>
         </div>
@@ -215,9 +279,9 @@ function ServicesSection() {
       <div className={styles.sectionHeading}>
         <div>
           <SectionLabel>SELECTED MENU</SectionLabel>
-          <h2 id="services-title">メニュー</h2>
+          <h2 id="services-title">メニュー・料金</h2>
         </div>
-        <p>料金と所要時間を確認して、空いている日時からスムーズにご予約いただけます。</p>
+        <p>河内長野市の美容室Salon Vishuでご提供している主なメニューです。料金と所要時間を確認して、空いている日時からご予約いただけます。</p>
       </div>
       <div className={styles.serviceList}>
         {services.map((service) => (
@@ -280,7 +344,7 @@ function SalonInfoSection() {
     <section className={styles.info} id="access" aria-labelledby="info-title">
       <div className={styles.infoIntro}>
         <SectionLabel>SALON INFORMATION</SectionLabel>
-        <h2 id="info-title">はじめての方へ。</h2>
+        <h2 id="info-title">河内長野市荘園町へ、<br />はじめてお越しの方へ。</h2>
         <p>髪型が決まっていなくても大丈夫です。<br />今のお悩みや普段の過ごし方から、一緒に考えます。</p>
         <a className={styles.outlineLink} href={hotPepperUrl} target="_blank" rel="noreferrer">
           最新情報を確認する <VishuIcon name="arrow" />
@@ -301,7 +365,7 @@ function SalonInfoSection() {
         <div className={styles.mapHeading}>
           <div>
             <span>ACCESS MAP</span>
-            <p>大阪府河内長野市荘園町18-14</p>
+            <p>大阪府河内長野市荘園町18-14。千代田駅・河内長野駅方面からお車でお越しいただけます。</p>
           </div>
           <a href={googleMapsUrl} target="_blank" rel="noreferrer">
             Google マップで見る <VishuIcon name="arrow" />
@@ -345,16 +409,37 @@ function SalonInfoSection() {
   );
 }
 
+function FaqSection() {
+  return (
+    <section className={styles.faq} aria-labelledby="faq-title">
+      <div className={styles.faqHeading}>
+        <SectionLabel>FREQUENTLY ASKED QUESTIONS</SectionLabel>
+        <h2 id="faq-title">河内長野の美容室Salon Vishuへの<br />よくあるご質問</h2>
+      </div>
+      <div className={styles.faqList}>
+        {frequentlyAskedQuestions.map(({ question, answer }) => (
+          <details key={question}>
+            <summary>{question}</summary>
+            <p>{answer}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function HomePage() {
   return (
     <main className={styles.page}>
       <div className={styles.headerWrap}><SiteHeader /></div>
       <HeroSection />
+      <PrivateSalonSection />
       <StraighteningSection />
       <ShampooSection />
       <ServicesSection />
       <BookingGuideSection />
       <SalonInfoSection />
+      <FaqSection />
       <PageFooter />
       <div className={styles.customerMobileLogoutSlot}>
         <CustomerLogoutButton variant="mobile" />
