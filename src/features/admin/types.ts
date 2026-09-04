@@ -121,7 +121,6 @@ export type AdminSection =
   | "dashboard"
   | "reservations"
   | "rests"
-  | "closures"
   | "customers"
   | "menus"
   | "notifications";

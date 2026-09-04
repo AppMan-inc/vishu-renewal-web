@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isClosureBlock } from "./closure-registration.ts";
-import { normalizeAdminRestBlocks } from "./admin-rest-blocks.ts";
+import {
+  isClosureBlock,
+  normalizeAdminRestBlocks,
+} from "./admin-rest-blocks.ts";
 
 test("treats legacy rest blocks without closure metadata as tappable rests", () => {
   const [rest] = normalizeAdminRestBlocks([{

@@ -15,6 +15,7 @@ import {
   loadBookingMenus,
 } from "@/features/booking/booking-data";
 import { bookingSlotsForDate } from "@/features/booking/booking-availability";
+import { createBookingAvailabilityStore } from "@/features/booking/booking-availability-prefetch";
 import {
   categoryDisplayLabel,
   defaultSelectedCategoryIds,
@@ -24,7 +25,10 @@ import {
   toggleCategory,
   type MenuGroups,
 } from "@/features/booking/booking-menu-catalog";
-import { bookingLoginHref } from "@/features/booking/booking-navigation";
+import {
+  bookingCompleteHref,
+  bookingLoginHref,
+} from "@/features/booking/booking-navigation";
 import {
   bookingReservationErrorMessage,
   createBookingReservation,
@@ -45,6 +49,10 @@ type ReservationSubmission =
   | { status: "success"; reservationId: string }
   | { status: "error"; message: string };
 type BookingFieldErrors = Partial<Record<"name" | "phone" | "request", string>>;
+
+const bookingAvailabilityStore = createBookingAvailabilityStore(
+  loadBookingAvailability,
+);
 
 export function BookingFlow() {
   const router = useRouter();
@@ -113,10 +121,7 @@ export function BookingFlow() {
     if (currentStep !== 1) return;
 
     let isActive = true;
-    const from = dates[0];
-    const until = new Date(from);
-    until.setDate(until.getDate() + dates.length);
-    loadBookingAvailability({ from, until })
+    bookingAvailabilityStore.get(availabilityRange(dates))
       .then((availability) => {
         if (!isActive) return;
         setCatalog((current) => current ? { ...current, ...availability } : current);
@@ -129,6 +134,16 @@ export function BookingFlow() {
       isActive = false;
     };
   }, [currentStep, dates]);
+
+  useEffect(() => {
+    if (!catalog || !currentUser || currentStep !== 0) return;
+
+    return scheduleWhenIdle(() => {
+      void bookingAvailabilityStore
+        .prefetch(availabilityRange(dates))
+        .catch(() => undefined);
+    });
+  }, [catalog, currentStep, currentUser, dates]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -179,6 +194,9 @@ export function BookingFlow() {
       setConfirmedLongHairCharge(false);
       setReservationSubmission({ status: "idle" });
       if (!requestedMenu.isCallable) {
+        void bookingAvailabilityStore
+          .prefetch(availabilityRange(dates))
+          .catch(() => undefined);
         setIsAvailabilityLoading(true);
         setCurrentStep(1);
       }
@@ -188,7 +206,7 @@ export function BookingFlow() {
     return () => {
       isActive = false;
     };
-  }, [catalog, currentUser, requestedMenuId, router]);
+  }, [catalog, currentUser, dates, requestedMenuId, router]);
 
   useEffect(() => {
     if (currentUser || currentStep === 0 || !selectedMenu) return;
@@ -202,6 +220,11 @@ export function BookingFlow() {
     setConfirmedSalonNotice(false);
     setConfirmedLongHairCharge(false);
     setReservationSubmission({ status: "idle" });
+    if (currentUser && !menu.isCallable) {
+      void bookingAvailabilityStore
+        .prefetch(availabilityRange(dates))
+        .catch(() => undefined);
+    }
     if (!currentUser) {
       router.push(bookingLoginHref(menu.id));
     }
@@ -280,7 +303,7 @@ export function BookingFlow() {
         status: "success",
         reservationId: result.reservationId,
       });
-      setReloadKey((key) => key + 1);
+      router.replace(bookingCompleteHref(result.reservationId));
     } catch (error) {
       setReservationSubmission({
         status: "error",
@@ -1052,6 +1075,24 @@ function nextDates(count: number, offsetDays = 0) {
     date.setDate(today.getDate() + index);
     return date;
   });
+}
+
+function availabilityRange(dates: Date[]) {
+  const from = dates[0];
+  const until = new Date(from);
+  until.setDate(until.getDate() + dates.length);
+  return { from, until };
+}
+
+function scheduleWhenIdle(action: () => void) {
+  const requestIdleCallback = window.requestIdleCallback?.bind(window);
+  if (requestIdleCallback) {
+    const requestId = requestIdleCallback(action, { timeout: 2_000 });
+    return () => window.cancelIdleCallback(requestId);
+  }
+
+  const timeoutId = window.setTimeout(action, 300);
+  return () => window.clearTimeout(timeoutId);
 }
 
 function menuIcon(menu: BookingMenu): "cut" | "sparkle" | "spa" {

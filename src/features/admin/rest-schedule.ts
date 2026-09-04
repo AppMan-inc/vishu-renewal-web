@@ -3,7 +3,7 @@ import type {
   AdminReservation,
   AdminRestBlock,
 } from "./types.ts";
-import { isClosureBlock } from "./closure-registration.ts";
+import { isClosureBlock } from "./admin-rest-blocks.ts";
 
 export type RestSlotState =
   | "available"

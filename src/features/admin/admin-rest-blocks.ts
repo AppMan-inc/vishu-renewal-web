@@ -42,3 +42,7 @@ export function normalizeAdminRestBlocks(value: unknown): AdminRestBlock[] {
     }];
   });
 }
+
+export function isClosureBlock(block: AdminRestBlock) {
+  return block.closurePeriod !== "custom";
+}

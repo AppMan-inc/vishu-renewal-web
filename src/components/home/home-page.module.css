@@ -513,8 +513,11 @@
 
 .serviceMeta strong {
   color: var(--taupe);
-  font-family: Georgia, serif;
+  font-family: var(--font-sans), "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  font-feature-settings: "palt" 0, "tnum" 1;
+  font-variant-numeric: lining-nums tabular-nums;
   font-size: 17px;
+  letter-spacing: 0;
 }
 
 .serviceArrow {
