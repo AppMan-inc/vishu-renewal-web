@@ -69,11 +69,9 @@
 }
 
 .hero h1,
-.concept h2,
 .sectionHeading h2,
 .guide h2,
-.info h2,
-.faq h2 {
+.info h2 {
   font-family: var(--font-serif), "Yu Mincho", serif;
   font-weight: 500;
   letter-spacing: -.035em;
@@ -266,62 +264,6 @@
 
 .heroBookingNote svg {
   width: 14px;
-}
-
-.concept {
-  display: grid;
-  grid-template-columns: minmax(300px, .8fr) minmax(0, 1.2fr);
-  gap: clamp(56px, 8vw, 120px);
-  padding: 130px max(32px, calc((100vw - 1180px) / 2));
-}
-
-.conceptHeading h2,
-.faqHeading h2 {
-  margin: 16px 0 0;
-  font-size: clamp(34px, 3.2vw, 50px);
-  line-height: 1.55;
-}
-
-.conceptHeading > p:last-child {
-  max-width: 480px;
-  margin: 26px 0 0;
-  color: #6f675e;
-  font-size: 13px;
-  line-height: 2.05;
-}
-
-.conceptList {
-  border-top: 1px solid var(--line);
-}
-
-.conceptCard {
-  display: grid;
-  grid-template-columns: 52px minmax(190px, .75fr) minmax(220px, 1.25fr);
-  gap: 22px;
-  align-items: start;
-  padding: 30px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.conceptCard > span {
-  color: var(--gold);
-  font-family: Georgia, serif;
-  font-size: 13px;
-}
-
-.conceptCard h3 {
-  margin: 0;
-  font-family: var(--font-serif), "Yu Mincho", serif;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.7;
-}
-
-.conceptCard p {
-  margin: 0;
-  color: #6f675e;
-  font-size: 11px;
-  line-height: 2;
 }
 
 .sectionHeading h2,
@@ -898,62 +840,6 @@
   display: none;
 }
 
-.faq {
-  display: grid;
-  grid-template-columns: minmax(300px, .8fr) minmax(0, 1.2fr);
-  gap: clamp(56px, 8vw, 120px);
-  padding: 120px max(32px, calc((100vw - 1180px) / 2));
-  border-top: 1px solid var(--line);
-  background: var(--warm);
-}
-
-.faqList {
-  border-top: 1px solid #dfd6cc;
-}
-
-.faqList details {
-  border-bottom: 1px solid #dfd6cc;
-}
-
-.faqList summary {
-  position: relative;
-  padding: 24px 42px 24px 0;
-  color: var(--ink-soft);
-  cursor: pointer;
-  font-family: var(--font-serif), "Yu Mincho", serif;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.7;
-  list-style: none;
-}
-
-.faqList summary::-webkit-details-marker {
-  display: none;
-}
-
-.faqList summary::after {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  color: var(--gold);
-  content: "+";
-  font-family: Georgia, serif;
-  font-size: 20px;
-  font-weight: 400;
-  transform: translateY(-50%);
-}
-
-.faqList details[open] summary::after {
-  content: "−";
-}
-
-.faqList p {
-  margin: -4px 42px 24px 0;
-  color: #6f675e;
-  font-size: 12px;
-  line-height: 2;
-}
-
 @media (min-width: 821px) and (max-width: 1080px) {
   .heroCopy {
     padding-right: 0;
@@ -1022,16 +908,9 @@
   }
 
   .sectionHeading,
-  .concept,
   .guide,
-  .info,
-  .faq {
+  .info {
     grid-template-columns: 1fr;
-  }
-
-  .concept,
-  .faq {
-    gap: 48px;
   }
 
   .sectionHeading {
@@ -1135,28 +1014,11 @@
   }
 
   .straightening,
-  .concept,
   .shampoo,
   .services,
   .guide,
-  .info,
-  .faq {
+  .info {
     padding: 88px 18px;
-  }
-
-  .conceptCard {
-    grid-template-columns: 36px 1fr;
-    gap: 12px 14px;
-    padding: 24px 0;
-  }
-
-  .conceptCard p {
-    grid-column: 2;
-  }
-
-  .conceptHeading h2,
-  .faqHeading h2 {
-    font-size: 31px;
   }
 
   .shampoo {

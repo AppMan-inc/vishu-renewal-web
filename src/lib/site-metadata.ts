@@ -3,7 +3,7 @@ import { siteUrl } from "@/lib/site-url";
 
 export const siteName = "Salon Vishu";
 export const defaultDescription =
-  "大阪府河内長野市の美容室、Salon Vishu（サロン ヴィッシュ）。荘園町にある一席だけの完全予約制プライベートサロンです。ハーブカラー、酸性縮毛矯正、髪質改善、ヘッドスパなどをご提供しています。駐車場をご用意しています。";
+  "大阪府河内長野市荘園町の美容室、Salon Vishu（サロン ヴィッシュ）。一席だけの完全予約制プライベートサロンです。ハーブカラー、縮毛矯正、髪質改善、ヘッドスパなどをご提供しています。";
 
 type PageMetadataOptions = {
   title: string;
