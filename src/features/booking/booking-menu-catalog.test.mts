@@ -37,6 +37,14 @@ const menus = [
     priority: 1,
   },
   {
+    id: "coupon-perm",
+    title: "パーマクーポン",
+    categories: ["パーマ"],
+    beforePrice: 14000,
+    price: 11000,
+    priority: 3,
+  },
+  {
     id: "regular-other",
     title: "眉毛のお手入れ",
     categories: [],
@@ -62,6 +70,7 @@ test("includes all coupons only while the coupon category is selected", () => {
   assert.deepEqual(groups.coupons.map((menu) => menu.id), [
     "coupon-cut",
     "coupon-color",
+    "coupon-perm",
   ]);
   assert.deepEqual(groups.regularMenus.map((menu) => menu.id), [
     "regular-cut",
@@ -78,12 +87,10 @@ test("hides all coupons when the coupon category is not selected", () => {
   ]);
 });
 
-test("applies multiple categories with OR semantics", () => {
-  const groups = groupVisibleMenus(menus, [couponMenuCategoryId, "color"]);
-  assert.deepEqual(
-    [...groups.coupons, ...groups.regularMenus].map((menu) => menu.id).sort(),
-    ["coupon-color", "coupon-cut"],
-  );
+test("combines the coupon and treatment filters with AND semantics", () => {
+  const groups = groupVisibleMenus(menus, [couponMenuCategoryId, "perm"]);
+  assert.deepEqual(groups.coupons.map((menu) => menu.id), ["coupon-perm"]);
+  assert.deepEqual(groups.regularMenus, []);
 });
 
 test("excludes coupons even when they match a selected treatment category", () => {

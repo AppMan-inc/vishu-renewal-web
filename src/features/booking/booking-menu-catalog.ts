@@ -44,11 +44,16 @@ export function groupVisibleMenus<T extends CatalogMenu>(
     (categoryId) => categoryId !== couponMenuCategoryId,
   );
   const filtered = menus.filter((menu) => {
-    if (isCoupon(menu)) return showCoupons;
-    return selectedTreatmentCategoryIds.length === 0 ||
+    const hasTreatmentFilter = selectedTreatmentCategoryIds.length > 0;
+    const matchesTreatment = !hasTreatmentFilter ||
       selectedTreatmentCategoryIds.some((categoryId) =>
         menuMatchesCategory(menu, categoryId)
       );
+    if (showCoupons && hasTreatmentFilter) {
+      return isCoupon(menu) && matchesTreatment;
+    }
+    if (isCoupon(menu)) return showCoupons;
+    return matchesTreatment;
   });
   const coupons = filtered.filter(isCoupon);
   const regularMenus = filtered.filter((menu) => !isCoupon(menu));
