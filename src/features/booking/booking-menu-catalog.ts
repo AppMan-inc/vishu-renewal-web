@@ -3,7 +3,11 @@ export type MenuCategory = {
   label: string;
   terms: string[];
   isOther?: boolean;
+  isCoupon?: boolean;
 };
+
+export const couponMenuCategoryId = "coupon";
+export const defaultSelectedCategoryIds = [couponMenuCategoryId];
 
 export const menuCategories: MenuCategory[] = [
   { id: "cut", label: "カット", terms: ["カット", "cut"] },
@@ -15,6 +19,7 @@ export const menuCategories: MenuCategory[] = [
   { id: "hairSet", label: "ヘアセット", terms: ["ヘアセット", "hair set", "hairset"] },
   { id: "kimono", label: "着付け", terms: ["着付け", "着付", "kimono"] },
   { id: "other", label: "その他", terms: [], isOther: true },
+  { id: couponMenuCategoryId, label: "クーポン", terms: [], isCoupon: true },
 ];
 
 export type CatalogMenu = {
@@ -34,11 +39,17 @@ export function groupVisibleMenus<T extends CatalogMenu>(
   menus: T[],
   selectedCategoryIds: string[],
 ): MenuGroups<T> {
-  const filtered = selectedCategoryIds.length === 0
-    ? menus
-    : menus.filter((menu) => selectedCategoryIds.some((categoryId) =>
-      menuMatchesCategory(menu, categoryId)
-    ));
+  const showCoupons = selectedCategoryIds.includes(couponMenuCategoryId);
+  const selectedTreatmentCategoryIds = selectedCategoryIds.filter(
+    (categoryId) => categoryId !== couponMenuCategoryId,
+  );
+  const filtered = menus.filter((menu) => {
+    if (isCoupon(menu)) return showCoupons;
+    return selectedTreatmentCategoryIds.length === 0 ||
+      selectedTreatmentCategoryIds.some((categoryId) =>
+        menuMatchesCategory(menu, categoryId)
+      );
+  });
   const coupons = filtered.filter(isCoupon);
   const regularMenus = filtered.filter((menu) => !isCoupon(menu));
   return {
@@ -63,7 +74,7 @@ export function toggleCategory(
 export function canonicalCategoryIds(values: string[]) {
   const normalizedValues = new Set(values.map(normalize));
   return menuCategories
-    .filter((category) => !category.isOther)
+    .filter((category) => !category.isOther && !category.isCoupon)
     .filter((category) =>
       [category.id, category.label, ...category.terms]
         .map(normalize)
@@ -85,10 +96,11 @@ export function categoryDisplayLabel(value: string) {
 function menuMatchesCategory(menu: CatalogMenu, categoryId: string) {
   const category = menuCategories.find((item) => item.id === categoryId);
   if (!category) return false;
+  if (category.isCoupon) return isCoupon(menu);
   const values = [menu.title, ...menu.categories].map(normalize);
   if (category.isOther) {
     return !menuCategories
-      .filter((item) => !item.isOther)
+      .filter((item) => !item.isOther && !item.isCoupon)
       .some((item) => termsMatch(values, item.terms));
   }
   return termsMatch(values, category.terms);

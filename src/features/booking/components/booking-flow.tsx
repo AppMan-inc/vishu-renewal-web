@@ -17,6 +17,7 @@ import {
 import { bookingSlotsForDate } from "@/features/booking/booking-availability";
 import {
   categoryDisplayLabel,
+  defaultSelectedCategoryIds,
   groupVisibleMenus,
   isCoupon,
   menuCategories,
@@ -55,8 +56,12 @@ export function BookingFlow() {
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [currentStep, setCurrentStep] = useState<Step>(0);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
-  const [draftCategoryIds, setDraftCategoryIds] = useState<string[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
+    defaultSelectedCategoryIds,
+  );
+  const [draftCategoryIds, setDraftCategoryIds] = useState<string[]>(
+    defaultSelectedCategoryIds,
+  );
   const [selectedMenu, setSelectedMenu] = useState<BookingMenu | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const dates = useMemo(() => nextDates(7, weekOffset * 7), [weekOffset]);

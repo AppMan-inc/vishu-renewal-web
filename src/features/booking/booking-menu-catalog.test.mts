@@ -3,8 +3,11 @@ import test from "node:test";
 import {
   categoryDisplayLabel,
   canonicalCategoryIds,
+  couponMenuCategoryId,
+  defaultSelectedCategoryIds,
   groupVisibleMenus,
   isCoupon,
+  menuCategories,
   toggleCategory,
 } from "./booking-menu-catalog.ts";
 
@@ -48,8 +51,14 @@ test("classifies coupons only by beforePrice nullability", () => {
   assert.equal(isCoupon({ beforePrice: null }), false);
 });
 
-test("shows all menus initially and groups coupons before regular menus", () => {
-  const groups = groupVisibleMenus(menus, []);
+test("adds coupon as the last category and selects it by default", () => {
+  assert.equal(menuCategories.at(-1)?.id, couponMenuCategoryId);
+  assert.equal(menuCategories.at(-1)?.label, "クーポン");
+  assert.deepEqual(defaultSelectedCategoryIds, [couponMenuCategoryId]);
+});
+
+test("includes all coupons only while the coupon category is selected", () => {
+  const groups = groupVisibleMenus(menus, [couponMenuCategoryId]);
   assert.deepEqual(groups.coupons.map((menu) => menu.id), [
     "coupon-cut",
     "coupon-color",
@@ -60,12 +69,27 @@ test("shows all menus initially and groups coupons before regular menus", () => 
   ]);
 });
 
+test("hides all coupons when the coupon category is not selected", () => {
+  const groups = groupVisibleMenus(menus, []);
+  assert.deepEqual(groups.coupons, []);
+  assert.deepEqual(groups.regularMenus.map((menu) => menu.id), [
+    "regular-cut",
+    "regular-other",
+  ]);
+});
+
 test("applies multiple categories with OR semantics", () => {
-  const groups = groupVisibleMenus(menus, ["cut", "color"]);
+  const groups = groupVisibleMenus(menus, [couponMenuCategoryId, "color"]);
   assert.deepEqual(
     [...groups.coupons, ...groups.regularMenus].map((menu) => menu.id).sort(),
-    ["coupon-color", "coupon-cut", "regular-cut"],
+    ["coupon-color", "coupon-cut"],
   );
+});
+
+test("excludes coupons even when they match a selected treatment category", () => {
+  const groups = groupVisibleMenus(menus, ["cut", "color"]);
+  assert.deepEqual(groups.coupons, []);
+  assert.deepEqual(groups.regularMenus.map((menu) => menu.id), ["regular-cut"]);
 });
 
 test("derives the other category from menus without a known category", () => {
