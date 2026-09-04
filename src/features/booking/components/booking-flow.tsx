@@ -42,6 +42,7 @@ import {
 } from "@/features/form-validation";
 
 const steps = ["メニュー", "日時", "お客様情報", "確認"];
+const mobileBookingMediaQuery = "(max-width: 680px)";
 type Step = 0 | 1 | 2 | 3;
 type ReservationSubmission =
   | { status: "idle" }
@@ -87,6 +88,32 @@ export function BookingFlow() {
   const phoneRef = useRef<HTMLInputElement>(null);
   const requestRef = useRef<HTMLTextAreaElement>(null);
   const restoredMenuIdRef = useRef<string | null>(null);
+  const previousStepRef = useRef<Step>(currentStep);
+  const skipNextStepScrollRef = useRef(false);
+
+  useEffect(() => {
+    if (previousStepRef.current === currentStep) return;
+    previousStepRef.current = currentStep;
+
+    if (skipNextStepScrollRef.current) {
+      skipNextStepScrollRef.current = false;
+      return;
+    }
+    if (!window.matchMedia(mobileBookingMediaQuery).matches) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [currentStep]);
 
   useEffect(() => {
     try {
@@ -280,6 +307,7 @@ export function BookingFlow() {
     const errors = bookingFieldErrors(customerName, phone, request);
     if (Object.values(errors).some(Boolean)) {
       setFieldErrors(errors);
+      skipNextStepScrollRef.current = true;
       setCurrentStep(2);
       const firstInvalid = errors.name
         ? nameRef
