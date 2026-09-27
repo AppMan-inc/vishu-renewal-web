@@ -10,14 +10,14 @@ const { processEnv } = nextEnvironment;
 
 const environments = {
   dev: {
-    siteUrl: "https://vishu-renewal-web.salon-vishu.workers.dev/",
+    siteUrl: "https://salonvishu.jp/",
     projectId: "salon-vishu2-dev-30830",
     authDomain: "salon-vishu2-dev-30830.firebaseapp.com",
     storageBucket: "salon-vishu2-dev-30830.firebasestorage.app",
     messagingSenderId: "229439602432",
   },
   prod: {
-    siteUrl: "https://vishu-renewal-web.salon-vishu.workers.dev/",
+    siteUrl: "https://salonvishu.jp/",
     projectId: "salon-vishu",
     authDomain: "salon-vishu.firebaseapp.com",
     storageBucket: "salon-vishu.appspot.com",

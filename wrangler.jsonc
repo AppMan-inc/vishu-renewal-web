@@ -3,6 +3,9 @@
   "name": "vishu-renewal-web",
   "main": ".open-next/worker.js",
   "workers_dev": true,
+  "routes": [
+    { "pattern": "salonvishu.jp/*", "zone_name": "salonvishu.jp" }
+  ],
   "preview_urls": false,
   "compatibility_date": "2026-08-23",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -21,7 +24,7 @@
     }
   ],
   "vars": {
-    "SITE_URL": "https://vishu-renewal-web.salon-vishu.workers.dev/",
+    "SITE_URL": "https://salonvishu.jp/",
     "VISHU_ENV": "prod",
     "VISHU_NEXT_MODE": "production",
     "NEXT_PUBLIC_VISHU_ENV": "prod",

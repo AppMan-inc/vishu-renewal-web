@@ -1,4 +1,4 @@
-const defaultSiteUrl = "https://vishu-renewal-web.salon-vishu.workers.dev/";
+const defaultSiteUrl = "https://salonvishu.jp/";
 
 export const siteUrl = normalizeSiteUrl(process.env.SITE_URL ?? defaultSiteUrl);
 

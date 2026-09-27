@@ -96,7 +96,37 @@ test("combines the coupon and treatment filters with AND semantics", () => {
 test("excludes coupons even when they match a selected treatment category", () => {
   const groups = groupVisibleMenus(menus, ["cut", "color"]);
   assert.deepEqual(groups.coupons, []);
-  assert.deepEqual(groups.regularMenus.map((menu) => menu.id), ["regular-cut"]);
+  assert.deepEqual(groups.regularMenus, []);
+});
+
+test("requires every selected treatment category for regular menus and coupons", () => {
+  const combinedMenus = [
+    ...menus,
+    {
+      id: "regular-cut-color",
+      title: "カットカラー",
+      categories: ["カット", "カラー"],
+      beforePrice: null,
+      price: 9000,
+      priority: 2,
+    },
+    {
+      id: "coupon-cut-color",
+      title: "カットカラークーポン",
+      categories: ["カット", "カラー"],
+      beforePrice: 12000,
+      price: 10000,
+      priority: 2,
+    },
+  ];
+
+  const regularGroups = groupVisibleMenus(combinedMenus, ["cut", "color"]);
+  assert.deepEqual(regularGroups.regularMenus.map((menu) => menu.id), ["regular-cut-color"]);
+  assert.deepEqual(regularGroups.coupons, []);
+
+  const couponGroups = groupVisibleMenus(combinedMenus, [couponMenuCategoryId, "cut", "color"]);
+  assert.deepEqual(couponGroups.coupons.map((menu) => menu.id), ["coupon-cut-color"]);
+  assert.deepEqual(couponGroups.regularMenus, []);
 });
 
 test("derives the other category from menus without a known category", () => {

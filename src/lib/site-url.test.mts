@@ -9,11 +9,11 @@ import {
 test("uses the production site URL by default", () => {
   assert.equal(
     siteUrl.toString(),
-    "https://vishu-renewal-web.salon-vishu.workers.dev/",
+    "https://salonvishu.jp/",
   );
   assert.equal(
     absoluteSiteUrl("/terms"),
-    "https://vishu-renewal-web.salon-vishu.workers.dev/terms",
+    "https://salonvishu.jp/terms",
   );
 });
 

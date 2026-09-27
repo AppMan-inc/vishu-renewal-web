@@ -46,7 +46,7 @@ export function groupVisibleMenus<T extends CatalogMenu>(
   const filtered = menus.filter((menu) => {
     const hasTreatmentFilter = selectedTreatmentCategoryIds.length > 0;
     const matchesTreatment = !hasTreatmentFilter ||
-      selectedTreatmentCategoryIds.some((categoryId) =>
+      selectedTreatmentCategoryIds.every((categoryId) =>
         menuMatchesCategory(menu, categoryId)
       );
     if (showCoupons && hasTreatmentFilter) {

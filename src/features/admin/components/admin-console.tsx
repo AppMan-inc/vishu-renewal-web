@@ -44,7 +44,8 @@ import {
 import { japaneseHolidayName } from "@/features/admin/japanese-holidays";
 import {
   canonicalCategoryIds,
-  isCoupon,
+  couponMenuCategoryId,
+  groupVisibleMenus,
   menuCategories,
   toggleCategory,
 } from "@/features/booking/booking-menu-catalog";
@@ -686,6 +687,8 @@ function Menus(props: {
   mutating: boolean;
   runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean>;
 }) {
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([couponMenuCategoryId]);
+  const [draftCategoryIds, setDraftCategoryIds] = useState<string[]>([couponMenuCategoryId]);
   if (props.menuId !== undefined) {
     const menu = props.menuId === "new"
       ? emptyMenu()
@@ -696,8 +699,19 @@ function Menus(props: {
     return <MenuEditor menu={menu} mutating={props.mutating} runMutation={props.runMutation} />;
   }
 
-  const coupons = props.snapshot.menus.filter(isCoupon);
-  const regularMenus = props.snapshot.menus.filter((menu) => !isCoupon(menu));
+  const groups = groupVisibleMenus(
+    props.snapshot.menus.map((menu) => ({
+      ...menu,
+      title: menu.treatmentDetail,
+      categories: menu.treatmentDetailList,
+      price: menu.afterPrice,
+    })),
+    selectedCategoryIds,
+  );
+  const couponIds = new Set(groups.coupons.map((menu) => menu.id));
+  const regularMenuIds = new Set(groups.regularMenus.map((menu) => menu.id));
+  const coupons = props.snapshot.menus.filter((menu) => couponIds.has(menu.id));
+  const regularMenus = props.snapshot.menus.filter((menu) => regularMenuIds.has(menu.id));
 
   return (
     <>
@@ -705,6 +719,23 @@ function Menus(props: {
       <div className="admin-section-action">
         <span>{props.snapshot.menus.length}件のメニュー</span>
         <Link href="/admin/menus?menuId=new">+ 新規メニュー</Link>
+      </div>
+      <div className="booking-filter-panel">
+        <div className="booking-filter-options" role="group" aria-label="メニューカテゴリ（複数選択可）">
+          {menuCategories.map((category) => (
+            <label key={category.id}>
+              <input
+                checked={draftCategoryIds.includes(category.id)}
+                type="checkbox"
+                onChange={() => setDraftCategoryIds((current) => toggleCategory(current, category.id))}
+              />
+              <span>{category.label}</span>
+            </label>
+          ))}
+        </div>
+        <div className="booking-filter-action">
+          <button type="button" onClick={() => setSelectedCategoryIds(draftCategoryIds)}>絞り込む</button>
+        </div>
       </div>
       <div className="admin-menu-groups">
         <AdminMenuSection
