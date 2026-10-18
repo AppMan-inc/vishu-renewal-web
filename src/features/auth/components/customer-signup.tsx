@@ -1,6 +1,6 @@
 "use client";
 
-import { onAuthStateChanged } from "firebase/auth";
+import { getRedirectResult, onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
@@ -17,8 +17,14 @@ import {
 } from "@/features/auth/customer-signup";
 import { firebaseAuth } from "@/lib/firebase/client";
 import {
+  authenticateCustomerWithSocialProvider,
+  type CustomerSocialMethod,
+} from "@/features/auth/customer-social-auth";
+import { SocialAuthButtons } from "./social-auth-buttons";
+import {
   emailValidationMessage,
   FORM_FIELD_LIMITS,
+  loginAuthErrorMessage,
 } from "@/features/form-validation";
 
 export function CustomerSignup() {
@@ -27,6 +33,7 @@ export function CustomerSignup() {
   const returnTo = searchParams.get("returnTo");
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingSocialMethod, setPendingSocialMethod] = useState<CustomerSocialMethod | null>(null);
   const [fieldErrors, setFieldErrors] = useState<CustomerSignupErrors>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const hasStartedNavigation = useRef(false);
@@ -48,8 +55,9 @@ export function CustomerSignup() {
     let unsubscribe: () => void = () => {};
 
     try {
+      const auth = firebaseAuth();
       unsubscribe = onAuthStateChanged(
-        firebaseAuth(),
+        auth,
         (user) => {
           if (user) {
             navigateAsCustomer();
@@ -59,6 +67,16 @@ export function CustomerSignup() {
         },
         () => setIsCheckingAuth(false),
       );
+
+      void getRedirectResult(auth)
+        .then((credential) => {
+          if (credential && isMounted.current) navigateAsCustomer();
+        })
+        .catch((error) => {
+          if (!isMounted.current || hasStartedNavigation.current) return;
+          setErrorMessage(loginAuthErrorMessage(error));
+          setIsCheckingAuth(false);
+        });
     } catch {
       queueMicrotask(() => {
         if (isMounted.current) setIsCheckingAuth(false);
@@ -70,6 +88,25 @@ export function CustomerSignup() {
       unsubscribe();
     };
   }, [navigateAsCustomer]);
+
+  async function handleSocialSignup(method: CustomerSocialMethod) {
+    if (!claimCustomerSignupSubmission(submissionInProgress, hasStartedNavigation)) return;
+    setIsSubmitting(true);
+    setPendingSocialMethod(method);
+    setFieldErrors({});
+    setErrorMessage(null);
+
+    try {
+      const credential = await authenticateCustomerWithSocialProvider(firebaseAuth(), method);
+      if (credential && isMounted.current) navigateAsCustomer();
+    } catch (error) {
+      submissionInProgress.current = false;
+      if (!isMounted.current || hasStartedNavigation.current) return;
+      setErrorMessage(loginAuthErrorMessage(error, method));
+      setPendingSocialMethod(null);
+      setIsSubmitting(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -160,11 +197,21 @@ export function CustomerSignup() {
           <div className="login-icon"><VishuIcon name="person" /></div>
           <p className="eyebrow">CREATE ACCOUNT</p>
           <h2>新規アカウント作成</h2>
-          <p className="login-guidance">メールアドレスとパスワードを入力してください。作成後、そのままマイページをご利用いただけます。</p>
+          <p className="login-guidance">Google・Apple、またはメールアドレスで登録できます。アプリと同じアカウントをご利用いただけます。</p>
 
           {errorMessage ? (
             <div className="login-error" role="alert">{errorMessage}</div>
           ) : null}
+
+          <SocialAuthButtons
+            intent="signup"
+            disabled={isPending}
+            pendingMethod={pendingSocialMethod}
+            onAuthenticate={handleSocialSignup}
+          />
+          <p className="login-field-help">登録済みのGoogle・Appleアカウントでは、そのままログインします。</p>
+
+          <div className="auth-divider"><span>メールアドレスで登録</span></div>
 
           <form ref={formRef} className="login-form" onSubmit={handleSubmit} noValidate>
             <label htmlFor="signup-email">メールアドレス</label>
@@ -248,7 +295,7 @@ export function CustomerSignup() {
             ) : null}
 
             <button className="button button-primary" type="submit" disabled={isPending}>
-              {isSubmitting ? "作成中…" : "アカウントを作成"}
+              {isSubmitting && !pendingSocialMethod ? "作成中…" : "アカウントを作成"}
               <VishuIcon name="arrow" />
             </button>
           </form>

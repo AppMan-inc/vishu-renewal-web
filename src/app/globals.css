@@ -5186,6 +5186,10 @@ button.booking-menu-card.is-selected .round-arrow {
   font-size: 11px;
 }
 
+.customer-signup-page .social-login-actions {
+  grid-template-columns: 1fr;
+}
+
 .social-login-icon {
   flex: 0 0 auto;
 }
