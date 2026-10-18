@@ -42,6 +42,7 @@ import {
   type RestSlotState,
 } from "@/features/admin/rest-schedule";
 import { japaneseHolidayName } from "@/features/admin/japanese-holidays";
+import { attachPreviousVisits, isFirstVisitReservation } from "@/features/admin/reservation-history";
 import {
   canonicalCategoryIds,
   couponMenuCategoryId,
@@ -334,7 +335,8 @@ function Reservations(props: {
   const [anchor, setAnchor] = useState(startOfDay(new Date()));
   const [status, setStatus] = useState<"active" | "all" | ReservationStatus>("active");
   const [selected, setSelected] = useState<AdminReservation | null>(null);
-  const visible = props.snapshot.reservations.filter((item) => status === "all" || (status === "active" ? item.status !== "canceled" : item.status === status));
+  const reservations = useMemo(() => attachPreviousVisits(props.snapshot.reservations), [props.snapshot.reservations]);
+  const visible = reservations.filter((item) => status === "all" || (status === "active" ? item.status !== "canceled" : item.status === status));
   const days = view === "week" ? weekDays(anchor) : monthCalendarDays(anchor);
   const move = (direction: number) => setAnchor((current) => addDays(view === "week" ? current : new Date(current.getFullYear(), current.getMonth() + direction, 1), view === "week" ? direction * 7 : 0));
 
@@ -359,7 +361,7 @@ function Reservations(props: {
           {days.map((day) => {
             const reservations = visible.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day));
             const rests = props.snapshot.restBlocks.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day));
-            return <section className={dayKey(day) === dayKey(new Date()) ? "is-today" : ""} key={day.toISOString()}><header><span>{weekday(day)}</span><strong>{day.getDate()}</strong></header><div>{[...reservations.map((item) => ({ type: "reservation" as const, start: item.startTime, item })), ...rests.map((item) => ({ type: "rest" as const, start: item.startTime, item }))].sort((a, b) => a.start.localeCompare(b.start)).map((event) => event.type === "reservation" ? <button className={`admin-calendar-event status-${event.item.status}`} key={event.item.sourcePath} onClick={() => setSelected(event.item)}><time>{formatTime(event.item.startTime)}</time><strong>{event.item.customerName}</strong><span>{event.item.treatmentDetail}</span><small className="admin-calendar-previous">{previousVisitText(event.item)}</small></button> : <div className={`admin-calendar-event ${isClosureBlock(event.item) ? "is-closure" : "is-rest"}`} key={event.item.id}><time>{formatTime(event.item.startTime)}–{formatTime(event.item.endTime)}</time><strong>{isClosureBlock(event.item) ? "休業" : "休憩"}</strong></div>)}{reservations.length === 0 && rests.length === 0 ? <p className="admin-calendar-empty">予定なし</p> : null}</div></section>;
+            return <section className={dayKey(day) === dayKey(new Date()) ? "is-today" : ""} key={day.toISOString()}><header><span>{weekday(day)}</span><strong>{day.getDate()}</strong></header><div>{[...reservations.map((item) => ({ type: "reservation" as const, start: item.startTime, item })), ...rests.map((item) => ({ type: "rest" as const, start: item.startTime, item }))].sort((a, b) => a.start.localeCompare(b.start)).map((event) => event.type === "reservation" ? <button className={`admin-calendar-event status-${event.item.status}`} key={event.item.sourcePath} onClick={() => setSelected(event.item)}><div className="admin-calendar-event-heading"><time>{formatTime(event.item.startTime)}</time><NewCustomerBadge reservation={event.item} /></div><strong>{event.item.customerName}</strong><span>{event.item.treatmentDetail}</span><small className="admin-calendar-previous">{previousVisitText(event.item)}</small></button> : <div className={`admin-calendar-event ${isClosureBlock(event.item) ? "is-closure" : "is-rest"}`} key={event.item.id}><time>{formatTime(event.item.startTime)}–{formatTime(event.item.endTime)}</time><strong>{isClosureBlock(event.item) ? "休業" : "休憩"}</strong></div>)}{reservations.length === 0 && rests.length === 0 ? <p className="admin-calendar-empty">予定なし</p> : null}</div></section>;
           })}
         </div>
       ) : (
@@ -369,17 +371,21 @@ function Reservations(props: {
             const dayBlocks = props.snapshot.restBlocks.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day));
             const restCount = dayBlocks.filter((item) => !isClosureBlock(item)).length;
             const closureCount = dayBlocks.filter(isClosureBlock).length;
-            return <section className={`${day.getMonth() !== anchor.getMonth() ? "is-outside" : ""} ${dayKey(day) === dayKey(new Date()) ? "is-today" : ""}`} key={day.toISOString()}><header>{day.getDate()}</header>{dayReservations.slice(0, 3).map((item) => <button key={item.sourcePath} onClick={() => setSelected(item)}><span><time>{formatTime(item.startTime)}</time> {item.customerName}</span><small>{previousVisitText(item)}</small></button>)}{dayReservations.length > 3 ? <small>ほか{dayReservations.length - 3}件</small> : null}{restCount ? <small>休憩 {restCount}件</small> : null}{closureCount ? <small>休業 {closureCount}件</small> : null}</section>;
+            return <section className={`${day.getMonth() !== anchor.getMonth() ? "is-outside" : ""} ${dayKey(day) === dayKey(new Date()) ? "is-today" : ""}`} key={day.toISOString()}><header>{day.getDate()}</header>{dayReservations.slice(0, 3).map((item) => <button key={item.sourcePath} onClick={() => setSelected(item)}><NewCustomerBadge reservation={item} /><span><time>{formatTime(item.startTime)}</time> {item.customerName}</span><small>{previousVisitText(item)}</small></button>)}{dayReservations.length > 3 ? <small>ほか{dayReservations.length - 3}件</small> : null}{restCount ? <small>休憩 {restCount}件</small> : null}{closureCount ? <small>休業 {closureCount}件</small> : null}</section>;
           })}
         </div>
       )}
-      {selected ? <ReservationDetail reservation={selected} mutating={props.mutating} onClose={() => setSelected(null)} onStatus={updateStatus} /> : null}
+      {selected ? <ReservationDetail reservation={selected} customerGender={props.snapshot.customers.find((customer) => customer.id === selected.customerId)?.gender} mutating={props.mutating} onClose={() => setSelected(null)} onStatus={updateStatus} /> : null}
     </>
   );
 }
 
-function ReservationDetail({ reservation, mutating, onClose, onStatus }: { reservation: AdminReservation; mutating: boolean; onClose: () => void; onStatus: (status: ReservationStatus) => void }) {
-  return <div className="admin-detail-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}><aside className="admin-detail-panel"><button className="admin-detail-close" onClick={onClose}>×</button><p className="eyebrow">RESERVATION DETAIL</p><h2>{reservation.customerName}</h2><span className={`admin-status status-${reservation.status}`}>{statusLabel(reservation.status)}</span><dl><div><dt>日時</dt><dd>{formatDateTime(reservation.startTime)} – {formatTime(reservation.finishTime)}</dd></div><div><dt>前回来店</dt><dd>{reservation.previousVisitAt ? formatDateTime(reservation.previousVisitAt) : "初回来店"}</dd></div><div><dt>メニュー</dt><dd>{reservation.treatmentDetail}</dd></div><div><dt>料金</dt><dd>{yen(reservation.price)}</dd></div><div><dt>電話番号</dt><dd>{reservation.telephoneNumber || "未登録"}</dd></div><div><dt>ご希望</dt><dd>{reservation.customerHope || "なし"}</dd></div></dl><div className="admin-detail-actions"><button disabled={mutating || reservation.status === "visited"} onClick={() => void onStatus("visited")}>来店済みにする</button><button disabled={mutating || reservation.status === "confirmed"} onClick={() => void onStatus("confirmed")}>予約済みに戻す</button><button className="is-danger" disabled={mutating || reservation.status === "canceled"} onClick={() => void onStatus("canceled")}>キャンセル</button></div>{reservation.customerId ? <Link className="admin-primary-link" href={`/admin/customers?customer=${encodeURIComponent(reservation.customerId)}`}>顧客・カルテを開く →</Link> : null}</aside></div>;
+function NewCustomerBadge({ reservation }: { reservation: AdminReservation }) {
+  return isFirstVisitReservation(reservation) ? <span className="admin-new-customer">新規</span> : null;
+}
+
+function ReservationDetail({ reservation, customerGender, mutating, onClose, onStatus }: { reservation: AdminReservation; customerGender?: string; mutating: boolean; onClose: () => void; onStatus: (status: ReservationStatus) => void }) {
+  return <div className="admin-detail-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}><aside className="admin-detail-panel"><button className="admin-detail-close" onClick={onClose}>×</button><p className="eyebrow">RESERVATION DETAIL</p><h2>{reservation.customerName}</h2><span className={`admin-status status-${reservation.status}`}>{statusLabel(reservation.status)}</span><dl><div><dt>性別</dt><dd>{customerGender?.trim() || reservation.gender?.trim() || "未登録"}</dd></div><div><dt>日時</dt><dd>{formatDateTime(reservation.startTime)} – {formatTime(reservation.finishTime)}</dd></div><div><dt>前回来店</dt><dd>{reservation.previousVisitAt ? formatDateTime(reservation.previousVisitAt) : "初回来店"}</dd></div><div><dt>メニュー</dt><dd>{reservation.treatmentDetail}</dd></div><div><dt>料金</dt><dd>{yen(reservation.price)}</dd></div><div><dt>電話番号</dt><dd>{reservation.telephoneNumber || "未登録"}</dd></div><div><dt>ご希望</dt><dd>{reservation.customerHope || "なし"}</dd></div></dl><div className="admin-detail-actions"><button disabled={mutating || reservation.status === "visited"} onClick={() => void onStatus("visited")}>来店済みにする</button><button disabled={mutating || reservation.status === "confirmed"} onClick={() => void onStatus("confirmed")}>予約済みに戻す</button><button className="is-danger" disabled={mutating || reservation.status === "canceled"} onClick={() => void onStatus("canceled")}>キャンセル</button></div>{reservation.customerId ? <Link className="admin-primary-link" href={`/admin/customers?customer=${encodeURIComponent(reservation.customerId)}`}>顧客・カルテを開く →</Link> : null}</aside></div>;
 }
 
 function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {

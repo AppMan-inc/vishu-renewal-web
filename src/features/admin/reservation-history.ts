@@ -24,17 +24,28 @@ export function attachPreviousVisits(
     }
 
     for (const reservation of simultaneous) {
-      previousBySourcePath.set(
-        reservation.sourcePath,
+      const candidates = [
         reservation.customerId
           ? latestVisitByCustomer.get(reservation.customerId) ?? null
           : null,
+        reservation.previousVisitAt,
+      ].filter((value): value is string => typeof value === "string" &&
+        new Date(value).getTime() < new Date(startTime).getTime() &&
+        new Date(value).getTime() <= nowTime,
+      );
+      previousBySourcePath.set(
+        reservation.sourcePath,
+        candidates.sort().at(-1) ?? null,
       );
     }
 
     if (new Date(startTime).getTime() > nowTime) continue;
     for (const reservation of simultaneous) {
-      if (reservation.customerId && reservation.status === "visited") {
+      if (
+        reservation.customerId &&
+        reservation.status !== "canceled" &&
+        new Date(reservation.finishTime).getTime() <= nowTime
+      ) {
         latestVisitByCustomer.set(reservation.customerId, startTime);
       }
     }
@@ -44,4 +55,8 @@ export function attachPreviousVisits(
     ...reservation,
     previousVisitAt: previousBySourcePath.get(reservation.sourcePath) ?? null,
   }));
+}
+
+export function isFirstVisitReservation(reservation: AdminReservation) {
+  return reservation.status !== "canceled" && !reservation.previousVisitAt;
 }

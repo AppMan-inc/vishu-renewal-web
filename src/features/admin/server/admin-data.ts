@@ -657,6 +657,7 @@ function reservationFromDocument(
     customerId: stringValue(data.uid, fallbackCustomerId),
     customerName: stringValue(data.customerName ?? data.name, "お客様"),
     telephoneNumber: stringValue(data.telephoneNumber),
+    gender: stringValue(data.gender),
     menuId: stringValue(data.menuId),
     treatmentDetail: stringValue(data.menuName ?? data.treatmentDetail, "ご予約メニュー"),
     treatmentTimeMinutes: numberValue(
@@ -668,7 +669,7 @@ function reservationFromDocument(
     finishTime: end.toISOString(),
     customerHope: stringValue(data.request ?? data.customerHope),
     status: normalizeStatus(data.status),
-    previousVisitAt: null,
+    previousVisitAt: dateValue(data.lastVisit)?.toISOString() ?? null,
     createdAt: (dateValue(data.createdAt) ?? start).toISOString(),
   };
 }

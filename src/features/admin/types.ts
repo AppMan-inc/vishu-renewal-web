@@ -30,6 +30,7 @@ export type AdminReservation = {
   customerId: string;
   customerName: string;
   telephoneNumber: string;
+  gender: string;
   menuId: string;
   treatmentDetail: string;
   treatmentTimeMinutes: number;

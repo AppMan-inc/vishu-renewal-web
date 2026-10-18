@@ -7098,6 +7098,28 @@ button.admin-calendar-event {
   white-space: nowrap;
 }
 
+.admin-calendar-event-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.admin-calendar-event .admin-new-customer,
+.admin-month-grid section button > .admin-new-customer {
+  display: inline-flex;
+  justify-self: start;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f5e4cc;
+  color: #79542b;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .admin-calendar-event.status-visited {
   border-color: #c9d6dd;
   background: #edf2f5;
