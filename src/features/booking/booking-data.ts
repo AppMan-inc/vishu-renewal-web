@@ -10,6 +10,7 @@ import { httpsCallable } from "firebase/functions";
 import { firestore } from "@/lib/firebase/firestore";
 import { firebaseFunctions } from "@/lib/firebase/functions";
 import { sanitizePhoneNumber } from "@/features/form-validation";
+import { bookingCustomerNames, bookingGender, type BookingGender } from "./booking-customer";
 import {
   type BookingAvailability,
   bookingAvailabilityFromData,
@@ -42,7 +43,9 @@ export type BookingCatalog = BookingAvailability & {
 };
 
 export type BookingCustomerProfile = {
-  name: string;
+  lastName: string;
+  firstName: string;
+  gender: BookingGender;
   phone: string;
 };
 
@@ -145,7 +148,8 @@ export async function loadBookingCustomerProfile(
 
     if (profile) {
       return {
-        name: profileName(profile) || fallbackName.trim(),
+        ...bookingCustomerNames(profile, fallbackName),
+        gender: bookingGender(profile.gender),
         phone: sanitizePhoneNumber(stringValue(
           profile.telephoneNumber ?? profile.phoneNumber ?? profile.phone,
         )),
@@ -153,7 +157,7 @@ export async function loadBookingCustomerProfile(
     }
   }
 
-  return { name: fallbackName.trim(), phone: "" };
+  return { ...bookingCustomerNames({}, fallbackName), gender: "", phone: "" };
 }
 
 async function settled<T>(action: () => Promise<T>): Promise<T | null> {
@@ -198,13 +202,6 @@ export function cloudStorageImageUrl(value: unknown) {
 
 function stringValue(value: unknown) {
   return typeof value === "string" ? value.trim() : value?.toString().trim() ?? "";
-}
-
-function profileName(data: Record<string, unknown>) {
-  const lastName = stringValue(data.lastName);
-  const firstName = stringValue(data.firstName);
-  const splitName = [lastName, firstName].filter(Boolean).join(" ");
-  return splitName || stringValue(data.name) || stringValue(data.displayName);
 }
 
 function numberValue(value: unknown) {
