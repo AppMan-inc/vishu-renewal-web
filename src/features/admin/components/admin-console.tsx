@@ -51,6 +51,7 @@ import {
 } from "@/features/booking/booking-menu-catalog";
 import { isClosureBlock } from "@/features/admin/admin-rest-blocks";
 import { customerMatchesQuery } from "@/features/admin/customer-search";
+import { attachPreviousVisits, customerVisitSummary } from "@/features/admin/reservation-history";
 
 const navigation: Array<{ section: AdminSection; href: string; label: string; icon: "bell" | "calendar" | "clock" | "person" | "spa" | "sparkle" }> = [
   { section: "dashboard", href: "/admin", label: "ホーム", icon: "sparkle" },
@@ -78,6 +79,7 @@ export function AdminConsoleProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [snapshot, setSnapshot] = useState<AdminSnapshot | null>(null);
+  const [visitClock, setVisitClock] = useState(() => new Date());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [errorPath, setErrorPath] = useState("");
@@ -89,6 +91,7 @@ export function AdminConsoleProvider({ children }: { children: ReactNode }) {
     setError("");
     try {
       setSnapshot(await fetchAdminSnapshot());
+      setVisitClock(new Date());
     } catch (caught) {
       console.error("[admin-console] refresh_failed", {
         errorName: caught instanceof Error ? caught.name : typeof caught,
@@ -149,6 +152,21 @@ export function AdminConsoleProvider({ children }: { children: ReactNode }) {
     );
   }, [refresh, router]);
 
+  useEffect(() => {
+    const updateVisitClock = () => setVisitClock(new Date());
+    const interval = window.setInterval(updateVisitClock, 30_000);
+    window.addEventListener("focus", updateVisitClock);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", updateVisitClock);
+    };
+  }, []);
+
+  const displayedSnapshot = useMemo(() => snapshot ? {
+    ...snapshot,
+    reservations: attachPreviousVisits(snapshot.reservations, visitClock),
+  } : null, [snapshot, visitClock]);
+
   const runMutation = useCallback(async (body: Record<string, unknown>, successMessage: string) => {
     setMutating(true);
     setError("");
@@ -175,7 +193,7 @@ export function AdminConsoleProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   const value = useMemo<AdminConsoleContextValue>(() => ({
-    snapshot,
+    snapshot: displayedSnapshot,
     loading,
     error: errorPath === pathname ? error : "",
     notice: noticePath === pathname ? notice : "",
@@ -194,7 +212,7 @@ export function AdminConsoleProvider({ children }: { children: ReactNode }) {
     refresh,
     runMutation,
     signOutAdmin,
-    snapshot,
+    displayedSnapshot,
   ]);
 
   return <AdminConsoleContext.Provider value={value}>{children}</AdminConsoleContext.Provider>;
@@ -334,7 +352,8 @@ function Reservations(props: {
   const [view, setView] = useState<"week" | "month">("week");
   const [anchor, setAnchor] = useState(startOfDay(new Date()));
   const [status, setStatus] = useState<"active" | "all" | ReservationStatus>("active");
-  const [selected, setSelected] = useState<AdminReservation | null>(null);
+  const [selectedPath, setSelectedPath] = useState("");
+  const selected = props.snapshot.reservations.find((item) => item.sourcePath === selectedPath) ?? null;
   const visible = props.snapshot.reservations.filter((item) => status === "all" || (status === "active" ? item.status !== "canceled" : item.status === status));
   const days = view === "week" ? weekDays(anchor) : monthCalendarDays(anchor);
   const move = (direction: number) => setAnchor((current) => addDays(view === "week" ? current : new Date(current.getFullYear(), current.getMonth() + direction, 1), view === "week" ? direction * 7 : 0));
@@ -343,7 +362,7 @@ function Reservations(props: {
     if (!selected) return;
     if (nextStatus === "canceled" && !confirm("本当にキャンセルしますか？")) return;
     const ok = await props.runMutation({ action: "reservation.status", sourcePath: selected.sourcePath, status: nextStatus }, "予約ステータスを更新しました。");
-    if (ok) setSelected(null);
+    if (ok) setSelectedPath("");
   }
 
   return (
@@ -360,7 +379,7 @@ function Reservations(props: {
           {days.map((day) => {
             const reservations = visible.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day));
             const rests = props.snapshot.restBlocks.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day));
-            return <section className={dayKey(day) === dayKey(new Date()) ? "is-today" : ""} key={day.toISOString()}><header><span>{weekday(day)}</span><strong>{day.getDate()}</strong></header><div>{[...reservations.map((item) => ({ type: "reservation" as const, start: item.startTime, item })), ...rests.map((item) => ({ type: "rest" as const, start: item.startTime, item }))].sort((a, b) => a.start.localeCompare(b.start)).map((event) => event.type === "reservation" ? <button className={`admin-calendar-event status-${event.item.status}`} key={event.item.sourcePath} onClick={() => setSelected(event.item)}><time>{formatTime(event.item.startTime)}</time><strong>{event.item.customerName}</strong><span>{event.item.treatmentDetail}</span><small className="admin-calendar-previous">{previousVisitText(event.item)}</small></button> : <div className={`admin-calendar-event ${isClosureBlock(event.item) ? "is-closure" : "is-rest"}`} key={event.item.id}><time>{formatTime(event.item.startTime)}–{formatTime(event.item.endTime)}</time><strong>{isClosureBlock(event.item) ? "休業" : "休憩"}</strong></div>)}{reservations.length === 0 && rests.length === 0 ? <p className="admin-calendar-empty">予定なし</p> : null}</div></section>;
+            return <section className={dayKey(day) === dayKey(new Date()) ? "is-today" : ""} key={day.toISOString()}><header><span>{weekday(day)}</span><strong>{day.getDate()}</strong></header><div>{[...reservations.map((item) => ({ type: "reservation" as const, start: item.startTime, item })), ...rests.map((item) => ({ type: "rest" as const, start: item.startTime, item }))].sort((a, b) => a.start.localeCompare(b.start)).map((event) => event.type === "reservation" ? <button className={`admin-calendar-event status-${event.item.status}`} key={event.item.sourcePath} onClick={() => setSelectedPath(event.item.sourcePath)}><time>{formatTime(event.item.startTime)}</time><strong>{event.item.customerName}</strong><span>{event.item.treatmentDetail}</span><small className="admin-calendar-previous">{previousVisitText(event.item)}</small></button> : <div className={`admin-calendar-event ${isClosureBlock(event.item) ? "is-closure" : "is-rest"}`} key={event.item.id}><time>{formatTime(event.item.startTime)}–{formatTime(event.item.endTime)}</time><strong>{isClosureBlock(event.item) ? "休業" : "休憩"}</strong></div>)}{reservations.length === 0 && rests.length === 0 ? <p className="admin-calendar-empty">予定なし</p> : null}</div></section>;
           })}
         </div>
       ) : (
@@ -370,17 +389,17 @@ function Reservations(props: {
             const dayBlocks = props.snapshot.restBlocks.filter((item) => dayKey(new Date(item.startTime)) === dayKey(day));
             const restCount = dayBlocks.filter((item) => !isClosureBlock(item)).length;
             const closureCount = dayBlocks.filter(isClosureBlock).length;
-            return <section className={`${day.getMonth() !== anchor.getMonth() ? "is-outside" : ""} ${dayKey(day) === dayKey(new Date()) ? "is-today" : ""}`} key={day.toISOString()}><header>{day.getDate()}</header>{dayReservations.slice(0, 3).map((item) => <button key={item.sourcePath} onClick={() => setSelected(item)}><span><time>{formatTime(item.startTime)}</time> {item.customerName}</span><small>{previousVisitText(item)}</small></button>)}{dayReservations.length > 3 ? <small>ほか{dayReservations.length - 3}件</small> : null}{restCount ? <small>休憩 {restCount}件</small> : null}{closureCount ? <small>休業 {closureCount}件</small> : null}</section>;
+            return <section className={`${day.getMonth() !== anchor.getMonth() ? "is-outside" : ""} ${dayKey(day) === dayKey(new Date()) ? "is-today" : ""}`} key={day.toISOString()}><header>{day.getDate()}</header>{dayReservations.slice(0, 3).map((item) => <button key={item.sourcePath} onClick={() => setSelectedPath(item.sourcePath)}><span><time>{formatTime(item.startTime)}</time> {item.customerName}</span><small>{previousVisitText(item)}</small></button>)}{dayReservations.length > 3 ? <small>ほか{dayReservations.length - 3}件</small> : null}{restCount ? <small>休憩 {restCount}件</small> : null}{closureCount ? <small>休業 {closureCount}件</small> : null}</section>;
           })}
         </div>
       )}
-      {selected ? <ReservationDetail reservation={selected} mutating={props.mutating} onClose={() => setSelected(null)} onStatus={updateStatus} /> : null}
+      {selected ? <ReservationDetail reservation={selected} mutating={props.mutating} onClose={() => setSelectedPath("")} onStatus={updateStatus} /> : null}
     </>
   );
 }
 
 function ReservationDetail({ reservation, mutating, onClose, onStatus }: { reservation: AdminReservation; mutating: boolean; onClose: () => void; onStatus: (status: ReservationStatus) => void }) {
-  return <div className="admin-detail-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}><aside className="admin-detail-panel"><button className="admin-detail-close" onClick={onClose}>×</button><p className="eyebrow">RESERVATION DETAIL</p><h2>{reservation.customerName}</h2><span className={`admin-status status-${reservation.status}`}>{statusLabel(reservation.status)}</span><dl><div><dt>日時</dt><dd>{formatDateTime(reservation.startTime)} – {formatTime(reservation.finishTime)}</dd></div><div><dt>前回来店</dt><dd>{reservation.previousVisitAt ? formatDateTime(reservation.previousVisitAt) : "初回来店"}</dd></div><div><dt>メニュー</dt><dd>{reservation.treatmentDetail}</dd></div><div><dt>料金</dt><dd>{yen(reservation.price)}</dd></div><div><dt>電話番号</dt><dd>{reservation.telephoneNumber || "未登録"}</dd></div><div><dt>ご希望</dt><dd>{reservation.customerHope || "なし"}</dd></div></dl><div className="admin-detail-actions"><button disabled={mutating || reservation.status === "visited"} onClick={() => void onStatus("visited")}>来店済みにする</button><button disabled={mutating || reservation.status === "confirmed"} onClick={() => void onStatus("confirmed")}>予約済みに戻す</button><button className="is-danger" disabled={mutating || reservation.status === "canceled"} onClick={() => void onStatus("canceled")}>キャンセル</button></div>{reservation.customerId ? <Link className="admin-primary-link" href={`/admin/customers?customer=${encodeURIComponent(reservation.customerId)}`}>顧客・カルテを開く →</Link> : null}</aside></div>;
+  return <div className="admin-detail-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}><aside className="admin-detail-panel"><button className="admin-detail-close" onClick={onClose}>×</button><p className="eyebrow">RESERVATION DETAIL</p><h2>{reservation.customerName}</h2><span className={`admin-status status-${reservation.status}`}>{statusLabel(reservation.status)}</span><dl><div><dt>日時</dt><dd>{formatDateTime(reservation.startTime)} – {formatTime(reservation.finishTime)}</dd></div><div><dt>前回来店</dt><dd>{reservation.previousVisitAt ? formatDateTime(reservation.previousVisitAt) : "初回来店"}</dd></div><div><dt>メニュー</dt><dd>{reservation.treatmentDetail}</dd></div><div><dt>料金</dt><dd>{yen(reservation.price)}</dd></div><div><dt>電話番号</dt><dd>{reservation.telephoneNumber || "未登録"}</dd></div><div><dt>ご希望</dt><dd>{reservation.customerHope || "なし"}</dd></div></dl><div className="admin-detail-actions">{reservation.status === "canceled" ? <button disabled={mutating} onClick={() => void onStatus("confirmed")}>キャンセルを取り消す</button> : null}<button className="is-danger" disabled={mutating || reservation.status === "canceled"} onClick={() => void onStatus("canceled")}>キャンセル</button></div>{reservation.customerId ? <Link className="admin-primary-link" href={`/admin/customers?customer=${encodeURIComponent(reservation.customerId)}`}>顧客・カルテを開く →</Link> : null}</aside></div>;
 }
 
 function Rests(props: { snapshot: AdminSnapshot; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
@@ -616,7 +635,7 @@ function Customers(props: { snapshot: AdminSnapshot; mutating: boolean; runMutat
   const [selectedId, setSelectedId] = useState("");
   const selected = props.snapshot.customers.find((item) => item.id === selectedId) ?? null;
   const customers = props.snapshot.customers.filter((item) => customerMatchesQuery(item, query));
-  return <><PageTitle eyebrow="CUSTOMERS & KARTE" title="顧客・カルテ" description="顧客情報、来店履歴、施術カルテをひとつの画面で管理します。" /><div className="admin-customer-layout"><section className="admin-panel admin-customer-list"><label className="admin-search"><VishuIcon name="person" /><input onChange={(event) => setQuery(event.target.value)} placeholder="氏名・電話番号で検索" value={query} /></label>{customers.map((customer) => { const summary = customerSummary(customer, props.snapshot.reservations, props.snapshot.karteEntries); return <button className={selected?.id === customer.id ? "is-active" : ""} key={customer.id} onClick={() => setSelectedId(customer.id)}><div><strong>{customer.displayName}</strong><span>{customer.telephoneNumber || "電話番号未登録"}</span></div><small>来店 {summary.visits}回<br />{summary.lastVisit ? `最終 ${formatDate(summary.lastVisit)}` : "来店履歴なし"}</small>{summary.missingKarte ? <em>カルテ未登録</em> : null}</button>; })}{customers.length === 0 ? <p>該当する顧客はいません。</p> : null}</section><section className="admin-panel admin-customer-detail">{selected ? <CustomerDetail customer={selected} snapshot={props.snapshot} mutating={props.mutating} runMutation={props.runMutation} /> : <EmptyState title="顧客を選択してください" text="左の一覧から顧客を選ぶと、カルテと予約履歴を確認できます。" />}</section></div></>;
+  return <><PageTitle eyebrow="CUSTOMERS & KARTE" title="顧客・カルテ" description="顧客情報、来店履歴、施術カルテをひとつの画面で管理します。" /><div className="admin-customer-layout"><section className="admin-panel admin-customer-list"><label className="admin-search"><VishuIcon name="person" /><input onChange={(event) => setQuery(event.target.value)} placeholder="氏名・電話番号で検索" value={query} /></label>{customers.map((customer) => { const summary = customerVisitSummary(customer.id, props.snapshot.reservations, props.snapshot.karteEntries); return <button className={selected?.id === customer.id ? "is-active" : ""} key={customer.id} onClick={() => setSelectedId(customer.id)}><div><strong>{customer.displayName}</strong><span>{customer.telephoneNumber || "電話番号未登録"}</span></div><small>来店 {summary.visits}回<br />{summary.lastVisit ? `最終 ${formatDate(summary.lastVisit)}` : "来店履歴なし"}</small>{summary.missingKarte ? <em>カルテ未登録</em> : null}</button>; })}{customers.length === 0 ? <p>該当する顧客はいません。</p> : null}</section><section className="admin-panel admin-customer-detail">{selected ? <CustomerDetail customer={selected} snapshot={props.snapshot} mutating={props.mutating} runMutation={props.runMutation} /> : <EmptyState title="顧客を選択してください" text="左の一覧から顧客を選ぶと、カルテと予約履歴を確認できます。" />}</section></div></>;
 }
 
 function CustomerDetail({ customer, snapshot, mutating, runMutation }: { customer: AdminCustomer; snapshot: AdminSnapshot; mutating: boolean; runMutation: (body: Record<string, unknown>, message: string) => Promise<boolean> }) {
@@ -1048,7 +1067,6 @@ function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) 
 function Metric({ icon, label, value, compact = false }: { icon: "calendar" | "clock" | "sparkle"; label: string; value: string; compact?: boolean }) { return <article><span><VishuIcon name={icon} /></span><div><small>{label}</small><strong className={compact ? "is-compact" : ""}>{value}</strong></div></article>; }
 function EmptyState({ title, text }: { title: string; text: string }) { return <div className="admin-empty-state"><VishuIcon name="leaf" /><h2>{title}</h2><p>{text}</p></div>; }
 function emptyMenu(): AdminMenu { return { id: "", treatmentDetail: "", menuIntroduction: "", treatmentDetailList: [], menuImageUrl: "", menuImagePath: "", treatmentTimeMinutes: 60, beforePrice: null, afterPrice: 0, isCallable: false, isNeedExtraMoney: false, priority: 999, updatedAt: null }; }
-function customerSummary(customer: AdminCustomer, reservations: AdminReservation[], entries: AdminSnapshot["karteEntries"]) { const customerReservations = reservations.filter((item) => item.customerId === customer.id); const visits = customerReservations.filter((item) => item.status === "visited"); const lastVisit = visits.sort((a, b) => b.startTime.localeCompare(a.startTime))[0]?.startTime; const entryIds = new Set(entries.filter((item) => item.customerId === customer.id).map((item) => item.reservationId)); return { visits: visits.length, lastVisit, missingKarte: visits.some((item) => !entryIds.has(item.id)) }; }
 function startOfDay(date: Date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
 function addDays(date: Date, days: number) { const result = new Date(date); result.setDate(result.getDate() + days); return result; }
 function weekDays(anchor: Date) { const day = anchor.getDay(); const monday = addDays(startOfDay(anchor), day === 0 ? -6 : 1 - day); return Array.from({ length: 7 }, (_, index) => addDays(monday, index)); }
