@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { VishuIcon } from "@/components/vishu-ui";
-import {
-  type CustomerReservation,
-  loadCustomerAccount,
-} from "@/features/account/account-data";
+import type { CustomerReservation } from "@/features/account/account-data";
 import { firebaseAuth } from "@/lib/firebase/client";
 import styles from "./booking-complete.module.css";
 
@@ -30,11 +27,12 @@ export function BookingComplete({ reservationId }: { reservationId: string }) {
       };
     }
 
-    loadCustomerAccount(
-      currentUser.uid,
-      currentUser.email ?? "",
-      currentUser.displayName ?? "",
-    )
+    import("@/features/account/account-data")
+      .then(({ loadCustomerAccount }) => loadCustomerAccount(
+        currentUser.uid,
+        currentUser.email ?? "",
+        currentUser.displayName ?? "",
+      ))
       .then(({ reservations }) => {
         if (!isActive) return;
         const reservation = reservations.find((item) => item.id === reservationId);
