@@ -2,6 +2,8 @@ import Link from "next/link";
 import { CustomerSessionAction } from "@/features/auth/components/customer-session-action";
 
 type IconName =
+  | "android"
+  | "apple"
   | "arrow"
   | "bell"
   | "calendar"
@@ -17,6 +19,21 @@ type IconName =
   | "spa";
 
 const iconPaths: Record<IconName, React.ReactNode> = {
+  android: (
+    <path
+      fill="currentColor"
+      fillRule="evenodd"
+      stroke="none"
+      d="m17.6 9.48 1.84-3.18a.64.64 0 0 0-1.09-.63l-1.88 3.24a11.68 11.68 0 0 0-8.94 0L5.65 5.67a.64.64 0 0 0-1.11.62l1.85 3.19A10.81 10.81 0 0 0 1 18h22c-.33-3.69-2.42-6.85-5.4-8.52ZM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z"
+    />
+  ),
+  apple: (
+    <path
+      fill="currentColor"
+      stroke="none"
+      d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.5 7.59 9.04 7.31c1.35.07 2.29.74 3.08.79 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.52 4.1ZM12.03 7.25C11.88 5.02 13.69 3.18 15.77 3c.29 2.58-2.34 4.5-3.74 4.25Z"
+    />
+  ),
   arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
   bell: (
     <>

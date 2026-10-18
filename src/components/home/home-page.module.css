@@ -634,38 +634,36 @@
   font-size: 14px;
 }
 
-.appDownload {
+.appDownloadButton {
   display: grid;
-  justify-items: start;
-  gap: 8px;
-  min-width: 0;
-}
-
-.appDownloadUrl {
-  max-width: 100%;
-  color: #6f675e;
-  font-size: 11px;
-  line-height: 1.7;
-  overflow-wrap: anywhere;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.outlineLink {
-  display: inline-flex;
-  min-height: 48px;
+  width: 100%;
+  max-width: 360px;
+  min-height: 56px;
+  grid-template-columns: 24px minmax(0, 1fr) 16px;
   align-items: center;
-  gap: 18px;
-  padding: 0 19px;
+  gap: 12px;
+  padding: 12px 16px;
   border: 1px solid #d8cec2;
   border-radius: 12px;
   color: var(--taupe);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
+  line-height: 1.6;
+  transition: background-color .2s ease;
 }
 
-.outlineLink svg {
-  width: 15px;
+.appDownloadButton:hover {
+  background: rgba(117, 96, 77, .06);
+}
+
+.appStoreIcon {
+  width: 24px;
+  height: 24px;
+}
+
+.appDownloadArrow {
+  width: 16px;
+  height: 16px;
 }
 
 .infoDetails dl {
@@ -1279,22 +1277,11 @@
 
   .appDownloads {
     margin-top: 28px;
-    gap: 20px;
-  }
-
-  .appDownload {
-    justify-items: stretch;
-  }
-
-  .outlineLink {
-    justify-content: space-between;
     gap: 12px;
-    padding-inline: 14px;
-    font-size: 12px;
   }
 
-  .outlineLink svg {
-    flex-shrink: 0;
+  .appDownloadButton {
+    padding-inline: 14px;
   }
 
   .infoDetails dl > div {

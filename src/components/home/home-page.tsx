@@ -7,11 +7,13 @@ import styles from "./home-page.module.css";
 
 const appStores = [
   {
-    label: "iPhone：App Storeでダウンロード",
+    label: "App Storeでダウンロード",
+    icon: "apple",
     url: "https://apps.apple.com/jp/app/id1666140616",
   },
   {
-    label: "Android：Google Playでダウンロード",
+    label: "Google Playでダウンロード",
+    icon: "android",
     url: "https://play.google.com/store/apps/details?id=com.itsukage.salonVishu",
   },
 ] as const;
@@ -293,15 +295,12 @@ function SalonInfoSection() {
         <p>髪型が決まっていなくても大丈夫です。<br />今のお悩みや普段の過ごし方から、一緒に考えます。</p>
         <div className={styles.appDownloads}>
           <h3>公式アプリをダウンロード</h3>
-          {appStores.map(({ label, url }) => (
-            <div className={styles.appDownload} key={url}>
-              <a className={styles.outlineLink} href={url} target="_blank" rel="noreferrer">
-                {label} <VishuIcon name="arrow" />
-              </a>
-              <a className={styles.appDownloadUrl} href={url} target="_blank" rel="noreferrer">
-                {url}
-              </a>
-            </div>
+          {appStores.map(({ label, icon, url }) => (
+            <a className={styles.appDownloadButton} href={url} target="_blank" rel="noreferrer" key={url}>
+              <VishuIcon name={icon} className={styles.appStoreIcon} />
+              <span>{label}</span>
+              <VishuIcon name="arrow" className={styles.appDownloadArrow} />
+            </a>
           ))}
         </div>
       </div>
