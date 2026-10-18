@@ -18,6 +18,8 @@ import { bookingSlotsForDate } from "@/features/booking/booking-availability";
 import { createBookingAvailabilityStore } from "@/features/booking/booking-availability-prefetch";
 import {
   bookingFieldErrors,
+  bookingTodayDate,
+  dateOfBirthValidationMessage,
   type BookingFieldErrors,
   type BookingGender,
 } from "@/features/booking/booking-customer";
@@ -82,6 +84,7 @@ export function BookingFlow() {
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [gender, setGender] = useState<BookingGender>("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const customerName = [lastName.trim(), firstName.trim()].filter(Boolean).join(" ");
   const [phone, setPhone] = useState("");
   const [request, setRequest] = useState("");
@@ -94,6 +97,7 @@ export function BookingFlow() {
   const lastNameRef = useRef<HTMLInputElement>(null);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const genderRef = useRef<HTMLSelectElement>(null);
+  const dateOfBirthRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const requestRef = useRef<HTMLTextAreaElement>(null);
   const restoredMenuIdRef = useRef<string | null>(null);
@@ -193,6 +197,7 @@ export function BookingFlow() {
       setLastName((current) => current.trim() || profile.lastName);
       setFirstName((current) => current.trim() || profile.firstName);
       setGender((current) => current || profile.gender);
+      setDateOfBirth((current) => current || profile.dateOfBirth);
       setPhone((currentPhone) => currentPhone.trim() || profile.phone);
     });
 
@@ -272,6 +277,7 @@ export function BookingFlow() {
     return errors.lastName ? lastNameRef
       : errors.firstName ? firstNameRef
         : errors.gender ? genderRef
+          : errors.dateOfBirth ? dateOfBirthRef
           : errors.phone ? phoneRef
             : errors.request ? requestRef : null;
   }
@@ -287,7 +293,7 @@ export function BookingFlow() {
       return;
     }
     if (currentStep === 2) {
-      const errors = bookingFieldErrors({ lastName, firstName, gender, phone, request });
+      const errors = bookingFieldErrors({ lastName, firstName, gender, dateOfBirth, phone, request });
       setFieldErrors(errors);
       const firstInvalid = firstInvalidField(errors);
       if (firstInvalid) {
@@ -317,7 +323,7 @@ export function BookingFlow() {
       return;
     }
 
-    const errors = bookingFieldErrors({ lastName, firstName, gender, phone, request });
+    const errors = bookingFieldErrors({ lastName, firstName, gender, dateOfBirth, phone, request });
     if (Object.values(errors).some(Boolean)) {
       setFieldErrors(errors);
       skipNextStepScrollRef.current = true;
@@ -336,6 +342,7 @@ export function BookingFlow() {
         lastName: lastName.trim(),
         firstName: firstName.trim(),
         gender: gender as Exclude<BookingGender, "">,
+        dateOfBirth,
         telephoneNumber: phone.trim(),
         request: request.trim(),
       });
@@ -430,12 +437,14 @@ export function BookingFlow() {
               lastName={lastName}
               firstName={firstName}
               gender={gender}
+              dateOfBirth={dateOfBirth}
               phone={phone}
               request={request}
               fieldErrors={fieldErrors}
               lastNameRef={lastNameRef}
               firstNameRef={firstNameRef}
               genderRef={genderRef}
+              dateOfBirthRef={dateOfBirthRef}
               phoneRef={phoneRef}
               requestRef={requestRef}
               onLastNameBlur={() => setFieldErrors((current) => ({ ...current, lastName: personNameValidationMessage(lastName, "姓") ?? undefined }))}
@@ -443,6 +452,7 @@ export function BookingFlow() {
               onFirstNameBlur={() => setFieldErrors((current) => ({ ...current, firstName: personNameValidationMessage(firstName, "名") ?? undefined }))}
               onFirstNameChange={(value) => { setFirstName(value); setFieldErrors((current) => value.length > FORM_FIELD_LIMITS.personName || current.firstName ? { ...current, firstName: personNameValidationMessage(value, "名") ?? undefined } : current); }}
               onGenderChange={(value) => { setGender(value); setFieldErrors((current) => ({ ...current, gender: value ? undefined : "性別を選択してください。" })); }}
+              onDateOfBirthChange={(value) => { setDateOfBirth(value); setFieldErrors((current) => ({ ...current, dateOfBirth: dateOfBirthValidationMessage(value) ?? undefined })); }}
               onPhoneBlur={() => setFieldErrors((current) => ({ ...current, phone: requiredPhoneValidationMessage(phone) ?? undefined }))}
               onPhoneChange={(rawValue) => { setPhone(sanitizePhoneNumber(rawValue)); setFieldErrors((current) => ({ ...current, phone: phoneFieldChangeResult(rawValue, current.phone).error ?? undefined })); }}
               onRequestChange={(value) => { setRequest(value); setFieldErrors((current) => ({ ...current, request: value.length > FORM_FIELD_LIMITS.inquiryMessage ? "ご要望・ご相談は300文字以内で入力してください。" : undefined })); }}
@@ -454,6 +464,7 @@ export function BookingFlow() {
               menu={selectedMenu}
               name={customerName}
               gender={gender}
+              dateOfBirth={dateOfBirth}
               phone={phone}
               request={request}
               slot={selectedSlot}
@@ -880,12 +891,14 @@ function CustomerStep({
   lastName,
   firstName,
   gender,
+  dateOfBirth,
   phone,
   request,
   fieldErrors,
   lastNameRef,
   firstNameRef,
   genderRef,
+  dateOfBirthRef,
   phoneRef,
   requestRef,
   onLastNameBlur,
@@ -893,6 +906,7 @@ function CustomerStep({
   onFirstNameBlur,
   onFirstNameChange,
   onGenderChange,
+  onDateOfBirthChange,
   onPhoneBlur,
   onPhoneChange,
   onRequestChange,
@@ -901,12 +915,14 @@ function CustomerStep({
   lastName: string;
   firstName: string;
   gender: BookingGender;
+  dateOfBirth: string;
   phone: string;
   request: string;
   fieldErrors: BookingFieldErrors;
   lastNameRef: RefObject<HTMLInputElement | null>;
   firstNameRef: RefObject<HTMLInputElement | null>;
   genderRef: RefObject<HTMLSelectElement | null>;
+  dateOfBirthRef: RefObject<HTMLInputElement | null>;
   phoneRef: RefObject<HTMLInputElement | null>;
   requestRef: RefObject<HTMLTextAreaElement | null>;
   onLastNameBlur: () => void;
@@ -914,6 +930,7 @@ function CustomerStep({
   onFirstNameBlur: () => void;
   onFirstNameChange: (value: string) => void;
   onGenderChange: (value: BookingGender) => void;
+  onDateOfBirthChange: (value: string) => void;
   onPhoneBlur: () => void;
   onPhoneChange: (value: string) => void;
   onRequestChange: (value: string) => void;
@@ -926,6 +943,7 @@ function CustomerStep({
           <label><span>姓 <em>必須</em></span><input ref={lastNameRef} autoComplete="family-name" value={lastName} onBlur={onLastNameBlur} onChange={(event) => onLastNameChange(event.target.value)} placeholder="山田" aria-invalid={Boolean(fieldErrors.lastName)} aria-describedby={fieldErrors.lastName ? "booking-last-name-error" : undefined} /><small className="field-error field-feedback" id="booking-last-name-error" aria-live="polite">{fieldErrors.lastName ?? ""}</small></label>
           <label><span>名 <em>必須</em></span><input ref={firstNameRef} autoComplete="given-name" value={firstName} onBlur={onFirstNameBlur} onChange={(event) => onFirstNameChange(event.target.value)} placeholder="花子" aria-invalid={Boolean(fieldErrors.firstName)} aria-describedby={fieldErrors.firstName ? "booking-first-name-error" : undefined} /><small className="field-error field-feedback" id="booking-first-name-error" aria-live="polite">{fieldErrors.firstName ?? ""}</small></label>
           <label><span>性別 <em>必須</em></span><select ref={genderRef} value={gender} onChange={(event) => onGenderChange(event.target.value as BookingGender)} aria-invalid={Boolean(fieldErrors.gender)} aria-describedby={fieldErrors.gender ? "booking-gender-error" : undefined}><option value="">選択してください</option><option value="男性">男性</option><option value="女性">女性</option><option value="その他">その他</option></select><small className="field-error field-feedback" id="booking-gender-error" aria-live="polite">{fieldErrors.gender ?? ""}</small></label>
+          <label><span>生年月日 <em>必須</em></span><input ref={dateOfBirthRef} autoComplete="bday" type="date" min="1920-01-01" max={bookingTodayDate()} required value={dateOfBirth} onChange={(event) => onDateOfBirthChange(event.target.value)} aria-invalid={Boolean(fieldErrors.dateOfBirth)} aria-describedby={fieldErrors.dateOfBirth ? "booking-birthday-error" : undefined} /><small className="field-error field-feedback" id="booking-birthday-error" aria-live="polite">{fieldErrors.dateOfBirth ?? ""}</small></label>
           <label><span>電話番号 <em>必須</em></span><input ref={phoneRef} autoComplete="tel" inputMode="numeric" pattern="[0-9]*" type="tel" value={phone} onBlur={onPhoneBlur} onChange={(event) => onPhoneChange(event.target.value)} placeholder="09012345678" aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "booking-phone-error" : undefined} /><small className="field-error field-feedback" id="booking-phone-error" aria-live="polite">{fieldErrors.phone ?? ""}</small></label>
           <label className="is-wide"><span>メールアドレス</span><input value={email} disabled /></label>
           <label className="is-wide"><span>ご要望・ご相談</span><textarea ref={requestRef} value={request} onChange={(event) => onRequestChange(event.target.value)} placeholder="髪のお悩みやご希望があればご記入ください。" rows={5} aria-invalid={Boolean(fieldErrors.request)} aria-describedby={fieldErrors.request ? "booking-request-count booking-request-error" : "booking-request-count"} /><span className={`booking-character-count${fieldErrors.request ? " is-error" : ""}`} id="booking-request-count">{request.length} / {FORM_FIELD_LIMITS.inquiryMessage}文字</span><small className="field-error field-feedback" id="booking-request-error" aria-live="polite">{fieldErrors.request ?? ""}</small></label>
@@ -950,6 +968,7 @@ function ConfirmationStep({
   menu,
   name,
   gender,
+  dateOfBirth,
   phone,
   request,
   slot,
@@ -964,6 +983,7 @@ function ConfirmationStep({
   menu: BookingMenu;
   name: string;
   gender: BookingGender;
+  dateOfBirth: string;
   phone: string;
   request: string;
   slot: Date;
@@ -982,6 +1002,7 @@ function ConfirmationStep({
         <ConfirmationRow label="日時" value={formatBookingDate(slot)} />
         <ConfirmationRow label="お客様" value={name} detail={`${phone}${email ? ` · ${email}` : ""}`} />
         <ConfirmationRow label="性別" value={gender} />
+        <ConfirmationRow label="生年月日" value={dateOfBirth.replace(/-/g, "/")} />
         <ConfirmationRow label="ご要望" value={request || "なし"} />
       </div>
       <div className="booking-confirmation-notices">

@@ -10,7 +10,7 @@ import { httpsCallable } from "firebase/functions";
 import { firestore } from "@/lib/firebase/firestore";
 import { firebaseFunctions } from "@/lib/firebase/functions";
 import { sanitizePhoneNumber } from "@/features/form-validation";
-import { bookingCustomerNames, bookingGender, type BookingGender } from "./booking-customer";
+import { bookingCustomerNames, bookingDateOfBirth, bookingGender, type BookingGender } from "./booking-customer";
 import {
   type BookingAvailability,
   bookingAvailabilityFromData,
@@ -46,6 +46,7 @@ export type BookingCustomerProfile = {
   lastName: string;
   firstName: string;
   gender: BookingGender;
+  dateOfBirth: string;
   phone: string;
 };
 
@@ -150,6 +151,7 @@ export async function loadBookingCustomerProfile(
       return {
         ...bookingCustomerNames(profile, fallbackName),
         gender: bookingGender(profile.gender),
+        dateOfBirth: bookingDateOfBirth(profile.dateOfBirth),
         phone: sanitizePhoneNumber(stringValue(
           profile.telephoneNumber ?? profile.phoneNumber ?? profile.phone,
         )),
@@ -157,7 +159,7 @@ export async function loadBookingCustomerProfile(
     }
   }
 
-  return { ...bookingCustomerNames({}, fallbackName), gender: "", phone: "" };
+  return { ...bookingCustomerNames({}, fallbackName), gender: "", dateOfBirth: "", phone: "" };
 }
 
 async function settled<T>(action: () => Promise<T>): Promise<T | null> {

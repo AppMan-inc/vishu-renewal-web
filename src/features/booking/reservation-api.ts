@@ -12,6 +12,7 @@ export type CreateBookingReservationInput = {
   lastName: string;
   firstName: string;
   gender: Exclude<BookingGender, "">;
+  dateOfBirth: string;
   telephoneNumber: string;
   request: string;
 };
