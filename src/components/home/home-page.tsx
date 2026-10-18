@@ -5,7 +5,16 @@ import { CustomerLogoutButton } from "@/features/auth/components/customer-sessio
 import { siteAssetPath } from "@/lib/site-path";
 import styles from "./home-page.module.css";
 
-const hotPepperUrl = "https://beauty.hotpepper.jp/slnH000583006/";
+const appStores = [
+  {
+    label: "iPhone：App Storeでダウンロード",
+    url: "https://apps.apple.com/jp/app/id1666140616",
+  },
+  {
+    label: "Android：Google Playでダウンロード",
+    url: "https://play.google.com/store/apps/details?id=com.itsukage.salonVishu",
+  },
+] as const;
 const googleMapsUrl =
   "https://www.google.com/maps/search/?api=1&query=" +
   encodeURIComponent("Salon Vishu 大阪府河内長野市荘園町18-14");
@@ -282,9 +291,19 @@ function SalonInfoSection() {
         <SectionLabel>SALON INFORMATION</SectionLabel>
         <h2 id="info-title">はじめての方へ。</h2>
         <p>髪型が決まっていなくても大丈夫です。<br />今のお悩みや普段の過ごし方から、一緒に考えます。</p>
-        <a className={styles.outlineLink} href={hotPepperUrl} target="_blank" rel="noreferrer">
-          最新情報を確認する <VishuIcon name="arrow" />
-        </a>
+        <div className={styles.appDownloads}>
+          <h3>公式アプリをダウンロード</h3>
+          {appStores.map(({ label, url }) => (
+            <div className={styles.appDownload} key={url}>
+              <a className={styles.outlineLink} href={url} target="_blank" rel="noreferrer">
+                {label} <VishuIcon name="arrow" />
+              </a>
+              <a className={styles.appDownloadUrl} href={url} target="_blank" rel="noreferrer">
+                {url}
+              </a>
+            </div>
+          ))}
+        </div>
       </div>
       <div className={styles.infoDetails}>
         <dl>
