@@ -50,6 +50,7 @@ import {
   toggleCategory,
 } from "@/features/booking/booking-menu-catalog";
 import { isClosureBlock } from "@/features/admin/admin-rest-blocks";
+import { customerMatchesQuery } from "@/features/admin/customer-search";
 
 const navigation: Array<{ section: AdminSection; href: string; label: string; icon: "bell" | "calendar" | "clock" | "person" | "spa" | "sparkle" }> = [
   { section: "dashboard", href: "/admin", label: "ホーム", icon: "sparkle" },
@@ -614,7 +615,7 @@ function Customers(props: { snapshot: AdminSnapshot; mutating: boolean; runMutat
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const selected = props.snapshot.customers.find((item) => item.id === selectedId) ?? null;
-  const customers = props.snapshot.customers.filter((item) => `${item.displayName} ${item.telephoneNumber}`.toLowerCase().includes(query.toLowerCase()));
+  const customers = props.snapshot.customers.filter((item) => customerMatchesQuery(item, query));
   return <><PageTitle eyebrow="CUSTOMERS & KARTE" title="顧客・カルテ" description="顧客情報、来店履歴、施術カルテをひとつの画面で管理します。" /><div className="admin-customer-layout"><section className="admin-panel admin-customer-list"><label className="admin-search"><VishuIcon name="person" /><input onChange={(event) => setQuery(event.target.value)} placeholder="氏名・電話番号で検索" value={query} /></label>{customers.map((customer) => { const summary = customerSummary(customer, props.snapshot.reservations, props.snapshot.karteEntries); return <button className={selected?.id === customer.id ? "is-active" : ""} key={customer.id} onClick={() => setSelectedId(customer.id)}><div><strong>{customer.displayName}</strong><span>{customer.telephoneNumber || "電話番号未登録"}</span></div><small>来店 {summary.visits}回<br />{summary.lastVisit ? `最終 ${formatDate(summary.lastVisit)}` : "来店履歴なし"}</small>{summary.missingKarte ? <em>カルテ未登録</em> : null}</button>; })}{customers.length === 0 ? <p>該当する顧客はいません。</p> : null}</section><section className="admin-panel admin-customer-detail">{selected ? <CustomerDetail customer={selected} snapshot={props.snapshot} mutating={props.mutating} runMutation={props.runMutation} /> : <EmptyState title="顧客を選択してください" text="左の一覧から顧客を選ぶと、カルテと予約履歴を確認できます。" />}</section></div></>;
 }
 
