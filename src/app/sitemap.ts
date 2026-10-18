@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { absoluteSiteUrl } from "@/lib/site-url";
 
+export const dynamic = "force-static";
+
 const publicRoutes = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/booking", changeFrequency: "weekly", priority: 0.9 },

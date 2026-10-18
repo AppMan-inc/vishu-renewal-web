@@ -1,36 +1,20 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { PageFooter, SiteHeader } from "@/components/vishu-ui";
-import { BookingComplete } from "@/features/booking/components/booking-complete";
-import { bookingCompleteHref } from "@/features/booking/booking-navigation";
-import { CustomerAuthGuard } from "@/features/auth/components/customer-auth-guard";
+import { Suspense } from "react";
+import { BookingCompleteRoute } from "@/features/booking/components/booking-complete-route";
 
 export const metadata: Metadata = {
   title: "予約完了",
   robots: { index: false, follow: false },
 };
 
-type BookingCompletePageProps = {
-  searchParams: Promise<{ reservationId?: string | string[] }>;
-};
-
-export default async function BookingCompletePage({
-  searchParams,
-}: BookingCompletePageProps) {
-  const reservationIdValue = (await searchParams).reservationId;
-  const reservationId = (
-    Array.isArray(reservationIdValue) ? reservationIdValue[0] : reservationIdValue
-  )?.trim();
-
-  if (!reservationId) redirect("/booking");
-
+export default function BookingCompletePage() {
   return (
-    <CustomerAuthGuard returnTo={bookingCompleteHref(reservationId)}>
-      <main className="app-page booking-page">
-        <SiteHeader />
-        <BookingComplete reservationId={reservationId} />
-        <PageFooter />
+    <Suspense fallback={
+      <main className="auth-loading-page" aria-busy="true">
+        <p>予約情報を確認しています…</p>
       </main>
-    </CustomerAuthGuard>
+    }>
+      <BookingCompleteRoute />
+    </Suspense>
   );
 }

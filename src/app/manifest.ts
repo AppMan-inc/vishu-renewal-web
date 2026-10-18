@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { siteAssetPath } from "@/lib/site-path";
 
+export const dynamic = "force-static";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Salon Vishu",
