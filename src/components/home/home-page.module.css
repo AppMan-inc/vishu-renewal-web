@@ -974,72 +974,129 @@
 
 }
 
-@media (max-width: 680px) {
+@media (max-width: 767px) {
   .page {
-    padding-bottom: 68px;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   }
 
   .headerWrap :global(.site-header) {
-    width: calc(100% - 24px);
+    width: calc(100% - 40px);
     height: 64px;
   }
 
-  .heroCopy {
-    width: calc(100% - 36px);
-    padding: 54px 0 48px;
+  .headerWrap :global(.header-booking-link) {
+    min-height: 44px;
   }
 
+  .headerWrap :global(.site-navigation > a),
+  .headerWrap :global(.header-actions .header-login-link) {
+    display: none;
+  }
+
+  .hero {
+    display: grid;
+    min-height: auto;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heroCopy {
+    display: contents;
+  }
+
+  .heroCopy > .sectionLabel,
   .heroBrand {
-    margin-top: 17px;
-    font-size: 14px;
+    display: none;
+  }
+
+  .heroVisual {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 1 / 1;
+    grid-column: 1;
+    grid-row: 1;
   }
 
   .hero h1 {
-    margin: 16px 0 20px;
-    font-size: clamp(26px, 8.2vw, 36px);
+    z-index: 2;
+    align-self: start;
+    grid-column: 1;
+    grid-row: 1;
+    margin: 24px 20px 0;
+    color: #fffaf1;
+    font-size: clamp(19px, 5.25vw, 28px);
+    letter-spacing: .015em;
+    line-height: 1.65;
+    pointer-events: none;
+    text-shadow: 0 1px 10px rgba(36, 28, 22, .3);
+  }
+
+  .hero h1 em {
+    color: inherit;
   }
 
   .heroDescription {
-    font-size: 12px;
-    line-height: 1.95;
+    max-width: none;
+    grid-column: 1;
+    grid-row: 2;
+    margin: 24px 20px 0;
+    font-size: 14px;
+    line-height: 1.9;
   }
 
   .heroActions {
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
-    gap: 16px;
-    margin-top: 28px;
+    grid-column: 1;
+    grid-row: 3;
+    gap: 12px;
+    margin: 24px 20px 0;
   }
 
   .arrowLink {
     width: 100%;
+    min-height: 54px;
+    font-size: 13px;
+  }
+
+  .heroActions .arrowLink {
+    width: 100%;
     min-height: 56px;
+  }
+
+  .textLink {
+    min-height: 44px;
+    align-self: center;
+    padding-block: 12px;
+    font-size: 12px;
   }
 
   .heroFacts {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    margin-top: 36px;
+    grid-column: 1;
+    grid-row: 4;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 28px 20px 40px;
   }
 
   .heroFacts div {
-    padding: 0 10px;
+    min-width: 0;
+    padding-inline: 10px;
   }
 
   .heroFacts dd {
-    font-size: 9px;
-    line-height: 1.5;
+    font-size: 10px;
+    line-height: 1.7;
   }
 
+  .heroImageShade {
+    background:
+      linear-gradient(135deg, rgba(38, 29, 23, .34), rgba(38, 29, 23, .13) 34%, transparent 58%),
+      linear-gradient(180deg, transparent 68%, rgba(45, 38, 32, .15));
+  }
+
+  .heroImageNote,
   .heroBookingNote {
-    right: 16px;
-    bottom: 16px;
-    width: 240px;
-    padding: 16px 18px;
-  }
-
-  .heroBookingNote strong {
-    font-size: 13px;
+    display: none;
   }
 
   .straightening,
@@ -1047,181 +1104,283 @@
   .services,
   .guide,
   .info {
-    padding: 88px 18px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    padding: 64px 20px;
+    scroll-margin-top: 80px;
+  }
+
+  .straighteningInner {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .straighteningTitle,
+  .shampooCopy h2,
+  .sectionHeading h2,
+  .guide h2,
+  .info h2 {
+    font-size: clamp(23px, 6.2vw, 32px);
+    line-height: 1.6;
+  }
+
+  .straighteningSubCopy,
+  .shampooCopy > p:last-child,
+  .sectionHeading > p,
+  .guideCopy > p:not(.sectionLabel),
+  .infoIntro > p:not(.sectionLabel) {
+    margin: 18px 0 0;
+    font-size: 14px;
+    line-height: 1.9;
+  }
+
+  .straighteningPairs {
+    gap: 28px;
+  }
+
+  .straighteningPair {
+    gap: 20px;
+  }
+
+  .straighteningPair figcaption {
+    font-size: 12px;
+    letter-spacing: .12em;
+  }
+
+  .straighteningArrow,
+  .straighteningArrow svg {
+    width: 18px;
+  }
+
+  .straighteningArrow {
+    top: calc(50% + 8px);
   }
 
   .shampoo {
-    gap: 40px;
-    padding-block: 64px;
+    gap: 28px;
   }
 
   .shampooImageWrap {
     border-radius: 3px 38px 3px 3px;
   }
 
-  .shampooCopy h2 {
-    font-size: 31px;
+  .shampooCopy {
+    max-width: none;
   }
 
-  .shampooCopy > p:last-child {
-    margin-top: 22px;
-    font-size: 12px;
-    line-height: 2;
-  }
-
-  .straighteningTitle {
-    font-size: 34px;
-  }
-
-  .straighteningSubCopy {
-    margin-top: 22px;
-    font-size: 12px;
-    line-height: 2;
-  }
-
-  .straighteningPairs {
-    gap: 44px;
-  }
-
-  .straighteningPair {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 28px;
-    justify-items: stretch;
-  }
-
-  .straighteningArrow {
-    top: calc(50% + 8px);
-    width: 24px;
-    height: 24px;
-    transform: translate(-50%, -50%);
-  }
-
-  .straighteningArrow svg {
-    width: 22px;
-    height: 16px;
-  }
-
-  .straighteningPair figure {
-    width: 100%;
-  }
-
-  .straighteningPair figcaption {
-    gap: 8px;
-    font-size: 11px;
-  }
-
-  .straighteningImage {
-    aspect-ratio: 3 / 4;
-  }
-
-  .straightening {
-    padding: 44px 0;
-  }
-
-  .straighteningInner {
-    width: calc(100% - 36px);
-  }
-
-  .sectionHeading h2,
-  .guide h2,
-  .info h2 {
-    font-size: 31px;
+  .sectionHeading {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
   }
 
   .serviceList {
-    margin-top: 36px;
+    margin-top: 28px;
   }
 
   .serviceCard {
-    min-height: 190px;
-    grid-template-columns: 34px 1fr 42px;
-    gap: 14px;
-    padding: 22px 0;
+    min-height: 0;
+    grid-template-columns: 24px minmax(0, 1fr) 44px;
+    grid-template-areas:
+      "index title arrow"
+      ". description description"
+      ". meta meta";
+    gap: 14px 12px;
+    padding: 24px 0;
+  }
+
+  .serviceIndex {
+    grid-area: index;
+    align-self: start;
+    padding-top: 18px;
+    font-size: 17px;
   }
 
   .serviceCard:hover {
     padding-inline: 0;
   }
 
+  .serviceTitle {
+    grid-area: title;
+    min-width: 0;
+  }
+
+  .serviceTitle span {
+    font-size: 9px;
+    letter-spacing: .08em;
+  }
+
+  .serviceTitle h3 {
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
   .serviceCard > p {
-    grid-column: 2 / -1;
-    margin: -7px 0 0;
+    grid-area: description;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.8;
   }
 
   .serviceMeta {
-    grid-column: 2 / 3;
-    justify-content: flex-start;
+    grid-area: meta;
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .serviceMeta span {
+    font-size: 12px;
+  }
+
+  .serviceMeta strong {
+    font-size: 19px;
   }
 
   .serviceArrow {
-    grid-column: 3 / 4;
-    grid-row: 1 / 2;
+    grid-area: arrow;
+    align-self: start;
+    width: 44px;
+    height: 44px;
+    margin-top: 10px;
   }
 
   .servicesFooter {
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
+    gap: 24px;
   }
 
   .servicesFooter > p {
-    line-height: 1.7;
+    font-size: 11px;
+    line-height: 1.8;
   }
 
-  .guide {
-    gap: 50px;
+  .guideCopy .arrowLink {
+    margin-top: 24px;
   }
 
   .guideSteps li {
-    min-height: 96px;
-    grid-template-columns: 48px 1fr 20px;
+    min-height: 94px;
+    grid-template-columns: 36px minmax(0, 1fr) 20px;
+    gap: 8px;
   }
 
-  .info {
-    gap: 50px;
+  .guideSteps strong {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .guideSteps p {
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .appDownloads {
+    margin-top: 28px;
+    gap: 20px;
+  }
+
+  .appDownload {
+    justify-items: stretch;
+  }
+
+  .outlineLink {
+    justify-content: space-between;
+    gap: 12px;
+    padding-inline: 14px;
+    font-size: 12px;
+  }
+
+  .outlineLink svg {
+    flex-shrink: 0;
   }
 
   .infoDetails dl > div {
-    min-height: 72px;
-    grid-template-columns: 90px 1fr;
+    min-height: 64px;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 12px;
   }
 
   .infoDetails dd {
-    font-size: 11px;
+    font-size: 13px;
+    line-height: 1.8;
   }
 
   .contact {
     align-items: flex-start;
     flex-direction: column;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .contact span {
+    font-size: 12px;
+  }
+
+  .contact a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    font-size: 30px;
   }
 
   .mapBlock {
-    margin-top: 38px;
+    margin-top: 16px;
   }
 
   .mapHeading {
     align-items: flex-start;
     flex-direction: column;
-    gap: 13px;
+    gap: 8px;
+  }
+
+  .mapHeading p,
+  .mapHeading a {
+    font-size: 12px;
+  }
+
+  .mapHeading a {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .mapMedia {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .mapImageWrap {
+    aspect-ratio: 1 / 1;
+    border-radius: 24px 3px 3px 3px;
   }
 
   .mapFrame {
     border-radius: 3px 24px 3px 3px;
   }
 
-  .mapImageWrap {
-    border-radius: 24px 3px 3px 3px;
-  }
-
   .drivingGuide {
-    gap: 22px;
-    padding: 24px 20px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding: 24px 18px;
     border-radius: 3px 3px 22px 3px;
   }
 
+  .drivingRoutes p,
+  .drivingWarning p {
+    font-size: 13px;
+    line-height: 1.9;
+  }
+
+  .drivingRoutes strong {
+    font-size: 13px;
+  }
+
   .drivingWarning {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 15px 16px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 16px 14px;
   }
 
   .mobileBooking {
@@ -1231,8 +1390,9 @@
     bottom: 0;
     left: 0;
     display: grid;
-    min-height: 68px;
+    min-height: calc(68px + env(safe-area-inset-bottom, 0px));
     grid-template-columns: .8fr 1.2fr;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     border-top: 1px solid var(--line);
     background: rgba(253, 251, 248, .96);
     box-shadow: 0 -8px 28px rgba(94, 81, 69, .09);
@@ -1253,7 +1413,7 @@
     justify-content: center;
     gap: 8px;
     color: var(--taupe);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
   }
 
@@ -1267,111 +1427,33 @@
   .mobileBooking svg {
     width: 17px;
   }
-}
 
-@media (max-width: 767px) {
-  .hero {
-    display: grid;
-    min-height: auto;
+  .page :global(.site-footer) {
     grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding: 40px 20px 28px;
   }
 
-  .heroCopy {
-    display: contents;
+  .page :global(.footer-info),
+  .page :global(.footer-links) {
+    font-size: 12px;
+    line-height: 1.9;
   }
 
-  .heroCopy > .sectionLabel,
-  .heroBrand {
-    display: none;
-  }
-
-  .heroVisual {
-    height: auto;
-    min-height: 0;
-    aspect-ratio: 3 / 4;
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .hero h1 {
-    z-index: 2;
-    align-self: start;
-    grid-column: 1;
-    grid-row: 1;
-    margin: clamp(26px, 8vw, 38px) 18px 0;
-    color: #fffaf1;
-    font-size: clamp(23px, 6.55vw, 28px);
-    letter-spacing: .015em;
-    line-height: 1.48;
-    pointer-events: none;
-    text-shadow: 0 1px 10px rgba(36, 28, 22, .3);
-  }
-
-  .hero h1 em {
-    color: inherit;
-  }
-
-  .heroDescription {
-    max-width: none;
-    grid-column: 1;
-    grid-row: 2;
-    margin: 24px 18px 0;
-    font-size: clamp(11px, 3vw, 12px);
-    line-height: 1.95;
-  }
-
-  .heroActions {
-    align-items: flex-start;
-    flex-direction: column;
-    grid-column: 1;
-    grid-row: 3;
-    gap: 16px;
-    margin: 26px 18px 0;
-  }
-
-  .heroActions .arrowLink {
-    width: 100%;
-    min-height: 56px;
-  }
-
-  .heroFacts {
+  .page :global(.footer-links) {
     display: grid;
-    grid-column: 1;
-    grid-row: 4;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin: 36px 18px 32px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
   }
 
-  .heroFacts div {
-    min-width: 0;
-    padding-inline: 10px;
+  .page :global(.footer-links a) {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
   }
 
-  .heroImageShade {
-    background:
-      linear-gradient(135deg, rgba(38, 29, 23, .34), rgba(38, 29, 23, .13) 34%, transparent 58%),
-      linear-gradient(180deg, transparent 68%, rgba(45, 38, 32, .15));
-  }
-
-  .heroImageNote,
-  .heroBookingNote {
-    display: none;
-  }
-}
-
-@media (max-width: 380px) {
-  .heroFacts div {
-    padding-inline: 7px;
-  }
-
-  .heroFacts dd {
-    font-size: 8px;
-  }
-
-  .serviceMeta {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 5px;
+  .page :global(.copyright) {
+    grid-column: auto;
   }
 }
 
