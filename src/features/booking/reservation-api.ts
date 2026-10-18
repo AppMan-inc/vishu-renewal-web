@@ -3,12 +3,15 @@ import "client-only";
 import { FirebaseError } from "firebase/app";
 import { httpsCallable } from "firebase/functions";
 import { firebaseFunctions } from "@/lib/firebase/functions";
-import { bookingCustomerValidationMessage } from "@/features/form-validation";
+import { bookingFieldErrors, type BookingGender } from "./booking-customer";
 
 export type CreateBookingReservationInput = {
   menuId: string;
   startAt: string;
   customerName: string;
+  lastName: string;
+  firstName: string;
+  gender: Exclude<BookingGender, "">;
   telephoneNumber: string;
   request: string;
 };
@@ -26,7 +29,9 @@ type CancelBookingReservationResult = {
 export async function createBookingReservation(
   input: CreateBookingReservationInput,
 ) {
-  const validationMessage = bookingCustomerValidationMessage(input);
+  const validationMessage = Object.values(bookingFieldErrors({
+    ...input, phone: input.telephoneNumber,
+  })).find(Boolean);
   if (validationMessage) throw new TypeError(validationMessage);
 
   const createReservation = httpsCallable<

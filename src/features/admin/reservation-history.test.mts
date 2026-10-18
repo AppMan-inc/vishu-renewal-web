@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { attachPreviousVisits, isFirstVisitReservation } from "./reservation-history.ts";
+import { attachPreviousVisits, isFirstVisitReservation, customerVisitSummary, reservationDisplayStatus } from "./reservation-history.ts";
 import type { AdminReservation, ReservationStatus } from "./types.ts";
 
 function reservation(
@@ -127,4 +127,60 @@ test("preserves legacy last-visit snapshots and chooses the latest valid earlier
   assert.equal(result[0].previousVisitAt, returning.previousVisitAt);
   assert.equal(isFirstVisitReservation(result[0]), false);
   assert.equal(isFirstVisitReservation(result[2]), true);
+});
+
+test("non-cancelled reservations become visited at their finish time", () => {
+  const booking = reservation("booking", "customer-1", "2026-10-22T03:30:00.000Z", "confirmed");
+  assert.equal(reservationDisplayStatus(booking, new Date("2026-10-22T04:29:59.999Z")), "confirmed");
+  assert.equal(reservationDisplayStatus(booking, new Date(booking.finishTime)), "visited");
+  assert.equal(reservationDisplayStatus({ ...booking, status: "canceled" }, new Date("2026-10-23T00:00:00Z")), "canceled");
+});
+
+test("stored visited flags do not turn future or ongoing reservations into past visits", () => {
+  const booking = reservation("booking", "customer-1", "2026-10-22T03:30:00.000Z", "visited");
+  assert.equal(reservationDisplayStatus(booking, new Date("2026-10-18T00:00:00Z")), "confirmed");
+  assert.equal(reservationDisplayStatus(booking, new Date("2026-10-22T04:00:00Z")), "confirmed");
+  assert.equal(reservationDisplayStatus({ ...booking, finishTime: "invalid" }), "confirmed");
+});
+
+test("customer counts, last visit and missing karte use elapsed uncancelled bookings", () => {
+  const first = reservation("first", "customer-1", "2026-10-01T01:00:00.000Z", "confirmed");
+  const last = reservation("last", "customer-1", "2026-10-10T01:00:00.000Z", "confirmed");
+  const canceled = reservation("canceled", "customer-1", "2026-10-11T01:00:00.000Z", "canceled");
+  const future = reservation("future", "customer-1", "2026-10-22T01:00:00.000Z", "visited");
+  const otherCustomer = reservation("other", "customer-2", "2026-10-15T01:00:00.000Z", "confirmed");
+  const bookings = [future, canceled, first, otherCustomer, last];
+  const now = new Date("2026-10-18T00:00:00Z");
+  const summary = customerVisitSummary("customer-1", bookings, [
+    { customerId: "customer-1", reservationId: first.id },
+  ], now);
+  assert.deepEqual(summary, { visits: 2, lastVisit: last.startTime, missingKarte: true });
+  assert.equal(customerVisitSummary("customer-1", bookings, [
+    { customerId: "customer-1", reservationId: first.id },
+    { customerId: "customer-1", reservationId: last.id },
+  ], now).missingKarte, false);
+});
+
+test("customers with only future bookings have zero visits", () => {
+  const booking = reservation("new", "customer-1", "2026-10-22T03:30:00.000Z", "confirmed");
+  assert.deepEqual(customerVisitSummary("customer-1", [booking], [], new Date("2026-10-18T00:00:00Z")),
+    { visits: 0, lastVisit: undefined, missingKarte: false });
+});
+
+test("elapsed confirmed bookings are shown as visited and become the previous visit", () => {
+  const past = reservation("past", "customer-1", "2026-10-01T01:00:00.000Z", "confirmed");
+  const upcoming = reservation("next", "customer-1", "2026-10-22T01:00:00.000Z", "confirmed");
+  const result = attachPreviousVisits([upcoming, past], new Date("2026-10-18T00:00:00Z"));
+  assert.equal(result[0].previousVisitAt, past.startTime);
+  assert.equal(result[1].status, "visited");
+  assert.equal(past.status, "confirmed");
+});
+
+test("the same loaded snapshot changes visit status when the clock crosses the finish time", () => {
+  const booking = reservation("booking", "customer-1", "2026-10-22T03:30:00.000Z", "confirmed");
+  const before = attachPreviousVisits([booking], new Date("2026-10-22T04:29:59Z"));
+  const after = attachPreviousVisits([booking], new Date("2026-10-22T04:30:00Z"));
+  assert.equal(before[0].status, "confirmed");
+  assert.equal(after[0].status, "visited");
+  assert.equal(customerVisitSummary("customer-1", [booking], [], new Date(booking.finishTime)).visits, 1);
 });

@@ -4494,6 +4494,7 @@ button.booking-menu-card.is-selected .round-arrow {
 }
 
 .booking-form-grid input,
+.booking-form-grid select,
 .booking-form-grid textarea {
   width: 100%;
   border: 1px solid var(--border);
@@ -4506,7 +4507,8 @@ button.booking-menu-card.is-selected .round-arrow {
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.booking-form-grid input {
+.booking-form-grid input,
+.booking-form-grid select {
   min-height: 50px;
   padding: 0 14px;
 }
@@ -4517,6 +4519,7 @@ button.booking-menu-card.is-selected .round-arrow {
 }
 
 .booking-form-grid input:focus,
+.booking-form-grid select:focus,
 .booking-form-grid textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(165, 137, 104, .12);
@@ -4527,8 +4530,10 @@ button.booking-menu-card.is-selected .round-arrow {
 }
 
 .booking-form-grid input[aria-invalid="true"],
+.booking-form-grid select[aria-invalid="true"],
 .booking-form-grid textarea[aria-invalid="true"],
 .booking-form-grid input[aria-invalid="true"]:focus,
+.booking-form-grid select[aria-invalid="true"]:focus,
 .booking-form-grid textarea[aria-invalid="true"]:focus {
   border-color: #9a4039;
   box-shadow: 0 0 0 3px rgba(154, 64, 57, .1);
