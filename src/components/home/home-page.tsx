@@ -114,7 +114,7 @@ function HeroSection() {
           <em className={styles.headlineLine}>完全予約制プライベートサロン</em>
         </h1>
         <p className={styles.heroDescription}>
-          Salon Vishuは、大阪府河内長野市荘園町にある一席だけの美容室です。ほかのお客様を気にせず過ごせる、完全予約制のプライベートサロンとして営業しています。ハーブカラー、縮毛矯正、髪質改善、ヘッドスパなどをご提供しています。
+          Salon Vishuは、大阪府河内長野市荘園町にある一席だけの美容室です。ほかのお客様を気にせず過ごせる、完全予約制のプライベートサロンとして営業しています。ハーブカラー、酸性縮毛矯正、髪質改善、ヘッドスパなどをご提供しています。
         </p>
         <div className={styles.heroActions}>
           <ArrowLink href="/booking">空き時間を見て予約</ArrowLink>
@@ -176,9 +176,9 @@ function StraighteningSection() {
       <div className={styles.straighteningInner}>
         <div className={styles.straighteningCopy}>
           <h2 className={styles.straighteningTitle} id="straightening-title">
-            髪質改善・縮毛矯正<br />自然に、美しく。
+            髪質改善・酸性縮毛矯正<br />自然に、美しく。
           </h2>
-          <p className={styles.straighteningSubCopy}>Salon Vishuが力を入れている髪質改善・縮毛矯正では、髪の状態を丁寧に見極めながら、髪本来の美しさを活かした自然なストレートに仕上げます。</p>
+          <p className={styles.straighteningSubCopy}>Salon Vishuが力を入れている髪質改善・酸性縮毛矯正では、髪の状態を丁寧に見極めながら、髪本来の美しさを活かした自然なストレートに仕上げます。</p>
         </div>
         <div className={styles.straighteningPairs}>
           {straighteningPairs.map((pair, index) => (
@@ -190,7 +190,7 @@ function StraighteningSection() {
               <figure>
                 <figcaption>Before</figcaption>
                 <Image
-                  alt={`髪質改善・縮毛矯正${index + 1}組目の施術前`}
+                  alt={`髪質改善・酸性縮毛矯正${index + 1}組目の施術前`}
                   className={styles.straighteningImage}
                   height={2134}
                   sizes="(max-width: 680px) 43vw, (max-width: 1120px) 344px, 300px"
@@ -201,7 +201,7 @@ function StraighteningSection() {
               <figure>
                 <figcaption>After</figcaption>
                 <Image
-                  alt={`髪質改善・縮毛矯正${index + 1}組目の施術後`}
+                  alt={`髪質改善・酸性縮毛矯正${index + 1}組目の施術後`}
                   className={styles.straighteningImage}
                   height={2134}
                   sizes="(max-width: 680px) 43vw, (max-width: 1120px) 344px, 300px"
