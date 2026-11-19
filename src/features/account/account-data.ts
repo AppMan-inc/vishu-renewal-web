@@ -1,5 +1,7 @@
 import "client-only";
 
+import { visibleCustomerReservations } from "./visible-customer-reservations";
+
 import {
   collection,
   doc,
@@ -127,20 +129,15 @@ async function loadCustomerReservations(uid: string) {
     throw failedSource?.reason ?? new Error("予約情報を読み込めませんでした。");
   }
 
-  const reservationsById = new Map<string, CustomerReservation>();
+  const reservations: CustomerReservation[] = [];
   for (const source of sources) {
     if (source.status === "rejected") continue;
     for (const document of source.value.docs) {
       const reservation = reservationFromData(document.id, document.data());
-      if (reservation && !reservationsById.has(reservation.id)) {
-        reservationsById.set(reservation.id, reservation);
-      }
+      if (reservation) reservations.push(reservation);
     }
   }
-
-  return [...reservationsById.values()].sort(
-    (left, right) => right.startAt.getTime() - left.startAt.getTime(),
-  );
+  return visibleCustomerReservations(reservations);
 }
 
 function profileFromData(
