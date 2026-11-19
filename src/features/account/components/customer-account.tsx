@@ -204,7 +204,7 @@ export function CustomerReservationHistory() {
     setCancellationMessage("");
     try {
       await cancelBookingReservation(reservationToCancel.id);
-      setCancellationMessage("予約をキャンセルしました。予約履歴へ反映されています。");
+      setCancellationMessage("予約をキャンセルしました。");
       setReservationToCancel(null);
       reload();
     } catch (error) {
@@ -292,7 +292,7 @@ export function CustomerReservationHistory() {
               <span>{formatReservationDate(reservationToCancel.startAt)}</span>
             </div>
             <p id="cancel-reservation-description">
-              キャンセル後は元に戻せません。予約履歴にはキャンセル済みとして残ります。
+              キャンセル後は元に戻せません。この予約は予約履歴から非表示になります。
             </p>
             {cancellationError ? (
               <div className="account-form-message is-error" role="alert">
